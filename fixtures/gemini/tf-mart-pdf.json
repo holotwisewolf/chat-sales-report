@@ -1,0 +1,18 @@
+{
+  "document_type": "sku_by_outlet",
+  "retailer_guess": "ValueMart",
+  "period_guess_start": "2026-08-01",
+  "period_guess_end": "2026-08-17",
+  "printed_totals": { "quantity": 53, "sales": 854.70 },
+  "rows": [
+    { "counter": "VM - Segamat", "sku": "9000000101", "product_name": "LADIES SHOES A-WSH299", "quantity": 1, "unit_price": 29.90, "sales": 29.90, "cost": 24.52, "profit": 5.38, "margin_percent": 18.0, "low_confidence": false, "note": null },
+    { "counter": "VM - Segamat", "sku": "9000000202", "product_name": "KIDS SLIPPERS A-CSL149", "quantity": 3, "unit_price": 14.90, "sales": 44.70, "cost": 33.53, "profit": 11.17, "margin_percent": 25.0, "low_confidence": false, "note": null },
+    { "counter": "VM - Segamat", "sku": "9000000303", "product_name": "MEN SLIPPERS A-MSL249", "quantity": 4, "unit_price": 24.90, "sales": 99.60, "cost": 74.70, "profit": 24.90, "margin_percent": 25.0, "low_confidence": false, "note": null },
+    { "counter": "VM - Kluang", "sku": "9000000404", "product_name": "MEN SLIPPERS A-MSL229", "quantity": 9, "unit_price": 22.90, "sales": 206.10, "cost": 154.58, "profit": 51.53, "margin_percent": 25.0, "low_confidence": false, "note": null },
+    { "counter": "VM - Kluang", "sku": "9000000505", "product_name": "LADIES SLIPPERS A-WSL279", "quantity": 1, "unit_price": 27.90, "sales": 27.90, "cost": 20.93, "profit": 6.98, "margin_percent": 25.0, "low_confidence": false, "note": null },
+    { "counter": "VM - Kluang", "sku": "9000000606", "product_name": "SCHOOL SHOES A-SSH199", "quantity": 12, "unit_price": 19.90, "sales": 238.80, "cost": 179.10, "profit": 59.70, "margin_percent": 25.0, "low_confidence": false, "note": null },
+    { "counter": "VM - Muar", "sku": "9000000707", "product_name": "CANVAS SCHOOL SHOES A-SSH099", "quantity": 25, "unit_price": 9.90, "sales": 247.50, "cost": 185.63, "profit": 61.88, "margin_percent": 25.0, "low_confidence": false, "note": null },
+    { "counter": "VM - Muar", "sku": "9000000404", "product_name": "MEN SLIPPERS A-MSL199", "quantity": -2, "unit_price": 19.90, "sales": -39.80, "cost": -29.85, "profit": -9.95, "margin_percent": 25.0, "low_confidence": true, "note": "negative quantity - printed return/adjustment line" }
+  ],
+  "warnings": []
+}

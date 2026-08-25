@@ -1,0 +1,22 @@
+{
+  "document_type": "counter_table",
+  "retailer_guess": "Mart Segar",
+  "period_guess_start": "2026-08-01",
+  "period_guess_end": "2026-08-24",
+  "printed_totals": { "quantity": 196, "sales": 9839.50 },
+  "rows": [
+    { "counter": "Segar Hypermarket Ujana", "sku": null, "product_name": null, "quantity": 42, "unit_price": null, "sales": 2180.50, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Hypermarket Subang", "sku": null, "product_name": null, "quantity": 35, "unit_price": null, "sales": 1795.20, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Hypermarket Melaka", "sku": null, "product_name": null, "quantity": 28, "unit_price": null, "sales": 1402.75, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Emporium Kota", "sku": null, "product_name": null, "quantity": 24, "unit_price": null, "sales": 1188.00, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Hypermarket Bertam", "sku": null, "product_name": null, "quantity": 19, "unit_price": null, "sales": 947.25, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Mart Sri Muda", "sku": null, "product_name": null, "quantity": 15, "unit_price": null, "sales": 726.60, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Hypermarket Senawang", "sku": null, "product_name": null, "quantity": 11, "unit_price": null, "sales": 534.40, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Wholesale Gopeng", "sku": null, "product_name": null, "quantity": 8, "unit_price": null, "sales": 388.90, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Hypermarket Gong Badak", "sku": null, "product_name": null, "quantity": 6, "unit_price": null, "sales": 291.30, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Emporium Penang", "sku": null, "product_name": null, "quantity": 4, "unit_price": null, "sales": 194.40, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Mart Shah Alam", "sku": null, "product_name": null, "quantity": 3, "unit_price": null, "sales": 142.65, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null },
+    { "counter": "Segar Hypermarket Rinting", "sku": null, "product_name": null, "quantity": 1, "unit_price": null, "sales": 47.55, "cost": null, "profit": null, "margin_percent": null, "low_confidence": false, "note": null }
+  ],
+  "warnings": []
+}

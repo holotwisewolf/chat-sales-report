@@ -1,0 +1,9 @@
+node_modules/
+.next/
+sales.db
+dashboard-preview*.png
+*.log
+.env
+.env.local
+uploads/
+package-lock.json.bak
