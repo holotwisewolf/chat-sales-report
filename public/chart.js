@@ -2,10 +2,10 @@
 // Colors come from CSS variables (theme-owned); the series step is validated for the dark surface.
 
 const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-const seriesColor = () => cssVar('--chart-series', '#28a745');
-const inkColor = () => cssVar('--chart-ink', '#98989d');
-const gridColor = () => cssVar('--chart-grid', '#2c2c2e');
-const strongInk = () => cssVar('--text', '#f5f5f7');
+const seriesColor = () => cssVar('--chart-series', '#2a78d6');
+const inkColor = () => cssVar('--chart-ink', '#5b6472');
+const gridColor = () => cssVar('--chart-grid', '#e2e8f1');
+const strongInk = () => cssVar('--ink', '#10151f');
 const registry = new Map();
 let resizeTimer;
 window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => registry.forEach(render => render()), 150); });
@@ -41,7 +41,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       ${ticks.map(t => `<line x1="${padL}" x2="${W - padR}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="${gridColor()}" stroke-width="1"/><text x="${padL - 8}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t === 0 ? '0' : format(t)}</text>`).join('')}
       <path d="${area}" fill="${seriesColor()}" opacity="0.12" class="areaFill"/>
       <path class="linePath" d="${line}" fill="none" stroke="${seriesColor()}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-      ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="3.5" fill="#1c1c1e" stroke="${seriesColor()}" stroke-width="2"/>`).join('')}
+      ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="3.5" fill="#ffffff" stroke="${seriesColor()}" stroke-width="2"/>`).join('')}
       <text x="${x(points.length - 1).toFixed(1)}" y="${(y(last.value) - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(last.value)}</text>
       ${xLabels}
       <line id="crosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="${inkColor()}" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
