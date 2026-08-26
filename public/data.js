@@ -1,7 +1,6 @@
-// Spreadsheet-style browser over confirmed rows: filter, sort, page; read-only by default, edit mode for fixes.
+// Main spreadsheet view: the table IS the page. Filters here also drive the stats strip and charts (via load()).
 const $data = selector => document.querySelector(selector);
-const dataDialog = $data('#dataDialog');
-const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', month: '', q: '', editRow: null, editMode: false, dirty: false };
+const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', month: '', q: '', editRow: null, editMode: false };
 const COLUMNS = [
   { key: 'periodStart', label: 'Period start', sort: 'period' },
   { key: 'periodEnd', label: 'Period end' },
@@ -15,9 +14,6 @@ const COLUMNS = [
   { key: 'cost', label: 'Cost', num: true },
   { key: 'profit', label: 'Profit', num: true }
 ];
-
-$data('#showData').onclick = async () => { dataDialog.showModal(); await populateDataFilters(); await loadRows(); };
-$data('#closeData').onclick = () => { dataDialog.close(); if (dataState.dirty) { dataState.dirty = false; load(); } };
 
 async function populateDataFilters() {
   const options = await fetch('/api/dashboard').then(r => r.json()).then(b => b.options).catch(() => null);
@@ -64,8 +60,8 @@ $data('#dataTable').addEventListener('click', async event => {
   if (del) {
     if (!confirm('Delete this row? This cannot be undone.')) return;
     await fetch(`/api/rows/${del}`, { method: 'DELETE' });
-    dataState.dirty = true;
     loadRows();
+    load();
     return;
   }
   if (event.target.id === 'dCancel') { dataState.editRow = null; loadRows(); return; }
@@ -77,8 +73,8 @@ $data('#dataTable').addEventListener('click', async event => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return alert(result.error || 'Could not save that row.');
     dataState.editRow = null;
-    dataState.dirty = true;
     loadRows();
+    load();
     return;
   }
   if (sortKey) {
@@ -91,7 +87,9 @@ $data('#dataTable').addEventListener('click', async event => {
 
 $data('#editMode').onchange = event => { dataState.editMode = event.target.checked; dataState.editRow = null; loadRows(); };
 [['#dRetailer', 'retailer'], ['#dCategory', 'category'], ['#dMonth', 'month']].forEach(([selector, key]) => {
-  $data(selector).onchange = event => { dataState[key] = event.target.value; dataState.page = 1; loadRows(); };
+  $data(selector).onchange = event => { dataState[key] = event.target.value; dataState.page = 1; loadRows(); load(); };
 });
 let searchTimer;
 $data('#dSearch').oninput = event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { dataState.q = event.target.value.trim(); dataState.page = 1; loadRows(); }, 300); };
+
+populateDataFilters().then(loadRows);

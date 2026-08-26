@@ -295,6 +295,7 @@ $import('#confirmImport').onclick = async () => {
   if (response.ok) {
     reviewDialog.close();
     alert(`Imported ${body.imported} rows${body.replaced?.length ? ` (replaced ${body.replaced.length} earlier report${body.replaced.length > 1 ? 's' : ''})` : ''}.`);
+    if (window.loadRows) loadRows();
     load();
   } else if (body.code === 'totals_mismatch') {
     syncFromServer({ ...state.job, reconciliation: body.reconciliation });
