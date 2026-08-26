@@ -101,7 +101,13 @@ app.get('/api/dashboard', (req, res) => {
     months: db.prepare('SELECT DISTINCT substr(period_end,1,7) month FROM reports ORDER BY month DESC').all().map(row => row.month),
     categories: db.prepare(`SELECT DISTINCT product_category category FROM sales_lines WHERE product_category IS NOT NULL AND product_category != '' ORDER BY category`).all().map(row => row.category)
   };
-  res.json({ summary, ranking: allCounters.slice(0, 12), allCounters, retailers, periods, trend, options });
+  // Category split ignores the category filter on purpose - it IS the category overview for the current retailer/month.
+  const categoryTotals = db.prepare(`SELECT s.product_category category, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity
+                                    FROM sales_lines s JOIN reports r ON r.id=s.report_id
+                                    WHERE (? = '' OR r.retailer = ?) AND (? = '' OR substr(r.period_end, 1, 7) = ?)
+                                      AND s.product_category IS NOT NULL AND s.product_category != ''
+                                    GROUP BY s.product_category ORDER BY sales DESC`).all(retailer, retailer, month, month);
+  res.json({ summary, ranking: allCounters.slice(0, 12), allCounters, retailers, periods, trend, options, categoryTotals });
 });
 
 app.post('/api/import/manual', (req, res) => {
@@ -124,6 +130,8 @@ app.post('/api/import/manual', (req, res) => {
 });
 
 require('./lib/importjobs')(app, db, { counterId, categoryId });
+require('./lib/chat')(app, db);
+require('./lib/data')(app, db, { counterId, categoryId });
 
 // Local-only branding: the published repo ships a generic label; BUSINESS_NAME in .env personalizes it.
 app.get('/api/config', (req, res) => res.json({ businessName: process.env.BUSINESS_NAME || '' }));

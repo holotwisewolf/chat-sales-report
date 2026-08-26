@@ -41,6 +41,7 @@ $import('#readBtn').onclick = () => {
   state.busy = true;
   const form = new FormData();
   staged.forEach(file => form.append('files', file));
+  form.append('note', $import('#uploadNote').value);
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/api/import-jobs');
   xhr.upload.onprogress = e => e.lengthComputable && setState(`Uploading&hellip; ${Math.round(e.loaded / e.total * 100)}%`, true);
@@ -106,6 +107,7 @@ function openReview(job) {
   $import('#reviewCategory').value = job.category || '';
   $import('#reviewStart').value = job.periodStart || '';
   $import('#reviewEnd').value = job.periodEnd || '';
+  $import('#reviewNote').value = job.note || '';
   renderTabs(job.files[0]?.id);
   renderGrid();
   syncFromServer(job);
@@ -236,9 +238,9 @@ function updateConfirmState() {
 $import('#overrideTotals').onchange = updateConfirmState;
 
 function metaValues() {
-  return { retailer: $import('#reviewRetailer').value, category: $import('#reviewCategory').value, periodStart: $import('#reviewStart').value, periodEnd: $import('#reviewEnd').value };
+  return { retailer: $import('#reviewRetailer').value, category: $import('#reviewCategory').value, periodStart: $import('#reviewStart').value, periodEnd: $import('#reviewEnd').value, note: $import('#reviewNote').value };
 }
-['#reviewRetailer', '#reviewCategory', '#reviewStart', '#reviewEnd'].forEach(s => $import(s).addEventListener('input', () => { state.dirty = true; scheduleSave(); }));
+['#reviewRetailer', '#reviewCategory', '#reviewStart', '#reviewEnd', '#reviewNote'].forEach(s => $import(s).addEventListener('input', () => { state.dirty = true; scheduleSave(); }));
 
 function scheduleSave() {
   clearTimeout(state.saveTimer);
@@ -253,8 +255,19 @@ async function saveDraft() {
 }
 
 // Server is the source of truth for flags/reconciliation - sync DOM marks without re-rendering inputs.
+// Overlap note: a restated period (1-21 Aug after 1-18 Aug) replaces the earlier report so days aren't counted twice.
+function renderOverlapNote(job) {
+  const el = $import('#overlapNote');
+  const overlaps = job.overlaps || [];
+  if (!overlaps.length || job.status !== 'review') { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  el.className = 'banner warn';
+  el.innerHTML = `<div>An earlier ${escapeHtml(job.retailer || '')} report (${escapeHtml(job.category || 'Uncategorised')}) already covers some of these days: ${overlaps.map(o => `${escapeHtml(o.periodStart)} to ${escapeHtml(o.periodEnd)}`).join(', ')}.</div><label class="override"><input type="checkbox" id="replaceOverlapping" checked> Replace the earlier report (recommended &mdash; the new one restates those days, so adding both would count them twice)</label>`;
+}
+
 function syncFromServer(job) {
   state.job = job;
+  renderOverlapNote(job);
   state.flags = new Map((job.reconciliation?.flagged || []).map(f => [`${f.fileId}:${f.index}`, f.reasons]));
   $import('#rowGrid').querySelectorAll('.r[data-row]').forEach(el => {
     const i = Number(el.dataset.row);
@@ -277,11 +290,11 @@ $import('#confirmImport').onclick = async () => {
   const button = $import('#confirmImport');
   button.disabled = true; button.textContent = 'Importing…';
   await saveDraft();
-  const response = await fetch(`/api/import-jobs/${state.job.id}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ overrideTotals: $import('#overrideTotals').checked }) });
+  const response = await fetch(`/api/import-jobs/${state.job.id}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ overrideTotals: $import('#overrideTotals').checked, replaceOverlapping: $import('#replaceOverlapping') ? $import('#replaceOverlapping').checked : true }) });
   const body = await response.json().catch(() => ({}));
   if (response.ok) {
     reviewDialog.close();
-    alert(`Imported ${body.imported} rows.`);
+    alert(`Imported ${body.imported} rows${body.replaced?.length ? ` (replaced ${body.replaced.length} earlier report${body.replaced.length > 1 ? 's' : ''})` : ''}.`);
     load();
   } else if (body.code === 'totals_mismatch') {
     syncFromServer({ ...state.job, reconciliation: body.reconciliation });

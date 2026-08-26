@@ -32,20 +32,31 @@ async function load() {
   populateSelect('month', data.options.months, current.month);
   populateSelect('retailer', data.options.retailers, current.retailer);
   populateSelect('category', data.options.categories, current.category);
+  const labels = { month: 'Month', retailer: 'Retailer', category: 'Category' };
+  const chips = filters.filter(id => document.querySelector(`#${id}`).value);
+  document.querySelector('#activeFilters').innerHTML = chips.length
+    ? chips.map(id => `<span class="filterChip">${labels[id]}: ${escapeHtml(document.querySelector(`#${id}`).value)}<button type="button" data-clear="${id}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
+    : '<span class="filterChip all">Showing all data &mdash; pick a month, retailer, or category above to focus.</span>';
+  const clearAll = document.querySelector('#clearAll');
+  if (clearAll) clearAll.onclick = () => { filters.forEach(id => document.querySelector(`#${id}`).value = ''); load(); };
+  const cats = data.categoryTotals || [];
+  const catRow = document.querySelector('#categoryRow');
+  if (cats.length >= 2) { catRow.hidden = false; catRow.innerHTML = cats.map(c => `<article><span>${escapeHtml(c.category)}</span><strong>${money(c.sales)}</strong><small>${Number(c.quantity).toLocaleString()} units</small></article>`).join(''); }
+  else catRow.hidden = true;
   document.querySelector('#sales').textContent = money(data.summary.sales);
   document.querySelector('#units').textContent = Number(data.summary.quantity).toLocaleString();
   document.querySelector('#counters').textContent = data.summary.counters;
   document.querySelector('#top').textContent = data.ranking[0]?.name || '—';
-  const maximum = Math.max(...data.trend.map(item => item.sales), 1);
-  document.querySelector('#trend').innerHTML = data.trend.length ? data.trend.map(item => `<div class="barItem"><div class="barValue">${money(item.sales)}</div><div class="bar"><i style="height:${Math.max(8, item.sales / maximum * 100)}%"></i></div><small>${item.month}</small></div>`).join('') : '<p class="hint">No data matches these filters.</p>';
+  lineChart(document.querySelector('#trend'), data.trend.map(item => ({ label: item.month, value: item.sales })), { format: money });
+  barList(document.querySelector('#retailers'), data.retailers.map(row => ({ label: row.retailer, value: row.sales, sub: `${row.quantity} units` })), { format: money });
   document.querySelector('#ranking').innerHTML = data.ranking.map((row, index) => `<div class="rank"><b>${index + 1}</b><div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.retailer)} &middot; ${row.quantity} units &middot; ${money(row.average_price)} avg/unit</small></div><em>${money(row.sales)}</em></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
-  document.querySelector('#retailers').innerHTML = data.retailers.map(row => `<div class="retailer"><span>${escapeHtml(row.retailer)}</span><strong>${money(row.sales)}</strong><small>${row.quantity} units</small></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
   const signals = buildSignals(data.allCounters);
   document.querySelector('#alerts').innerHTML = signals.length ? signals.map(signal => `<div class="alert ${signal.type}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
   document.querySelector('#reports').innerHTML = data.periods.map(row => `<div class="report"><div><strong>${escapeHtml(row.retailer)}</strong><small>${row.period_start} to ${row.period_end}${row.source_filename ? ` &middot; ${escapeHtml(row.source_filename)}` : ''}</small></div><div><strong>${money(row.sales)}</strong><small>${row.quantity} units</small></div></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
 }
 
 filters.forEach(id => document.querySelector(`#${id}`).onchange = load);
+document.querySelector('#activeFilters').onclick = event => { const id = event.target.dataset?.clear; if (id) { document.querySelector(`#${id}`).value = ''; load(); } };
 document.querySelector('#resetFilters').onclick = () => { filters.forEach(id => document.querySelector(`#${id}`).value = ''); load(); };
 const dialog = document.querySelector('#importDialog');
 document.querySelector('#showImport').onclick = () => dialog.showModal();
