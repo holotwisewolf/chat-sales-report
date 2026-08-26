@@ -2,17 +2,16 @@
 const $data = selector => document.querySelector(selector);
 const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', month: '', q: '', editRow: null, editMode: false };
 const COLUMNS = [
-  { key: 'periodStart', label: 'Period start', sort: 'period' },
-  { key: 'periodEnd', label: 'Period end' },
+  { key: 'counter', label: 'Counter', sort: 'counter', cls: 'counterName' },
   { key: 'retailer', label: 'Retailer', sort: 'retailer' },
-  { key: 'counter', label: 'Counter', sort: 'counter' },
   { key: 'category', label: 'Category', sort: 'category' },
   { key: 'productName', label: 'Product' },
   { key: 'sku', label: 'SKU' },
   { key: 'quantity', label: 'Qty', sort: 'quantity', num: true },
   { key: 'sales', label: 'Sales (RM)', sort: 'sales', num: true },
   { key: 'cost', label: 'Cost', num: true },
-  { key: 'profit', label: 'Profit', num: true }
+  { key: 'profit', label: 'Profit', num: true },
+  { key: 'period', label: 'Period', sort: 'period', cls: 'mutedcol' }
 ];
 
 async function populateDataFilters() {
@@ -29,27 +28,38 @@ async function loadRows() {
   const params = new URLSearchParams({ page: dataState.page, sort: dataState.sort, dir: dataState.dir, retailer: dataState.retailer, category: dataState.category, month: dataState.month, q: dataState.q });
   const data = await fetch(`/api/rows?${params}`).then(r => r.json()).catch(() => null);
   if (!data) { $data('#dataTable').innerHTML = '<p class="hint">Couldn\'t load rows.</p>'; return; }
-  const head = `<thead><tr>${COLUMNS.map(c => `<th ${c.sort ? `data-sort="${c.sort}" class="sortable${dataState.sort === c.sort ? ' on' : ''}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`).join('')}<th></th></tr></thead>`;
+  const head = `<thead><tr>${COLUMNS.map(c => `<th ${c.sort ? `data-sort="${c.sort}" class="sortable${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`).join('')}${dataState.editMode ? '<th></th>' : ''}</tr></thead>`;
   const body = data.rows.map(row => row.id === dataState.editRow ? editRowHtml(row) : displayRowHtml(row)).join('');
-  $data('#dataTable').innerHTML = `<div class="tableWrap"><table>${head}<tbody>${body || '<tr><td colspan="12" class="hint">No rows match these filters.</td></tr>'}</tbody></table></div>
+  $data('#dataTable').innerHTML = `<div class="tableWrap"><table>${head}<tbody>${body || `<tr><td colspan="${COLUMNS.length + 1}" class="hint" style="padding:22px">No rows match these filters.</td></tr>`}</tbody></table></div>
     <div class="pageBar"><button type="button" class="secondary" id="dPrev" ${data.page <= 1 ? 'disabled' : ''}>&larr; Previous</button><small>Page ${data.page} of ${data.pages} &middot; ${data.total.toLocaleString()} rows</small><button type="button" class="secondary" id="dNext" ${data.page >= data.pages ? 'disabled' : ''}>Next &rarr;</button></div>`;
   const prev = $data('#dPrev'), next = $data('#dNext');
   if (prev) prev.onclick = () => { dataState.page--; loadRows(); };
   if (next) next.onclick = () => { dataState.page++; loadRows(); };
 }
 
+const shortDate = iso => { if (!iso) return null; const [, m, d] = iso.split('-'); return `${+d}/${+m}`; };
+const periodText = row => {
+  const start = shortDate(row.periodStart), end = shortDate(row.periodEnd);
+  if (!start && !end) return '';
+  const yy = (row.periodEnd || '').slice(2, 4);
+  return `${start || '?'}–${end || '?'}${yy ? `/${yy}` : ''}`;
+};
 const cellText = (row, col) => {
+  if (col.key === 'period') return escapeHtml(periodText(row));
   const value = row[col.key];
   if (value == null) return '';
   return col.num ? Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 }) : escapeHtml(String(value));
 };
+const sortIndex = () => COLUMNS.findIndex(c => c.sort === dataState.sort);
+const cellClass = (col, index) => `${col.num ? 'num' : ''}${col.cls ? ` ${col.cls}` : ''}${index === sortIndex() ? ' sortedCol' : ''}`;
+
 const displayRowHtml = row => `<tr data-id="${row.id}" class="${dataState.editMode ? 'editable' : ''}">
-  ${COLUMNS.map(c => `<td class="${c.num ? 'num' : ''}">${cellText(row, c)}</td>`).join('')}
-  <td class="rowActions">${dataState.editMode ? `<button type="button" class="secondary" data-edit="${row.id}">Edit</button><button type="button" class="secondary danger" data-del="${row.id}">Delete</button>` : ''}</td></tr>`;
+  ${COLUMNS.map((c, ci) => `<td class="${cellClass(c, ci)}">${cellText(row, c)}</td>`).join('')}
+  ${dataState.editMode ? `<td class="rowActions"><button type="button" class="secondary" data-edit="${row.id}">Edit</button><button type="button" class="secondary danger" data-del="${row.id}">Delete</button></td>` : ''}</tr>`;
 
 const editInput = (row, key, num = false) => `<input value="${row[key] ?? ''}" data-k="${key}" ${num ? 'type="number" step="any"' : ''}>`;
 const editRowHtml = row => `<tr data-id="${row.id}" class="editing">
-  ${COLUMNS.map(c => `<td class="${c.num ? 'num' : ''}">${['retailer', 'periodStart', 'periodEnd'].includes(c.key) ? cellText(row, c) : editInput(row, c.key, c.num)}</td>`).join('')}
+  ${COLUMNS.map((c, ci) => `<td class="${cellClass(c, ci)}">${['retailer', 'period'].includes(c.key) ? cellText(row, c) : editInput(row, c.key, c.num)}</td>`).join('')}
   <td class="rowActions"><button type="button" id="dSave">Save</button><button type="button" class="secondary" id="dCancel">Cancel</button></td></tr>`;
 
 $data('#dataTable').addEventListener('click', async event => {
