@@ -3,7 +3,7 @@
 const money = n => new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(n || 0);
 const escapeHtml = value => String(value).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
 const median = values => { const sorted = values.slice().sort((a,b) => a-b); const half = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2; };
-const FILTER_IDS = { '#dMonth': 'month', '#dRetailer': 'retailer', '#dCategory': 'category' };
+const FILTER_IDS = { '#dRetailer': 'retailer', '#dCategory': 'category' };
 const filterValue = selector => document.querySelector(selector)?.value || '';
 
 function buildSignals(counters) {
@@ -24,16 +24,23 @@ function buildSignals(counters) {
 
 async function load() {
   const params = new URLSearchParams(Object.fromEntries(Object.entries(FILTER_IDS).map(([selector, key]) => [key, filterValue(selector)])));
+  const range = window.currentPeriod ? window.currentPeriod() : {};
+  params.set('from', range.from || '');
+  params.set('to', range.to || '');
   const data = await fetch(`/api/dashboard?${params}`).then(response => response.json());
   document.querySelector('#sales').textContent = money(data.summary.sales);
   document.querySelector('#units').textContent = Number(data.summary.quantity).toLocaleString();
   document.querySelector('#counters').textContent = data.summary.counters;
   document.querySelector('#top').textContent = data.ranking[0]?.name || '—';
-  const labels = { month: 'Month', retailer: 'Retailer', category: 'Category' };
+  const labels = { retailer: 'Retailer', category: 'Category' };
   const chips = Object.entries(FILTER_IDS).filter(([selector]) => filterValue(selector));
-  document.querySelector('#activeFilters').innerHTML = chips.length
-    ? chips.map(([selector, key]) => `<span class="filterChip">${labels[key]}: ${escapeHtml(filterValue(selector))}<button type="button" data-clear="${selector}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
+  const periodChip = window.periodLabel && window.periodLabel() !== 'All time'
+    ? `<span class="filterChip">Period: ${escapeHtml(window.periodLabel())}<button type="button" id="clearPeriod" aria-label="Clear period">&times;</button></span>` : '';
+  document.querySelector('#activeFilters').innerHTML = (chips.length || periodChip)
+    ? periodChip + chips.map(([selector, key]) => `<span class="filterChip">${labels[key]}: ${escapeHtml(filterValue(selector))}<button type="button" data-clear="${selector}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
     : '<span class="filterChip all">All data &mdash; use the filters above the table to focus.</span>';
+  const clearPeriod = document.querySelector('#clearPeriod');
+  if (clearPeriod) clearPeriod.onclick = () => { if (window.resetPeriod) window.resetPeriod(); loadRows(); load(); };
   const clearAll = document.querySelector('#clearAll');
   if (clearAll) clearAll.onclick = clearFilters;
   const cats = data.categoryTotals || [];
@@ -52,6 +59,7 @@ function clearFilters() {
   Object.keys(FILTER_IDS).forEach(selector => { const el = document.querySelector(selector); if (el) el.value = ''; });
   const search = document.querySelector('#dSearch');
   if (search) search.value = '';
+  if (window.resetPeriod) window.resetPeriod();
   if (window.loadRows) loadRows();
   load();
 }

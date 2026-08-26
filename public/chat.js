@@ -21,17 +21,29 @@ function chatCard(html) {
   card.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
+let chatAbort = null;
+const chatSend = $chat('#chatSend');
+
+// While a question is in flight the send button becomes Stop: it aborts the request.
+chatSend.onclick = event => {
+  if (chatAbort) { event.preventDefault(); chatAbort.abort(); }
+};
+
 $chat('#chatForm').onsubmit = async event => {
   event.preventDefault();
   const question = chatInput.value.trim();
-  if (!question) return;
+  if (!question || chatAbort) return;
   chatInput.value = '';
   chatCard(`<div class="chatQuestion">${escapeHtml(question)}</div>`);
   const pending = chatCard('<div class="chatPending"><div class="spinner"></div> Thinking about the data&hellip;</div>');
+  chatAbort = new AbortController();
+  chatSend.textContent = 'Stop';
+  const done = () => { chatAbort = null; chatSend.textContent = 'Ask'; };
   try {
-    const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) });
+    const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }), signal: chatAbort.signal });
     const body = await response.json().catch(() => ({}));
     pending.remove();
+    done();
     if (!response.ok) return chatCard(`<div class="chatError">${escapeHtml(body.error || 'Something went wrong. Try rephrasing the question.')}</div>`);
     const table = body.rows.length
       ? `<div class="tableWrap"><table><thead><tr>${body.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${body.rows.map(row => `<tr>${body.columns.map(c => `<td>${escapeHtml(String(cellValue(c, row[c])))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
@@ -39,8 +51,10 @@ $chat('#chatForm').onsubmit = async event => {
     chatCard(`<p class="chatAnswer">${escapeHtml(body.explanation)}</p>${table}
       ${body.truncated ? '<p class="hint">Showing the first 200 rows.</p>' : ''}
       <details><summary>The query used</summary><code>${escapeHtml(body.sql)}</code></details>`);
-  } catch {
+  } catch (error) {
     pending.remove();
+    done();
+    if (error.name === 'AbortError') return chatCard('<div class="chatError">Stopped.</div>');
     chatCard('<div class="chatError">The answer service is unreachable. Check that the app is running, then try again.</div>');
   }
 };

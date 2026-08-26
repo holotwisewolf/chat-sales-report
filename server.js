@@ -89,8 +89,11 @@ app.get('/api/dashboard', (req, res) => {
   const retailer = req.query.retailer || '';
   const month = req.query.month || '';
   const category = req.query.category || '';
-  const where = `WHERE (? = '' OR r.retailer = ?) AND (? = '' OR substr(r.period_end, 1, 7) = ?) AND (? = '' OR s.product_category = ?)`;
-  const params = [retailer, retailer, month, month, category, category];
+  const from = req.query.from || '';
+  const to = req.query.to || '';
+  // A report belongs to a range when its period overlaps it (period_start <= to AND period_end >= from).
+  const where = `WHERE (? = '' OR r.retailer = ?) AND (? = '' OR substr(r.period_end, 1, 7) = ?) AND (? = '' OR s.product_category = ?) AND (? = '' OR (r.period_start <= ? AND r.period_end >= ?))`;
+  const params = [retailer, retailer, month, month, category, category, from, to, from];
   const summary = db.prepare(`SELECT COALESCE(SUM(s.sales),0) sales, COALESCE(SUM(s.quantity),0) quantity, COUNT(DISTINCT s.counter_id) counters FROM sales_lines s JOIN reports r ON r.id=s.report_id ${where}`).get(...params);
   const allCounters = db.prepare(`SELECT c.name, r.retailer, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity, ROUND(SUM(s.sales)/NULLIF(SUM(s.quantity),0),2) average_price FROM sales_lines s JOIN counters c ON c.id=s.counter_id JOIN reports r ON r.id=s.report_id ${where} GROUP BY c.id, r.retailer ORDER BY sales DESC`).all(...params);
   const retailers = db.prepare(`SELECT r.retailer, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity FROM sales_lines s JOIN reports r ON r.id=s.report_id ${where} GROUP BY r.retailer ORDER BY sales DESC`).all(...params);
@@ -99,14 +102,16 @@ app.get('/api/dashboard', (req, res) => {
   const options = {
     retailers: db.prepare('SELECT DISTINCT retailer FROM reports ORDER BY retailer').all().map(row => row.retailer),
     months: db.prepare('SELECT DISTINCT substr(period_end,1,7) month FROM reports ORDER BY month DESC').all().map(row => row.month),
-    categories: db.prepare(`SELECT DISTINCT product_category category FROM sales_lines WHERE product_category IS NOT NULL AND product_category != '' ORDER BY category`).all().map(row => row.category)
+    categories: db.prepare(`SELECT DISTINCT product_category category FROM sales_lines WHERE product_category IS NOT NULL AND product_category != '' ORDER BY category`).all().map(row => row.category),
+    counters: db.prepare('SELECT name FROM counters ORDER BY name LIMIT 1000').all().map(row => row.name)
   };
   // Category split ignores the category filter on purpose - it IS the category overview for the current retailer/month.
   const categoryTotals = db.prepare(`SELECT s.product_category category, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity
                                     FROM sales_lines s JOIN reports r ON r.id=s.report_id
                                     WHERE (? = '' OR r.retailer = ?) AND (? = '' OR substr(r.period_end, 1, 7) = ?)
+                                      AND (? = '' OR (r.period_start <= ? AND r.period_end >= ?))
                                       AND s.product_category IS NOT NULL AND s.product_category != ''
-                                    GROUP BY s.product_category ORDER BY sales DESC`).all(retailer, retailer, month, month);
+                                    GROUP BY s.product_category ORDER BY sales DESC`).all(retailer, retailer, month, month, from, to, from);
   res.json({ summary, ranking: allCounters.slice(0, 12), allCounters, retailers, periods, trend, options, categoryTotals });
 });
 

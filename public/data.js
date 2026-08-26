@@ -1,6 +1,68 @@
 // Main spreadsheet view: the table IS the page. Filters here also drive the stats strip and charts (via load()).
 const $data = selector => document.querySelector(selector);
-const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', month: '', q: '', editRow: null, editMode: false };
+const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', q: '', editRow: null, editMode: false, period: { year: null, monthIdx: null, from: '', to: '' }, years: [] };
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Resolved date range for the current picker state: all time, a year, a month of a year, or custom.
+function currentPeriod() {
+  const p = dataState.period;
+  if (p.from || p.to) return { from: p.from, to: p.to };
+  if (p.year == null) return { from: '', to: '' };
+  if (p.monthIdx == null) return { from: `${p.year}-01-01`, to: `${p.year}-12-31` };
+  const mm = String(p.monthIdx + 1).padStart(2, '0');
+  const lastDay = new Date(Date.UTC(p.year, p.monthIdx + 1, 0)).getUTCDate();
+  return { from: `${p.year}-${mm}-01`, to: `${p.year}-${mm}-${String(lastDay).padStart(2, '0')}` };
+}
+function periodLabel() {
+  const p = dataState.period;
+  const short = iso => iso ? iso.replace(/(\d{4})-(\d{2})-(\d{2})/, (_, y, m, d) => `${+d}/${+m}/${y.slice(2)}`) : '';
+  if (p.from || p.to) return `${short(p.from) || '…'} – ${short(p.to) || '…'}`;
+  if (p.year == null) return 'All time';
+  return p.monthIdx == null ? String(p.year) : `${MONTHS[p.monthIdx]} ${p.year}`;
+}
+function resetPeriod() { dataState.period = { year: null, monthIdx: null, from: '', to: '' }; renderPeriodPicker(); }
+function applyPeriod() { dataState.page = 1; loadRows(); load(); }
+window.currentPeriod = currentPeriod;
+window.periodLabel = periodLabel;
+window.resetPeriod = resetPeriod;
+
+function renderPeriodPicker() {
+  $data('#periodBtn').innerHTML = `${escapeHtml(periodLabel())} &darr;`;
+  const p = dataState.period;
+  $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">All</button>`]
+    .concat(dataState.years.map(y => `<button type="button" class="ppBtn secondary ${p.year === y && !p.from && !p.to ? 'on' : ''}" data-year="${y}">${y}</button>`)).join('');
+  const monthsEnabled = p.year != null;
+  $data('#ppMonths').innerHTML = MONTHS.map((m, i) => `<button type="button" class="ppBtn secondary ${p.monthIdx === i && monthsEnabled ? 'on' : ''}" data-month="${i}" ${monthsEnabled ? '' : 'disabled'}>${m}</button>`).join('');
+  $data('#ppFrom').value = p.from; $data('#ppTo').value = p.to;
+}
+
+function wirePeriodPicker() {
+  const pop = $data('#periodPop');
+  $data('#periodBtn').onclick = event => { event.stopPropagation(); pop.hidden = !pop.hidden; if (!pop.hidden) renderPeriodPicker(); };
+  document.addEventListener('click', event => { if (!pop.hidden && !event.target.closest('.periodPicker')) pop.hidden = true; });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !pop.hidden) pop.hidden = true; });
+  $data('#ppYears').onclick = event => {
+    const year = event.target.dataset?.year;
+    if (year === undefined) return;
+    dataState.period = { year: year === '' ? null : Number(year), monthIdx: null, from: '', to: '' };
+    renderPeriodPicker();
+    applyPeriod();
+  };
+  $data('#ppMonths').onclick = event => {
+    const month = event.target.dataset?.month;
+    if (month === undefined || dataState.period.year == null) return;
+    const idx = Number(month);
+    dataState.period.monthIdx = dataState.period.monthIdx === idx ? null : idx;
+    renderPeriodPicker();
+    applyPeriod();
+  };
+  $data('#ppApply').onclick = () => {
+    dataState.period = { year: null, monthIdx: null, from: $data('#ppFrom').value, to: $data('#ppTo').value };
+    pop.hidden = true;
+    applyPeriod();
+  };
+  $data('#ppReset').onclick = () => { resetPeriod(); pop.hidden = true; applyPeriod(); };
+}
 const COLUMNS = [
   { key: 'counter', label: 'Counter', sort: 'counter', cls: 'counterName' },
   { key: 'retailer', label: 'Retailer', sort: 'retailer' },
@@ -20,12 +82,15 @@ async function populateDataFilters() {
   const fill = (id, values, all) => { $data(id).innerHTML = `<option value="">${all}</option>${values.map(v => `<option>${escapeHtml(v)}</option>`).join('')}`; };
   fill('#dRetailer', options.retailers, 'All retailers');
   fill('#dCategory', options.categories, 'All categories');
-  fill('#dMonth', options.months, 'All months');
-  $data('#dRetailer').value = dataState.retailer; $data('#dCategory').value = dataState.category; $data('#dMonth').value = dataState.month;
+  $data('#counterList').innerHTML = (options.counters || []).map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+  dataState.years = [...new Set((options.months || []).map(m => m.slice(0, 4)))].sort().reverse().map(Number);
+  $data('#dRetailer').value = dataState.retailer; $data('#dCategory').value = dataState.category;
+  renderPeriodPicker();
 }
 
 async function loadRows() {
-  const params = new URLSearchParams({ page: dataState.page, sort: dataState.sort, dir: dataState.dir, retailer: dataState.retailer, category: dataState.category, month: dataState.month, q: dataState.q });
+  const range = currentPeriod();
+  const params = new URLSearchParams({ page: dataState.page, sort: dataState.sort, dir: dataState.dir, retailer: dataState.retailer, category: dataState.category, from: range.from, to: range.to, q: dataState.q });
   const data = await fetch(`/api/rows?${params}`).then(r => r.json()).catch(() => null);
   if (!data) { $data('#dataTable').innerHTML = '<p class="hint">Couldn\'t load rows.</p>'; return; }
   const head = `<thead><tr>${COLUMNS.map(c => `<th ${c.sort ? `data-sort="${c.sort}" class="sortable${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`).join('')}${dataState.editMode ? '<th></th>' : ''}</tr></thead>`;
@@ -96,10 +161,11 @@ $data('#dataTable').addEventListener('click', async event => {
 });
 
 $data('#editMode').onchange = event => { dataState.editMode = event.target.checked; dataState.editRow = null; loadRows(); };
-[['#dRetailer', 'retailer'], ['#dCategory', 'category'], ['#dMonth', 'month']].forEach(([selector, key]) => {
+[['#dRetailer', 'retailer'], ['#dCategory', 'category']].forEach(([selector, key]) => {
   $data(selector).onchange = event => { dataState[key] = event.target.value; dataState.page = 1; loadRows(); load(); };
 });
 let searchTimer;
 $data('#dSearch').oninput = event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { dataState.q = event.target.value.trim(); dataState.page = 1; loadRows(); }, 300); };
 
+wirePeriodPicker();
 populateDataFilters().then(loadRows);
