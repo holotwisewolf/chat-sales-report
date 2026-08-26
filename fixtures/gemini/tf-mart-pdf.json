@@ -1,5 +1,6 @@
 {
   "document_type": "sku_by_outlet",
+  "category_guess": "Shoes",
   "retailer_guess": "ValueMart",
   "period_guess_start": "2026-08-01",
   "period_guess_end": "2026-08-17",

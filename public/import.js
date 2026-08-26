@@ -130,7 +130,7 @@ function renderGrid() {
   const sku = isSku(state.job);
   const head = sku
     ? `<div class="r head sku"><span>Product</span><span>Counter / outlet</span><span>SKU</span><span>Qty</span><span>Sales (RM)</span><span>Cost</span><span>Profit</span><span>GP%</span><span></span></div>`
-    : `<div class="r head"><span>Counter</span><span>Qty</span><span>Sales (RM)</span><span></span></div>`;
+    : `<div class="r head"><span>Counter</span><span>Qty</span><span>Sales (RM)</span><span>Category</span><span></span><span></span></div>`;
   const groups = [];
   let last = null;
   state.rows.forEach((row, i) => {
@@ -140,18 +140,34 @@ function renderGrid() {
   $import('#rowGrid').innerHTML = head + groups.map(g => {
     if (g.start) {
       const f = state.job.files.find(x => x.id === g.fileId);
-      const n = state.rows.filter(r => r.fileId === g.fileId).length;
-      return `<div class="r group" style="grid-column:1/-1">${escapeHtml(f?.filename || 'file')} &middot; ${n} rows</div>`;
+      const fileRows = state.rows.filter(r => r.fileId === g.fileId);
+      const sharedCategory = fileRows.length && [...new Set(fileRows.map(r => (r.category || '').trim()))].length === 1 ? fileRows[0].category || '' : '';
+      return `<div class="r group" style="grid-column:1/-1"><span style="overflow:hidden;text-overflow:ellipsis">${escapeHtml(f?.filename || 'file')} &middot; ${fileRows.length} rows</span><input class="groupCat" data-setcat="${g.fileId}" list="categoryList" placeholder="Set category for this page" value="${escapeHtml(sharedCategory)}"></div>`;
     }
     const { row, i } = g;
     const reasons = state.flags.get(`${row.fileId}:${i}`);
     const bad = k => (k === 'counter' ? !row.counter : NUM_KEYS.slice(0, 2).includes(k) && !Number.isFinite(row[k]) && row[k] !== null && row[k] !== '') ? 'bad' : '';
     const inp = (k, cls, type = 'text') => `<input data-f="${row.fileId}" data-i="${i}" data-k="${k}" class="${cls}" type="${type}" value="${row[k] ?? ''}" ${type === 'number' ? 'step="any"' : ''}>`;
+    const catInput = `<input data-f="${row.fileId}" data-i="${i}" data-k="category" list="categoryList" value="${escapeHtml(row.category ?? '')}">`;
     return sku
       ? `<div class="r sku ${reasons ? 'flag' : ''}" data-row="${i}">${inp('product_name', bad('product_name'))}${inp('counter', bad('counter'))}${inp('sku', '')}${inp('quantity', bad('quantity'), 'number')}${inp('sales', bad('sales'), 'number')}${inp('cost', '', 'number')}${inp('profit', '', 'number')}${inp('margin_percent', '', 'number')}${reasons ? `<span class="needsChip" title="${escapeHtml(reasons.join(' • '))}">REVIEW</span>` : '<span></span>'}<button type="button" class="rm" data-remove="${i}" title="Remove row">&times;</button></div>`
-      : `<div class="r ${reasons ? 'flag' : ''}" data-row="${i}">${inp('counter', bad('counter'))}${inp('quantity', bad('quantity'), 'number')}${inp('sales', bad('sales'), 'number')}${reasons ? `<span class="needsChip" title="${escapeHtml(reasons.join(' • '))}">REVIEW</span>` : '<span></span>'}<button type="button" class="rm" data-remove="${i}" title="Remove row">&times;</button></div>`;
+      : `<div class="r ${reasons ? 'flag' : ''}" data-row="${i}">${inp('counter', bad('counter'))}${inp('quantity', bad('quantity'), 'number')}${inp('sales', bad('sales'), 'number')}${catInput}${reasons ? `<span class="needsChip" title="${escapeHtml(reasons.join(' • '))}">REVIEW</span>` : '<span></span>'}<button type="button" class="rm" data-remove="${i}" title="Remove row">&times;</button></div>`;
   }).join('');
 }
+
+// Typing a category on a page header relabels every row from that page in one go.
+$import('#rowGrid').addEventListener('change', event => {
+  const set = event.target.dataset?.setcat;
+  if (set === undefined) return;
+  const fileId = Number(set);
+  const value = event.target.value.trim();
+  state.rows.forEach(row => { if (row.fileId === fileId) row.category = value; });
+  state.dirty = true;
+  renderGrid();
+  renderBanner();
+  updateConfirmState();
+  scheduleSave();
+});
 
 // All grid interaction through two delegated listeners - never a per-row handler, never a re-render on typing.
 $import('#rowGrid').addEventListener('input', e => {

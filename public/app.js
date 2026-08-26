@@ -65,7 +65,4 @@ document.querySelector('#activeFilters').onclick = event => {
   load();
 };
 document.querySelector('#resetFilters').onclick = clearFilters;
-const dashDialog = document.querySelector('#dashDialog');
-document.querySelector('#showDash').onclick = () => { dashDialog.showModal(); load(); };
-document.querySelector('#closeDash').onclick = () => dashDialog.close();
 load();

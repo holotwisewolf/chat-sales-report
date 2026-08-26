@@ -29,11 +29,11 @@ Without a key the app runs in **mock mode** with sample data, so the whole uploa
 
 ## How an import works
 
-1. **Upload** — photos (JPG/PNG, up to 10 MB each) or PDFs (up to 8 pages). Multi-page PDFs are split and read page by page. One upload = one retailer + one period + one category, so upload the School Shoes pages and Other Shoes pages as two separate uploads.
+1. **Upload** — photos (JPG/PNG, up to 10 MB each) or PDFs (up to 8 pages), as many as you like, mixed together. Multi-page PDFs are split and read page by page. The reader labels each page with its retailer, period, and category straight from the document, so one drop can contain Mydin School Shoes pages, Other Shoes pages, and a TF Mart PDF at once. Anything the pages don't say (like the year) can go in the optional note.
 2. **Read** — the reader proposes rows; it never writes anything. Files, raw provider responses, and warnings are kept as an audit trail.
-3. **Review** — an editable grid beside the original file. Uncertain values arrive flagged "Needs review"; duplicate counter lines and negative quantities are flagged too.
+3. **Review** — an editable grid beside the original file. Each page keeps its own labels (fixable per page or per row); the top fields relabel the whole batch. Uncertain values arrive flagged "Needs review"; duplicate counter lines, negative quantities, and counter names that look like near-duplicates of existing ones are flagged too.
 4. **Reconcile** — extracted sums are compared with the printed grand totals (per file). If they disagree, confirmation is blocked until the numbers are fixed or the mismatch is explicitly overridden.
-5. **Confirm** — the only step that writes to the database. Drafts survive restarts and can be resumed.
+5. **Confirm** — the only step that writes to the database. Rows are grouped by retailer + category + period into separate reports. A restated window (1–21 Aug after 1–18 Aug) replaces the earlier report for that retailer + category instead of double-counting the shared days. Drafts survive restarts and can be resumed.
 
 Errors are always specific: an unopenable file, an unavailable reader, a file with no sales table, ambiguous rows, or disagreeing totals each get their own message and a retry or edit path - never a generic "import failed".
 
@@ -42,6 +42,7 @@ Errors are always specific: an unopenable file, an unavailable reader, a file wi
 - Local SQLite (`sales.db`); no cloud account required.
 - Dynamic retailers, counter names, and categories: anything new typed in a reviewed report is created automatically.
 - School Shoes and Other Shoes are separate category rows for the same counter and period, so school-shoe performance filters cleanly and "all categories" sums to total shoes.
+- One upload may mix retailers, categories, and periods; each page's labels decide where its rows land.
 - Same counter + same dates with different categories is normal, not a duplicate. Re-uploading an already-imported file is detected and warned about, but never silently merged.
 
 ## Development notes
