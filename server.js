@@ -91,9 +91,11 @@ app.get('/api/dashboard', (req, res) => {
   const category = req.query.category || '';
   const from = req.query.from || '';
   const to = req.query.to || '';
+  const monthOfYear = req.query.monthOfYear || '';
   // A report belongs to a range when its period overlaps it (period_start <= to AND period_end >= from).
-  const where = `WHERE (? = '' OR r.retailer = ?) AND (? = '' OR substr(r.period_end, 1, 7) = ?) AND (? = '' OR s.product_category = ?) AND (? = '' OR (r.period_start <= ? AND r.period_end >= ?))`;
-  const params = [retailer, retailer, month, month, category, category, from, to, from];
+  // monthOfYear ('08') matches that month in EVERY year, for year-over-year comparison.
+  const where = `WHERE (? = '' OR r.retailer = ?) AND (? = '' OR substr(r.period_end, 1, 7) = ?) AND (? = '' OR s.product_category = ?) AND (? = '' OR (r.period_start <= ? AND r.period_end >= ?)) AND (? = '' OR substr(r.period_end, 6, 2) = ?)`;
+  const params = [retailer, retailer, month, month, category, category, from, to, from, monthOfYear, monthOfYear];
   const summary = db.prepare(`SELECT COALESCE(SUM(s.sales),0) sales, COALESCE(SUM(s.quantity),0) quantity, COUNT(DISTINCT s.counter_id) counters FROM sales_lines s JOIN reports r ON r.id=s.report_id ${where}`).get(...params);
   const allCounters = db.prepare(`SELECT c.name, r.retailer, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity, ROUND(SUM(s.sales)/NULLIF(SUM(s.quantity),0),2) average_price FROM sales_lines s JOIN counters c ON c.id=s.counter_id JOIN reports r ON r.id=s.report_id ${where} GROUP BY c.id, r.retailer ORDER BY sales DESC`).all(...params);
   const retailers = db.prepare(`SELECT r.retailer, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity FROM sales_lines s JOIN reports r ON r.id=s.report_id ${where} GROUP BY r.retailer ORDER BY sales DESC`).all(...params);
@@ -109,9 +111,9 @@ app.get('/api/dashboard', (req, res) => {
   const categoryTotals = db.prepare(`SELECT s.product_category category, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity
                                     FROM sales_lines s JOIN reports r ON r.id=s.report_id
                                     WHERE (? = '' OR r.retailer = ?) AND (? = '' OR substr(r.period_end, 1, 7) = ?)
-                                      AND (? = '' OR (r.period_start <= ? AND r.period_end >= ?))
+                                      AND (? = '' OR (r.period_start <= ? AND r.period_end >= ?)) AND (? = '' OR substr(r.period_end, 6, 2) = ?)
                                       AND s.product_category IS NOT NULL AND s.product_category != ''
-                                    GROUP BY s.product_category ORDER BY sales DESC`).all(retailer, retailer, month, month, from, to, from);
+                                    GROUP BY s.product_category ORDER BY sales DESC`).all(retailer, retailer, month, month, from, to, from, monthOfYear, monthOfYear);
   res.json({ summary, ranking: allCounters.slice(0, 12), allCounters, retailers, periods, trend, options, categoryTotals });
 });
 

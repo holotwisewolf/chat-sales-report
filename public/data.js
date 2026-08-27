@@ -3,21 +3,23 @@ const $data = selector => document.querySelector(selector);
 const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', q: '', editRow: null, editMode: false, period: { year: null, monthIdx: null, from: '', to: '' }, years: [] };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Resolved date range for the current picker state: all time, a year, a month of a year, or custom.
+// Resolved filter for the picker state: a date range (all time / year / month-of-year / custom),
+// or month-of-year across ALL years when a month is picked without a year (year-over-year compare).
 function currentPeriod() {
   const p = dataState.period;
-  if (p.from || p.to) return { from: p.from, to: p.to };
-  if (p.year == null) return { from: '', to: '' };
-  if (p.monthIdx == null) return { from: `${p.year}-01-01`, to: `${p.year}-12-31` };
+  if (p.from || p.to) return { from: p.from, to: p.to, monthOfYear: '' };
+  if (p.monthIdx != null && p.year == null) return { from: '', to: '', monthOfYear: String(p.monthIdx + 1).padStart(2, '0') };
+  if (p.year == null) return { from: '', to: '', monthOfYear: '' };
+  if (p.monthIdx == null) return { from: `${p.year}-01-01`, to: `${p.year}-12-31`, monthOfYear: '' };
   const mm = String(p.monthIdx + 1).padStart(2, '0');
   const lastDay = new Date(Date.UTC(p.year, p.monthIdx + 1, 0)).getUTCDate();
-  return { from: `${p.year}-${mm}-01`, to: `${p.year}-${mm}-${String(lastDay).padStart(2, '0')}` };
+  return { from: `${p.year}-${mm}-01`, to: `${p.year}-${mm}-${String(lastDay).padStart(2, '0')}`, monthOfYear: '' };
 }
 function periodLabel() {
   const p = dataState.period;
   const short = iso => iso ? iso.replace(/(\d{4})-(\d{2})-(\d{2})/, (_, y, m, d) => `${+d}/${+m}/${y.slice(2)}`) : '';
   if (p.from || p.to) return `${short(p.from) || '…'} – ${short(p.to) || '…'}`;
-  if (p.year == null) return 'All time';
+  if (p.year == null) return p.monthIdx == null ? 'All time' : `${MONTHS[p.monthIdx]} · all years`;
   return p.monthIdx == null ? String(p.year) : `${MONTHS[p.monthIdx]} ${p.year}`;
 }
 function resetPeriod() { dataState.period = { year: null, monthIdx: null, from: '', to: '' }; renderPeriodPicker(); }
@@ -31,8 +33,7 @@ function renderPeriodPicker() {
   const p = dataState.period;
   $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">All</button>`]
     .concat(dataState.years.map(y => `<button type="button" class="ppBtn secondary ${p.year === y && !p.from && !p.to ? 'on' : ''}" data-year="${y}">${y}</button>`)).join('');
-  const monthsEnabled = p.year != null;
-  $data('#ppMonths').innerHTML = MONTHS.map((m, i) => `<button type="button" class="ppBtn secondary ${p.monthIdx === i && monthsEnabled ? 'on' : ''}" data-month="${i}" ${monthsEnabled ? '' : 'disabled'}>${m}</button>`).join('');
+  $data('#ppMonths').innerHTML = MONTHS.map((m, i) => `<button type="button" class="ppBtn secondary ${p.monthIdx === i && !p.from && !p.to ? 'on' : ''}" data-month="${i}" title="${p.year == null ? m + ' of every year' : m + ' ' + p.year}">${m}</button>`).join('');
   $data('#ppFrom').value = p.from; $data('#ppTo').value = p.to;
 }
 
@@ -44,15 +45,18 @@ function wirePeriodPicker() {
   $data('#ppYears').onclick = event => {
     const year = event.target.dataset?.year;
     if (year === undefined) return;
-    dataState.period = { year: year === '' ? null : Number(year), monthIdx: null, from: '', to: '' };
+    // Picking a year keeps an already-chosen month (refining to that month of that year); "All" keeps it as all-years.
+    dataState.period.year = year === '' ? null : Number(year);
+    dataState.period.from = ''; dataState.period.to = '';
     renderPeriodPicker();
     applyPeriod();
   };
   $data('#ppMonths').onclick = event => {
     const month = event.target.dataset?.month;
-    if (month === undefined || dataState.period.year == null) return;
+    if (month === undefined) return;
     const idx = Number(month);
     dataState.period.monthIdx = dataState.period.monthIdx === idx ? null : idx;
+    dataState.period.from = ''; dataState.period.to = '';
     renderPeriodPicker();
     applyPeriod();
   };
@@ -90,7 +94,7 @@ async function populateDataFilters() {
 
 async function loadRows() {
   const range = currentPeriod();
-  const params = new URLSearchParams({ page: dataState.page, sort: dataState.sort, dir: dataState.dir, retailer: dataState.retailer, category: dataState.category, from: range.from, to: range.to, q: dataState.q });
+  const params = new URLSearchParams({ page: dataState.page, sort: dataState.sort, dir: dataState.dir, retailer: dataState.retailer, category: dataState.category, from: range.from, to: range.to, monthOfYear: range.monthOfYear || '', q: dataState.q });
   const data = await fetch(`/api/rows?${params}`).then(r => r.json()).catch(() => null);
   if (!data) { $data('#dataTable').innerHTML = '<p class="hint">Couldn\'t load rows.</p>'; return; }
   const head = `<thead><tr>${COLUMNS.map(c => `<th ${c.sort ? `data-sort="${c.sort}" class="sortable${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`).join('')}${dataState.editMode ? '<th></th>' : ''}</tr></thead>`;

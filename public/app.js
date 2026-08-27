@@ -27,6 +27,7 @@ async function load() {
   const range = window.currentPeriod ? window.currentPeriod() : {};
   params.set('from', range.from || '');
   params.set('to', range.to || '');
+  params.set('monthOfYear', range.monthOfYear || '');
   const data = await fetch(`/api/dashboard?${params}`).then(response => response.json());
   document.querySelector('#sales').textContent = money(data.summary.sales);
   document.querySelector('#units').textContent = Number(data.summary.quantity).toLocaleString();
