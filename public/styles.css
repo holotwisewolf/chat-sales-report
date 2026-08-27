@@ -203,8 +203,8 @@ form,.modalWrap{padding:24px}
 .rowGrid .r{padding:7px 12px;gap:10px;grid-template-columns:1fr 88px 132px 150px 26px 34px}
 .rowGrid .r input{font-size:15px;padding:10px 12px;min-height:44px}
 .rowGrid .r .rm{font-size:20px;min-height:44px;min-width:36px}
-.rowGrid .r{border-bottom:1px solid #d9e0ea}
-.rowGrid .r.head{border-bottom:2px solid #b6c2d4}
+.rowGrid .r{border-bottom:1px solid #b9c6d8}
+.rowGrid .r.head{border-bottom:2px solid #8fa3bd}
 .rowGrid .r.group{font-size:13px;padding:8px 12px}
 .rowGrid{background:rgba(255,255,255,.92)}
 .groupCat{max-width:230px;font-size:13px!important;min-height:40px!important}
@@ -214,8 +214,12 @@ form,.modalWrap{padding:24px}
 .fields input,.noteLabel textarea{font-size:15px}
 h3{margin:0 0 8px;font-size:14px;font-weight:700;color:var(--ink2)}
 /* Visible gridlines on every table - main datasheet, chat results, review rows. */
-.dataTable th,.dataTable td{border-right:1px solid #c6d0e0;border-bottom:1px solid #c6d0e0}
-.chatCard th,.chatCard td{border-right:1px solid #d5dde8;border-bottom:1px solid #d5dde8}
+.dataTable table{border:1px solid #8fa3bd}
+.dataTable th,.dataTable td{border-right:1px solid #8fa3bd;border-bottom:1px solid #8fa3bd}
+.dataTable th{border-bottom:2px solid #7d94b3}
+.dataTable tbody tr:last-child td{border-bottom:1px solid #8fa3bd}
+.chatCard table{border:1px solid #a9b8cd}
+.chatCard th,.chatCard td{border-right:1px solid #a9b8cd;border-bottom:1px solid #a9b8cd}
 .chatCard th:last-child,.chatCard td:last-child{border-right:0}
 /* Dialogs: never taller than the screen, and their content scrolls when needed. */
 dialog:not(#reviewDialog){max-height:92vh}
