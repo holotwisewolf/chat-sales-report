@@ -6,18 +6,18 @@ const median = values => { const sorted = values.slice().sort((a,b) => a-b); con
 const FILTER_IDS = { '#dRetailer': 'retailer', '#dCategory': 'category' };
 const filterValue = selector => document.querySelector(selector)?.value || '';
 
+// Plain-English signals for a non-native speaker: "typical store" instead of median, no jargon.
 function buildSignals(counters) {
   const byRetailer = counters.reduce((groups, counter) => { (groups[counter.retailer] ||= []).push(counter); return groups; }, {});
   return Object.values(byRetailer).flatMap(group => {
     if (group.length < 4) return [];
-    const salesMedian = median(group.map(row => row.sales));
-    const qtyMedian = median(group.map(row => row.quantity));
-    const priceMedian = median(group.map(row => row.average_price));
+    const typical = median(group.map(row => row.sales));
+    const typicalUnits = median(group.map(row => row.quantity));
     const high = group[0];
     const low = group[group.length - 1];
     const results = [];
-    if (high.sales >= salesMedian * 1.5) results.push({ type: 'high', title: `${high.name} is above its ${high.retailer} peers`, text: `${money(high.sales)} is ${Math.round(high.sales / salesMedian * 100)}% of the retailer median; ${high.quantity} units vs median ${qtyMedian}, at ${money(high.average_price)} per unit vs median ${money(priceMedian)}.` });
-    if (low.sales <= salesMedian * .55) results.push({ type: 'low', title: `${low.name} needs a check`, text: `${money(low.sales)} is ${Math.round(low.sales / salesMedian * 100)}% of the ${low.retailer} median; ${low.quantity} units vs median ${qtyMedian}, at ${money(low.average_price)} per unit vs median ${money(priceMedian)}.` });
+    if (high.sales >= typical * 1.5) results.push({ type: 'high', title: `${high.name} is doing very well`, text: `It earned ${money(high.sales)} with ${high.quantity} pairs sold. That is much more than the other ${high.retailer} stores - a typical one earned about ${money(typical)}. Maybe worth asking what they are doing right.` });
+    if (low.sales <= typical * .55) results.push({ type: 'low', title: `${low.name} is much slower than the others`, text: `It only earned ${money(low.sales)} (${low.quantity} pairs), while a typical ${low.retailer} store earned about ${money(typical)} (${Math.round(typicalUnits)} pairs). Maybe check the stock or the display there.` });
     return results;
   }).slice(0, 4);
 }
@@ -74,4 +74,13 @@ document.querySelector('#activeFilters').onclick = event => {
   load();
 };
 document.querySelector('#resetFilters').onclick = clearFilters;
+// Collapsible dashboard sections; whether each is open is remembered.
+document.querySelectorAll('.collapsible').forEach(section => {
+  const saved = localStorage.getItem(`collapsible-${section.id}`);
+  if (saved === 'closed') section.classList.add('closed');
+  section.querySelector('.collHead').onclick = () => {
+    section.classList.toggle('closed');
+    localStorage.setItem(`collapsible-${section.id}`, section.classList.contains('closed') ? 'closed' : 'open');
+  };
+});
 load();

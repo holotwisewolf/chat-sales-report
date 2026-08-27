@@ -45,12 +45,11 @@ $chat('#chatForm').onsubmit = async event => {
     pending.remove();
     done();
     if (!response.ok) return chatCard(`<div class="chatError">${escapeHtml(body.error || 'Something went wrong. Try rephrasing the question.')}</div>`);
-    const table = body.rows.length
+    const table = body.rows?.length
       ? `<div class="tableWrap"><table><thead><tr>${body.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${body.rows.map(row => `<tr>${body.columns.map(c => `<td>${escapeHtml(String(cellValue(c, row[c])))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
-      : '<p class="hint">The query ran but returned no rows for these filters.</p>';
-    chatCard(`<p class="chatAnswer">${escapeHtml(body.explanation)}</p>${table}
-      ${body.truncated ? '<p class="hint">Showing the first 200 rows.</p>' : ''}
-      <details><summary>The query used</summary><code>${escapeHtml(body.sql)}</code></details>`);
+      : '<p class="hint">There is no data for that yet.</p>';
+    chatCard(`<p class="chatAnswer">${escapeHtml(body.answer || '')}</p>${table}
+      <details><summary>Where these numbers come from</summary><code>${escapeHtml(body.tool || '')} ${escapeHtml(JSON.stringify(body.args || {}, null, 1))}</code></details>`);
   } catch (error) {
     pending.remove();
     done();

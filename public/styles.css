@@ -198,3 +198,40 @@ form,.modalWrap{padding:24px}
 .ppCustom span{color:var(--ink2);font-size:12px}
 .ppCustom input{min-height:38px;padding:7px 9px;font-size:12.5px}
 .ppFoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+/* Bigger, calmer, uncramped: larger type and touch areas for the important data surfaces. */
+.dataTable table{font-size:13.8px}.dataTable th,.dataTable td{padding:10px 14px}
+.rowGrid .r{padding:7px 12px;gap:10px;grid-template-columns:1fr 88px 132px 150px 26px 34px}
+.rowGrid .r input{font-size:15px;padding:10px 12px;min-height:44px}
+.rowGrid .r .rm{font-size:20px;min-height:44px;min-width:36px}
+.rowGrid .r{border-bottom:1px solid #d9e0ea}
+.rowGrid .r.head{border-bottom:2px solid #b6c2d4}
+.rowGrid .r.group{font-size:13px;padding:8px 12px}
+.rowGrid{background:rgba(255,255,255,.92)}
+.groupCat{max-width:230px;font-size:13px!important;min-height:40px!important}
+.toolbar input,.toolbar select{font-size:15px}
+.statStrip strong{font-size:24px}
+.chatAnswer{font-size:15.5px}.chatQuestion{font-size:15px}
+.fields input,.noteLabel textarea{font-size:15px}
+h3{margin:0 0 8px;font-size:14px;font-weight:700;color:var(--ink2)}
+/* Visible gridlines on every table - main datasheet, chat results, review rows. */
+.dataTable th,.dataTable td{border-right:1px solid #c6d0e0;border-bottom:1px solid #c6d0e0}
+.chatCard th,.chatCard td{border-right:1px solid #d5dde8;border-bottom:1px solid #d5dde8}
+.chatCard th:last-child,.chatCard td:last-child{border-right:0}
+/* Dialogs: never taller than the screen, and their content scrolls when needed. */
+dialog:not(#reviewDialog){max-height:92vh}
+dialog:not(#reviewDialog) .modalWrap{max-height:calc(92vh - 8px);overflow-y:auto}
+.fileTabs{overflow-x:auto}
+.sourceFrame{min-height:200px}
+/* Collapsible dashboard sections - grid-rows trick animates height smoothly. */
+.collapsible{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);margin:16px 0}
+.collHead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 22px;cursor:pointer;user-select:none}
+.collHead h2{margin:0}
+.collHead .chev{background:var(--accent-soft);color:var(--accent);min-height:40px;min-width:40px;font-size:16px;padding:0 12px;transition:transform .3s ease}
+.collapsible.closed .collHead .chev{transform:rotate(180deg)}
+.collBody{display:grid;grid-template-rows:1fr;transition:grid-template-rows .35s ease}
+.collapsible.closed .collBody{grid-template-rows:0fr}
+.collInner{min-height:0;overflow:hidden;padding:0 22px}
+.collInner>.grid{margin:6px 0 20px}
+.collInner>#reports{padding-bottom:20px}
+.panel.plain{background:transparent;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:16px 4px 4px}
+@media(prefers-reduced-motion:reduce){.collBody{transition:none}}

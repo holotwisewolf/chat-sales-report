@@ -14,7 +14,7 @@ const uploadDialog = $import('#uploadDialog');
 const reviewDialog = $import('#reviewDialog');
 let staged = [];
 
-$import('#showUpload').onclick = () => { renderStaged(); loadDrafts(); uploadDialog.showModal(); };
+$import('#showUpload').onclick = () => { setState(''); renderStaged(); loadDrafts(); uploadDialog.showModal(); };
 ['#closeUpload', '#cancelUpload'].forEach(s => $import(s).onclick = () => uploadDialog.close());
 
 function renderStaged() {
@@ -65,6 +65,7 @@ function poll(jobId, attempt = 0) {
     if (!job) return;
     if (job.status === 'reading') { if (attempt++ < 240) return setState('Reading report&hellip;', true); }
     clearInterval(state.pollTimer);
+    setState('');
     if (job.status === 'review') { uploadDialog.close(); openReview(job); }
     else showFailure(job);
   }, 1500);
