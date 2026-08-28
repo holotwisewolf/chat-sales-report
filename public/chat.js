@@ -16,7 +16,7 @@ const cellValue = (column, value) => {
   if (value == null) return '';
   if (moneyish(column)) return money(Number(value));
   if (typeof value === 'number') return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  return String(value);
+  return value; // the caller already coerces with String() when escaping
 };
 
 function chatCard(html) {

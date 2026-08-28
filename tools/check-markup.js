@@ -22,9 +22,7 @@ for (const m of css.matchAll(/\.([a-zA-Z][\w-]*)/g)) styled.add(m[1]);
 // ids injected at runtime (rendered inside template strings), so they are not expected in index.html
 const injected = new Set([...js.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 
-// SVG chart helpers styled via attributes (opacity/stroke set inline), not via CSS rules.
-const ATTR_STYLED = new Set(['crosshair', 'crossdot']);
-const unstyled = [...used].filter(c => !styled.has(c) && !ATTR_STYLED.has(c)).sort();
+const unstyled = [...used].filter(c => !styled.has(c)).sort();
 const idsNeeded = new Set([...js.matchAll(/['`]#([a-zA-Z][\w-]*)['`]/g)].map(m => m[1]));
 const idsPresent = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 const missingIds = [...idsNeeded].filter(id => !idsPresent.has(id) && !injected.has(id) && !/^[0-9a-f]{3,8}$/i.test(id)).sort();

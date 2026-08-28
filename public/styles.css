@@ -6,7 +6,7 @@
   --glass:rgba(250,252,255,.72);--glass-strong:rgba(251,252,254,.86);--glass-head:#dbe2ec;
   --glass-border:rgba(122,141,172,.24);--hair:rgba(28,46,84,.13);--hair2:rgba(28,46,84,.20);
   --ok-tx:#1d7a3e;--ok-bg:rgba(29,122,62,.10);--warn-tx:#96570a;--warn-bg:rgba(255,159,10,.16);--bad-tx:#bb3a30;--bad-bg:rgba(214,69,56,.10);
-  --chart-series:#2a78d6;--chart-ink:#545e6e;--chart-grid:#d3dbe7;
+  --chart-series:#2a78d6;--chart-ink:#545e6e;--chart-grid:#d3dbe7;--grid:#000;
   --shadow:0 12px 38px rgba(26,45,86,.14);--shadow-lg:0 26px 74px rgba(20,38,74,.24);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
 }
@@ -143,15 +143,15 @@ form,.modalWrap{padding:24px}
 .chatCard code{display:block;margin-top:6px;font-size:11.5px;background:rgba(21,42,80,.05);border-radius:8px;padding:8px;white-space:pre-wrap;color:var(--ink2)}
 
 /* Main data table: Access-style datasheet - full cell gridlines, dense rows, solid header strip, sorted-column shading. */
-.chatCard table{border-collapse:collapse;width:100%;font-size:13px}
-.chatCard th,.chatCard td{padding:8px 11px;text-align:left;white-space:nowrap}
-.chatCard th{position:sticky;top:0;background:var(--glass-head);font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink2);border-bottom:1px solid var(--hair2);text-transform:uppercase}
-.chatCard td{font-variant-numeric:tabular-nums}
-.dataTable table{border-collapse:collapse;width:100%;min-width:1060px;font-size:12.8px}
-.dataTable th,.dataTable td{padding:6px 12px;text-align:left;white-space:nowrap;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);font-variant-numeric:tabular-nums;background:#fff}
+.chatCard table{border-collapse:collapse;width:100%;font-size:13px;border:1px solid var(--grid)}
+.chatCard th,.chatCard td{padding:8px 11px;text-align:left;white-space:nowrap;border-right:1px solid var(--grid)}
+.chatCard th{position:sticky;top:0;background:var(--glass-head);font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink2);border-bottom:1px solid var(--grid);text-transform:uppercase}
+.chatCard td{font-variant-numeric:tabular-nums;border-bottom:1px solid var(--grid)}
+.chatCard th:last-child,.chatCard td:last-child{border-right:0}
+.dataTable table{border-collapse:collapse;width:100%;min-width:1060px;font-size:12.8px;border:1px solid var(--grid)}
+.dataTable th,.dataTable td{padding:6px 12px;text-align:left;white-space:nowrap;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;background:#fff}
 .dataTable th:last-child,.dataTable td:last-child{border-right:0}
-.dataTable tbody tr:last-child td{border-bottom:1px solid var(--hair)}
-.dataTable th{position:sticky;top:0;z-index:2;background:#d8dfe9;font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;border-bottom:2px solid #b6c2d4;border-top:1px solid var(--hair);text-transform:uppercase;min-width:64px}
+.dataTable th{position:sticky;top:0;z-index:2;background:#d8dfe9;font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);text-transform:uppercase;min-width:64px}
 .dataTable th.num{text-align:right}
 .dataTable th.sortable{cursor:pointer;user-select:none}
 .dataTable th.sortable:hover{background:#ccd6e3;color:var(--accent)}
@@ -180,6 +180,9 @@ form,.modalWrap{padding:24px}
 @keyframes zcFadeIn{to{opacity:1}}
 .chartAnim .endPulse{animation:zcPulse 2.2s ease 2.4s infinite}
 @keyframes zcPulse{0%,100%{r:4}50%{r:6.5}}
+/* Chart hover helpers - real CSS presentation properties, so every used class is styled. */
+.crosshair{stroke:var(--chart-ink);stroke-width:1;stroke-dasharray:3 3}
+.crossdot{fill:var(--chart-series)}
 @media(prefers-reduced-motion:reduce){.chartAnim .lineDraw,.chartAnim .areaFill,.chartAnim .gridLine,.chartAnim .endPulse{animation:none!important}.chartAnim .lineDraw{stroke-dashoffset:0}.chartAnim .areaFill{opacity:1}}
 .chartTip{position:absolute;background:#0f172a;border:1px solid #223148;border-radius:0;color:#e7edf7;padding:8px 11px;font-size:12px;pointer-events:none;display:flex;flex-direction:column;gap:3px;z-index:6;box-shadow:none}
 .chartTip b{font-size:10.5px;color:#8a97ad;letter-spacing:.05em;text-transform:uppercase}
@@ -203,8 +206,8 @@ form,.modalWrap{padding:24px}
 .rowGrid .r{padding:7px 12px;gap:10px;grid-template-columns:1fr 88px 132px 150px 26px 34px}
 .rowGrid .r input{font-size:15px;padding:10px 12px;min-height:44px}
 .rowGrid .r .rm{font-size:20px;min-height:44px;min-width:36px}
-.rowGrid .r{border-bottom:1px solid #000}
-.rowGrid .r.head{border-bottom:2px solid #000}
+.rowGrid .r{border-bottom:1px solid var(--grid)}
+.rowGrid .r.head{border-bottom:2px solid var(--grid)}
 .rowGrid .r.group{font-size:13px;padding:8px 12px}
 .rowGrid{background:rgba(255,255,255,.92)}
 .groupCat{max-width:230px;font-size:13px!important;min-height:40px!important}
@@ -213,14 +216,6 @@ form,.modalWrap{padding:24px}
 .chatAnswer{font-size:15.5px}.chatQuestion{font-size:15px}
 .fields input,.noteLabel textarea{font-size:15px}
 h3{margin:0 0 8px;font-size:14px;font-weight:700;color:var(--ink2)}
-/* Visible gridlines on every table - main datasheet, chat results, review rows. */
-.dataTable table{border:1px solid #000}
-.dataTable th,.dataTable td{border-right:1px solid #000;border-bottom:1px solid #000}
-.dataTable th{border-bottom:2px solid #000}
-.dataTable tbody tr:last-child td{border-bottom:1px solid #000}
-.chatCard table{border:1px solid #000}
-.chatCard th,.chatCard td{border-right:1px solid #000;border-bottom:1px solid #000}
-.chatCard th:last-child,.chatCard td:last-child{border-right:0}
 /* Dialogs: never taller than the screen, and their content scrolls when needed. */
 dialog:not(#reviewDialog){max-height:92vh}
 dialog:not(#reviewDialog) .modalWrap{max-height:calc(92vh - 8px);overflow-y:auto}

@@ -47,8 +47,8 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       <circle class="endPulse" cx="${x(points.length - 1).toFixed(1)}" cy="${y(last.value).toFixed(1)}" r="4" fill="${seriesColor()}"/>
       <text x="${x(points.length - 1).toFixed(1)}" y="${(y(last.value) - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(last.value)}</text>
       ${xLabels}
-      <line class="crosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="${inkColor()}" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
-      <circle class="crossdot" r="4.5" fill="${seriesColor()}" opacity="0"/>
+      <line class="crosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" opacity="0"/>
+      <circle class="crossdot" r="4.5" opacity="0"/>
     </svg><div class="chartTip"></div>`;
     const svg = container.querySelector('svg');
     const tip = container.querySelector('.chartTip');
