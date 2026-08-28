@@ -27,7 +27,8 @@ async function load() {
   const range = window.currentPeriod ? window.currentPeriod() : {};
   params.set('from', range.from || '');
   params.set('to', range.to || '');
-  params.set('monthOfYear', range.monthOfYear || '');
+  params.set('months', range.months || '');
+  params.set('exMonths', range.exMonths || '');
   const data = await fetch(`/api/dashboard?${params}`).then(response => response.json());
   document.querySelector('#sales').textContent = money(data.summary.sales);
   document.querySelector('#units').textContent = Number(data.summary.quantity).toLocaleString();
@@ -38,8 +39,8 @@ async function load() {
   const periodChip = window.periodLabel && window.periodLabel() !== 'All time'
     ? `<span class="filterChip">Period: ${escapeHtml(window.periodLabel())}<button type="button" id="clearPeriod" aria-label="Clear period">&times;</button></span>` : '';
   document.querySelector('#activeFilters').innerHTML = (chips.length || periodChip)
-    ? periodChip + chips.map(([selector, key]) => `<span class="filterChip">${labels[key]}: ${escapeHtml(filterValue(selector))}<button type="button" data-clear="${selector}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
-    : '<span class="filterChip all">All data &mdash; use the filters above the table to focus.</span>';
+    ? '<span class="statusLabel">Showing</span>' + periodChip + chips.map(([selector, key]) => `<span class="filterChip">${labels[key]}: ${escapeHtml(filterValue(selector))}<button type="button" data-clear="${selector}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
+    : '<span class="statusLabel">Showing</span><span class="filterChip all">everything &mdash; use the filters above the table to focus.</span>';
   const clearPeriod = document.querySelector('#clearPeriod');
   if (clearPeriod) clearPeriod.onclick = () => { if (window.resetPeriod) window.resetPeriod(); loadRows(); load(); };
   const clearAll = document.querySelector('#clearAll');
@@ -48,7 +49,15 @@ async function load() {
   const catRow = document.querySelector('#categoryRow');
   if (cats.length >= 2) { catRow.hidden = false; catRow.innerHTML = cats.map(c => `<article><span>${escapeHtml(c.category)}</span><strong>${money(c.sales)}</strong><small>${Number(c.quantity).toLocaleString()} units</small></article>`).join(''); }
   else catRow.hidden = true;
-  lineChart(document.querySelector('#trend'), data.trend.map(item => ({ label: item.month, value: item.sales })), { format: money });
+  // A trend needs two months; with less, show the category comparison instead of an empty panel.
+  if (data.trend.length >= 2) {
+    lineChart(document.querySelector('#trend'), data.trend.map(item => ({ label: item.month, value: item.sales })), { format: money });
+  } else if ((data.categoryTotals || []).length >= 2) {
+    document.querySelector('#trend').innerHTML = '<p class="hint" style="margin-bottom:6px">One month so far &mdash; showing categories. The month trend appears with two or more months.</p>';
+    barList(document.querySelector('#trend'), data.categoryTotals.map(c => ({ label: c.category, value: c.sales, sub: `${Number(c.quantity).toLocaleString()} units` })), { format: money });
+  } else {
+    lineChart(document.querySelector('#trend'), [], { format: money });
+  }
   barList(document.querySelector('#retailers'), data.retailers.map(row => ({ label: row.retailer, value: row.sales, sub: `${row.quantity} units` })), { format: money });
   document.querySelector('#ranking').innerHTML = data.ranking.map((row, index) => `<div class="rank"><b>${index + 1}</b><div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.retailer)} &middot; ${row.quantity} units &middot; ${money(row.average_price)} avg/unit</small></div><em>${money(row.sales)}</em></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
   const signals = buildSignals(data.allCounters);
@@ -74,6 +83,31 @@ document.querySelector('#activeFilters').onclick = event => {
   load();
 };
 document.querySelector('#resetFilters').onclick = clearFilters;
+
+// Manual-entry dialog (restored - a rewrite had dropped its wiring entirely).
+const importDialog = document.querySelector('#importDialog');
+const saleRowHtml = '<div class="saleRow"><input name="counter" placeholder="Counter name" required><input name="quantity" type="number" min="0" step="1" placeholder="Qty" required><input name="sales" type="number" min="0" step="0.01" placeholder="Sales (RM)" required></div>';
+document.querySelector('#showImport').onclick = () => importDialog.showModal();
+['#closeImport', '#cancelImport'].forEach(selector => document.querySelector(selector).onclick = () => importDialog.close());
+document.querySelector('#addRow').onclick = () => document.querySelector('#rows').insertAdjacentHTML('beforeend', saleRowHtml);
+document.querySelector('#importForm').onsubmit = async event => {
+  event.preventDefault();
+  const form = new FormData(event.target);
+  const body = {
+    retailer: form.get('retailer'), periodStart: form.get('periodStart'), periodEnd: form.get('periodEnd'), category: form.get('category'),
+    rows: form.getAll('counter').map((counter, index) => ({ counter, quantity: form.getAll('quantity')[index], sales: form.getAll('sales')[index] }))
+  };
+  const response = await fetch('/api/import/manual', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!response.ok) return alert((await response.json()).error);
+  importDialog.close();
+  event.target.reset();
+  document.querySelector('#rows').innerHTML = saleRowHtml;
+  if (window.loadRows) loadRows();
+  load();
+};
+
+// Clicking a dialog's backdrop (outside its card) closes it.
+document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
 // Collapsible dashboard sections; whether each is open is remembered.
 document.querySelectorAll('.collapsible').forEach(section => {
   const saved = localStorage.getItem(`collapsible-${section.id}`);

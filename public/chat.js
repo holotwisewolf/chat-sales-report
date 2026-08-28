@@ -41,10 +41,15 @@ $chat('#chatForm').onsubmit = async event => {
   if (!question || chatAbort) return;
   chatInput.value = '';
   chatCard(`<div class="chatQuestion">${escapeHtml(question)}</div>`);
-  const pending = chatCard('<div class="chatPending"><div class="spinner"></div> Thinking about the data&hellip;</div>');
+  const pending = chatCard('<div class="chatPending"><div class="spinner"></div> <span class="chatTick">Thinking about the data&hellip;</span><br><small class="chatTickHint">this can take up to half a minute</small></div>');
+  const started = Date.now();
+  const ticker = setInterval(() => {
+    const el = pending.querySelector('.chatTick');
+    if (el) el.textContent = `Thinking about the data… ${Math.round((Date.now() - started) / 1000)}s`;
+  }, 1000);
   chatAbort = new AbortController();
   chatSend.textContent = 'Stop';
-  const done = () => { chatAbort = null; chatSend.textContent = 'Ask'; };
+  const done = () => { chatAbort = null; chatSend.textContent = 'Ask'; clearInterval(ticker); };
   try {
     const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }), signal: chatAbort.signal });
     const body = await response.json().catch(() => ({}));
