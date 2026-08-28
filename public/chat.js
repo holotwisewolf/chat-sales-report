@@ -11,7 +11,13 @@ $chat('#chatChips').innerHTML = SUGGESTIONS.map(s => `<button type="button" clas
 $chat('#chatChips').onclick = event => { const ask = event.target.dataset?.ask; if (ask) { chatInput.value = ask; $chat('#chatForm').requestSubmit(); } };
 
 const moneyish = column => /sales|rm|cost|profit|price|total/i.test(column);
-const cellValue = (column, value) => value == null ? '' : moneyish(column) ? money(Number(value)) : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+// Strings pass through untouched (a year label, a store name); only actual numbers get formatted.
+const cellValue = (column, value) => {
+  if (value == null) return '';
+  if (moneyish(column)) return money(Number(value));
+  if (typeof value === 'number') return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return String(value);
+};
 
 function chatCard(html) {
   const card = document.createElement('div');
