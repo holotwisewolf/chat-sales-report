@@ -31,7 +31,22 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       return;
     }
     if (points.length === 1) {
-      container.innerHTML = `<div class="singlePoint"><small>${escapeChartText(points[0].label)}</small><strong>${format(points[0].value)}</strong><p class="hint">One period so far &mdash; the trend line appears once there are two or more months.</p></div>`;
+      // One month still gets a real chart: full axes with the value plotted as a point.
+      const W = container.clientWidth || 600, H = height;
+      const padL = 62, padR = 18, padT = 20, padB = 30;
+      const max = niceCeil(points[0].value);
+      const px = padL + (W - padL - padR) / 2;
+      const py = padT + (H - padT - padB) * (1 - points[0].value / max);
+      const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => t * max);
+      container.classList.add('chartAnim');
+      container.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="Monthly sales">
+        ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 60}ms"><line x1="${padL}" x2="${W - padR}" y1="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" y2="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" stroke="${gridColor()}" stroke-width="1"/><text x="${padL - 8}" y="${(H - padB - t / max * (H - padT - padB) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t === 0 ? '0' : format(t)}</text></g>`).join('')}
+        <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="#fff" stroke="${seriesColor()}" stroke-width="2.5"/>
+        <circle class="endPulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${seriesColor()}"/>
+        <text x="${px.toFixed(1)}" y="${(py - 14).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="${strongInk()}">${format(points[0].value)}</text>
+        <text x="${px.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(points[0].label)}</text>
+        <text x="${(W - padR + padL) / 2}" y="${padT + 10}" text-anchor="middle" font-size="11" fill="${inkColor()}">One month so far &#8212; the line appears with two or more months</text>
+      </svg>`;
       return;
     }
     const W = container.clientWidth || 600, H = height;

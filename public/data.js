@@ -53,6 +53,9 @@ function wirePeriodPicker() {
   $data('#ppYears').onclick = event => {
     const year = event.target.dataset?.year;
     if (year === undefined) return;
+    // The re-render below detaches the clicked button before this click reaches the document
+    // listener, which would then see it as "outside" and close the menu - so stop here.
+    event.stopPropagation();
     dataState.period.year = year === '' ? null : Number(year);
     dataState.period.from = ''; dataState.period.to = '';
     renderPeriodPicker();
@@ -63,6 +66,7 @@ function wirePeriodPicker() {
   $data('#ppMonths').onclick = event => {
     const month = event.target.dataset?.month;
     if (month === undefined) return;
+    event.stopPropagation();
     const idx = Number(month);
     dataState.period.months[idx] = dataState.period.months[idx] === 'on' ? '' : 'on';
     dataState.period.from = ''; dataState.period.to = '';

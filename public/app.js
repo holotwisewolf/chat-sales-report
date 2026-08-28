@@ -49,11 +49,12 @@ async function load() {
   const catRow = document.querySelector('#categoryRow');
   if (cats.length >= 2) { catRow.hidden = false; catRow.innerHTML = cats.map(c => `<article><span>${escapeHtml(c.category)}</span><strong>${money(c.sales)}</strong><small>${Number(c.quantity).toLocaleString()} units</small></article>`).join(''); }
   else catRow.hidden = true;
-  // A trend needs two months; with less, show the category comparison instead of an empty panel.
-  if (data.trend.length >= 2) {
+  // The line chart handles any number of months (one month plots as a single point);
+  // with no months at all, show the category comparison instead of an empty panel.
+  if (data.trend.length >= 1) {
     lineChart(document.querySelector('#trend'), data.trend.map(item => ({ label: item.month, value: item.sales })), { format: money });
   } else if ((data.categoryTotals || []).length >= 2) {
-    document.querySelector('#trend').innerHTML = '<p class="hint" style="margin-bottom:6px">One month so far &mdash; showing categories. The month trend appears with two or more months.</p>';
+    document.querySelector('#trend').innerHTML = '<p class="hint" style="margin-bottom:6px">No monthly data in this filter yet &mdash; showing categories.</p>';
     barList(document.querySelector('#trend'), data.categoryTotals.map(c => ({ label: c.category, value: c.sales, sub: `${Number(c.quantity).toLocaleString()} units` })), { format: money });
   } else {
     lineChart(document.querySelector('#trend'), [], { format: money });
