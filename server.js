@@ -83,6 +83,9 @@ function seed() {
 seed();
 
 app.use(express.json());
+// The HTML document must never be cached (it carries the asset version numbers);
+// the versioned JS/CSS behind it can cache forever.
+app.use((req, res, next) => { if (req.path === '/' || req.path === '/index.html') res.set('Cache-Control', 'no-store'); next(); });
 app.use(express.static(path.join(__dirname, 'public')));
 
 // '08,09' -> validated ['08','09']; invalid tokens dropped.

@@ -49,9 +49,13 @@ const $extra = selector => document.querySelector(selector);
   if (!dockEl) return;
   const zone = document.createElement('div');
   zone.className = 'dockZone';
+  // The dock lives INSIDE the zone: hovering the dock itself must count as hovering the zone,
+  // otherwise the dock pops up, steals the pointer, "leaves" the zone, and flickers forever.
   document.body.appendChild(zone);
-  zone.addEventListener('pointerenter', () => dockEl.classList.add('show'));
-  zone.addEventListener('pointerleave', () => dockEl.classList.remove('show'));
+  zone.appendChild(dockEl);
+  let hideTimer;
+  zone.addEventListener('pointerenter', () => { clearTimeout(hideTimer); dockEl.classList.add('show'); });
+  zone.addEventListener('pointerleave', () => { hideTimer = setTimeout(() => dockEl.classList.remove('show'), 250); });
   const actions = {
     upload: () => $extra('#showUpload')?.click(),
     ask: () => window.openChat?.(),
