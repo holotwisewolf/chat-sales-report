@@ -125,6 +125,8 @@ document.querySelectorAll('.collapsible').forEach(section => {
   section.querySelector('.collHead').onclick = () => {
     section.classList.toggle('closed');
     localStorage.setItem(`collapsible-${section.id}`, section.classList.contains('closed') ? 'closed' : 'open');
+    // Charts rendered while hidden had no width to measure; re-measure on reveal.
+    if (section.id === 'collCharts' && !section.classList.contains('closed')) load();
   };
 });
 load();

@@ -299,3 +299,11 @@ main{padding-bottom:110px}
 .tableWrap>table{height:100%}
 /* Chat dialog: only the message log scrolls, never the dialog itself. */
 #chatDialog .modalWrap{overflow:hidden}
+/* Dock stays below the screen edge until the pointer nears the bottom. */
+.dockZone{position:fixed;bottom:0;left:0;right:0;height:90px;z-index:49}
+.dock{transform:translateX(-50%) translateY(140%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.dock.show{transform:translateX(-50%) translateY(0)}
+.dockItem{transform:translateY(0)}
+/* Charts scale to their pane (viewBox); keep them block-level and proportional. */
+.trend svg,.carouselPane svg,.catLine{display:block}
+.trend svg,.carouselPane svg{width:100%;height:auto}

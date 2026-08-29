@@ -29,7 +29,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       const W = container.clientWidth || 600, H = height;
       const padL = 62, padR = 18, padT = 20, padB = 30;
       container.classList.add('chartAnim');
-      container.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="No data yet">
+      container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="No data yet">
         <line x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${gridColor()}" stroke-width="1"/>
         <text x="${padL - 8}" y="${H - padB + 4}" text-anchor="end" font-size="11" fill="${inkColor()}">0</text>
         <line class="lineDraw" pathLength="1" x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${seriesColor()}" stroke-width="2" opacity="0.4"/>
@@ -46,7 +46,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       const py = padT + (H - padT - padB) * (1 - points[0].value / max);
       const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => t * max);
       container.classList.add('chartAnim');
-      container.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="Monthly sales">
+      container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Monthly sales">
         ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 60}ms"><line x1="${padL}" x2="${W - padR}" y1="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" y2="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" stroke="${gridColor()}" stroke-width="1"/><text x="${padL - 8}" y="${(H - padB - t / max * (H - padT - padB) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t === 0 ? '0' : format(t)}</text></g>`).join('')}
         <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="#fff" stroke="${seriesColor()}" stroke-width="2.5"/>
         <circle class="endPulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${seriesColor()}"/>
@@ -90,7 +90,8 @@ function lineChart(container, points, { format = value => value.toLocaleString()
     const dot = container.querySelector('.crossdot');
     svg.addEventListener('pointermove', event => {
       const rect = svg.getBoundingClientRect();
-      const relX = event.clientX - rect.left;
+      // The SVG scales to its pane; map the on-screen x into the coordinate space it was drawn with.
+      const relX = (event.clientX - rect.left) * (W / rect.width);
       const index = Math.max(0, Math.min(points.length - 1, Math.round((relX - padL) / (W - padL - padR) * (points.length - 1))));
       const px = x(index), py = y(points[index].value);
       hair.setAttribute('x1', px); hair.setAttribute('x2', px); hair.setAttribute('opacity', '0.55');

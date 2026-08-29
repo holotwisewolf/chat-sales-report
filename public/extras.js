@@ -43,9 +43,15 @@ const $extra = selector => document.querySelector(selector);
 })();
 
 // Dock: floating glass quick-action bar with hover magnification and labels.
+// It hides below the screen edge and slides up when the pointer nears the bottom.
 (function dock() {
   const dockEl = $extra('.dock');
   if (!dockEl) return;
+  const zone = document.createElement('div');
+  zone.className = 'dockZone';
+  document.body.appendChild(zone);
+  zone.addEventListener('pointerenter', () => dockEl.classList.add('show'));
+  zone.addEventListener('pointerleave', () => dockEl.classList.remove('show'));
   const actions = {
     upload: () => $extra('#showUpload')?.click(),
     ask: () => window.openChat?.(),
