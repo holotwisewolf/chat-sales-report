@@ -33,7 +33,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
         <line x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${gridColor()}" stroke-width="1"/>
         <text x="${padL - 8}" y="${H - padB + 4}" text-anchor="end" font-size="11" fill="${inkColor()}">0</text>
         <line class="lineDraw" pathLength="1" x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${seriesColor()}" stroke-width="2" opacity="0.4"/>
-        <text x="${(W + padL) / 2}" y="${(H - padB) / 2}" text-anchor="middle" font-size="13" fill="${inkColor()}">No data for these filters yet</text>
+        <text x="${(W + padL) / 2}" y="${(H - padB) / 2}" text-anchor="middle" font-size="13" fill="${inkColor()}">No sales in the current filter &#8212; try Reset in the period picker</text>
       </svg>`;
       return;
     }

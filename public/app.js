@@ -118,7 +118,13 @@ document.querySelector('#importForm').onsubmit = async event => {
 
 // Clicking a dialog's backdrop (outside its card) closes it.
 document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
-// Collapsible dashboard sections; whether each is open is remembered.
+// Collapsible dashboard sections; whether each is open is remembered - except across UI
+// versions, where stale saved state (e.g. graphs left collapsed) caused confusion.
+const UI_VERSION = '6';
+if (localStorage.getItem('uiVersion') !== UI_VERSION) {
+  Object.keys(localStorage).filter(key => key.startsWith('collapsible-')).forEach(key => localStorage.removeItem(key));
+  localStorage.setItem('uiVersion', UI_VERSION);
+}
 document.querySelectorAll('.collapsible').forEach(section => {
   const saved = localStorage.getItem(`collapsible-${section.id}`);
   if (saved === 'closed') section.classList.add('closed');

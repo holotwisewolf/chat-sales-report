@@ -26,6 +26,7 @@ function chatCard(html) {
   card.innerHTML = html;
   chatLog.appendChild(card);
   card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return card; // callers hold this to update/remove the card (the missing return broke the whole flow)
 }
 
 let chatAbort = null;
