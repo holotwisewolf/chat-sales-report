@@ -14,6 +14,13 @@ const remember = (container, render) => { registry.set(container, render); rende
 
 const escapeChartText = value => String(value).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
 
+// Round an axis maximum up to a pleasant number (1/2/2.5/5 x powers of ten).
+const niceCeil = value => {
+  const magnitude = Math.pow(10, Math.floor(Math.log10(value || 1)));
+  for (const step of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (step * magnitude >= value) return step * magnitude;
+  return 10 * magnitude;
+};
+
 // points: [{label, value}]. Single series - the panel title names it, so no legend.
 function lineChart(container, points, { format = value => value.toLocaleString(), height = 220 } = {}) {
   remember(container, () => {

@@ -36,7 +36,7 @@ window.resetPeriod = resetPeriod;
 function renderPeriodPicker() {
   $data('#periodBtn').innerHTML = `${escapeHtml(periodLabel())} &darr;`;
   const p = dataState.period;
-  $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">All</button>`]
+  $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">Reset</button>`]
     .concat(dataState.years.map(y => `<button type="button" class="ppBtn secondary ${p.year === y && !p.from && !p.to ? 'on' : ''}" data-year="${y}">${y}</button>`)).join('');
   $data('#ppMonths').innerHTML = MONTHS.map((m, i) => {
     const state = p.months[i] || '';
@@ -48,7 +48,13 @@ function renderPeriodPicker() {
 function wirePeriodPicker() {
   const pop = $data('#periodPop');
   $data('#periodBtn').onclick = event => { event.stopPropagation(); pop.hidden = !pop.hidden; if (!pop.hidden) renderPeriodPicker(); };
-  document.addEventListener('click', event => { if (!pop.hidden && !event.target.closest('.periodPicker')) pop.hidden = true; });
+  // pointerdown fires before any click handler can re-render (and detach) the button that was
+  // clicked, so inside/outside detection can't be fooled in either direction.
+  document.addEventListener('pointerdown', event => {
+    if (pop.hidden) return;
+    const path = event.composedPath ? event.composedPath() : [event.target];
+    if (!path.some(el => el.classList && el.classList.contains('periodPicker'))) pop.hidden = true;
+  });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !pop.hidden) pop.hidden = true; });
   $data('#ppYears').onclick = event => {
     const year = event.target.dataset?.year;

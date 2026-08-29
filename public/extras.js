@@ -1,0 +1,77 @@
+// Chart carousel and quick-action dock - vanilla ports of the React Bits patterns (no build step).
+const $extra = selector => document.querySelector(selector);
+
+// Carousel: horizontal panes you can drag or click through, with dot indicators.
+(function carousel() {
+  const track = $extra('#carouselTrack');
+  const dots = $extra('#carouselDots');
+  if (!track || !dots) return;
+  const panes = () => [...track.children];
+  let index = 0;
+  let dragStart = null;
+  let dragDelta = 0;
+
+  const render = () => {
+    track.style.transform = `translateX(${-index * 100}%)`;
+    dots.innerHTML = panes().map((_, i) => `<button type="button" class="carouselDot ${i === index ? 'on' : ''}" data-pane="${i}" aria-label="Show graph ${i + 1}"></button>`).join('');
+  };
+  dots.onclick = event => { const pane = event.target.dataset?.pane; if (pane !== undefined) { index = Number(pane); render(); } };
+
+  track.addEventListener('pointerdown', event => {
+    dragStart = event.clientX;
+    dragDelta = 0;
+    track.setPointerCapture(event.pointerId);
+  });
+  track.addEventListener('pointermove', event => {
+    if (dragStart === null) return;
+    dragDelta = event.clientX - dragStart;
+    track.style.transform = `translateX(calc(${-index * 100}% + ${dragDelta}px))`;
+  });
+  const release = () => {
+    if (dragStart === null) return;
+    const width = track.clientWidth || 1;
+    if (dragDelta < -width / 5 && index < panes().length - 1) index++;
+    else if (dragDelta > width / 5 && index > 0) index--;
+    dragStart = null;
+    track.style.transition = 'transform .35s cubic-bezier(.2,.8,.2,1)';
+    render();
+    setTimeout(() => { track.style.transition = ''; }, 380);
+  };
+  track.addEventListener('pointerup', release);
+  track.addEventListener('pointercancel', release);
+  render();
+})();
+
+// Dock: floating glass quick-action bar with hover magnification and labels.
+(function dock() {
+  const dockEl = $extra('.dock');
+  if (!dockEl) return;
+  const actions = {
+    upload: () => $extra('#showUpload')?.click(),
+    ask: () => window.openChat?.(),
+    charts: () => {
+      const section = $extra('#collCharts');
+      if (!section) return;
+      section.classList.remove('closed');
+      localStorage.setItem('collapsible-collCharts', 'open');
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    manual: () => window.openManual?.()
+  };
+  dockEl.addEventListener('click', event => {
+    const item = event.target.closest('.dockItem');
+    if (item) actions[item.dataset.action]?.();
+  });
+  // Proximity magnification: nearest items grow as the pointer sweeps across the dock.
+  dockEl.addEventListener('pointermove', event => {
+    dockEl.querySelectorAll('.dockItem').forEach(item => {
+      const rect = item.getBoundingClientRect();
+      const distance = Math.abs(event.clientX - (rect.left + rect.width / 2));
+      const grow = Math.max(0, 1 - distance / 130);
+      item.style.transform = `scale(${1 + grow * 0.28}) translateY(${-grow * 7}px)`;
+    });
+  });
+  dockEl.addEventListener('pointerleave', () => {
+    dockEl.querySelectorAll('.dockItem').forEach(item => { item.style.transform = ''; });
+  });
+})();

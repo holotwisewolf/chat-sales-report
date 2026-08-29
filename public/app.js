@@ -23,6 +23,16 @@ function buildSignals(counters) {
 }
 
 async function load() {
+  try {
+    await renderDashboard();
+  } catch (error) {
+    console.error('dashboard load failed', error);
+    const bar = document.querySelector('#activeFilters');
+    if (bar) bar.innerHTML = `<span class="filterChip" style="color:var(--bad-tx);border-color:var(--bad-tx)">Something broke while refreshing the numbers - ${escapeHtml(error.message || 'unknown error')}</span>`;
+  }
+}
+
+async function renderDashboard() {
   const params = new URLSearchParams(Object.fromEntries(Object.entries(FILTER_IDS).map(([selector, key]) => [key, filterValue(selector)])));
   const range = window.currentPeriod ? window.currentPeriod() : {};
   params.set('from', range.from || '');
@@ -46,9 +56,10 @@ async function load() {
   const clearAll = document.querySelector('#clearAll');
   if (clearAll) clearAll.onclick = clearFilters;
   const cats = data.categoryTotals || [];
-  const catRow = document.querySelector('#categoryRow');
-  if (cats.length >= 2) { catRow.hidden = false; catRow.innerHTML = cats.map(c => `<article><span>${escapeHtml(c.category)}</span><strong>${money(c.sales)}</strong><small>${Number(c.quantity).toLocaleString()} units</small></article>`).join(''); }
-  else catRow.hidden = true;
+  const catPane = document.querySelector('#catPane');
+  if (catPane) catPane.innerHTML = cats.length
+    ? cats.map(c => `<div class="catLine"><span>${escapeHtml(c.category)}</span><strong>${money(c.sales)}</strong><small>${Number(c.quantity).toLocaleString()} units</small></div>`).join('')
+    : '<p class="hint">No categories in this filter yet.</p>';
   // The line chart handles any number of months (one month plots as a single point);
   // with no months at all, show the category comparison instead of an empty panel.
   if (data.trend.length >= 1) {
@@ -83,12 +94,10 @@ document.querySelector('#activeFilters').onclick = event => {
   if (window.loadRows) loadRows();
   load();
 };
-document.querySelector('#resetFilters').onclick = clearFilters;
-
 // Manual-entry dialog (restored - a rewrite had dropped its wiring entirely).
 const importDialog = document.querySelector('#importDialog');
 const saleRowHtml = '<div class="saleRow"><input name="counter" placeholder="Counter name" required><input name="quantity" type="number" min="0" step="1" placeholder="Qty" required><input name="sales" type="number" min="0" step="0.01" placeholder="Sales (RM)" required></div>';
-document.querySelector('#showImport').onclick = () => importDialog.showModal();
+window.openManual = () => importDialog.showModal();
 ['#closeImport', '#cancelImport'].forEach(selector => document.querySelector(selector).onclick = () => importDialog.close());
 document.querySelector('#addRow').onclick = () => document.querySelector('#rows').insertAdjacentHTML('beforeend', saleRowHtml);
 document.querySelector('#importForm').onsubmit = async event => {

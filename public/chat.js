@@ -5,7 +5,8 @@ const chatLog = $chat('#chatLog');
 const chatInput = $chat('#chatInput');
 const SUGGESTIONS = ['Top counters by sales', 'School shoes vs other shoes', 'Sales by retailer this month', 'Units sold each month'];
 
-$chat('#showChat').onclick = () => chatDialog.showModal();
+// The dock and suggestion chips call window.openChat(); no header button anymore.
+window.openChat = () => chatDialog.showModal();
 $chat('#closeChat').onclick = () => chatDialog.close();
 $chat('#chatChips').innerHTML = SUGGESTIONS.map(s => `<button type="button" class="secondary" data-ask="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('');
 $chat('#chatChips').onclick = event => { const ask = event.target.dataset?.ask; if (ask) { chatInput.value = ask; $chat('#chatForm').requestSubmit(); } };

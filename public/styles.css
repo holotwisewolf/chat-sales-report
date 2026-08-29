@@ -269,3 +269,33 @@ button:active{filter:brightness(.88);transform:none}
 /* Fill the card's height so the totals footer always sits at the bottom, even with few rows. */
 .tableWrap{display:flex}
 .tableWrap>table{height:100%}
+/* Two distinct chart cards side by side, same proportions as before. */
+.chartRow{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin:6px 0 20px}
+.panel.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);padding:18px}
+/* Carousel: draggable panes with dot indicators. */
+.carousel{position:relative;overflow:hidden;border-radius:12px;touch-action:pan-y;cursor:grab}
+.carousel:active{cursor:grabbing}
+.carouselTrack{display:flex;width:100%}
+.carouselPane{flex:0 0 100%;min-width:100%;user-select:none}
+.carouselDots{display:flex;justify-content:center;gap:8px;margin-top:10px}
+.carouselDot{width:9px;height:9px;border-radius:50%;border:0;padding:0;min-height:0;cursor:pointer;background:rgba(90,110,140,.35)}
+.carouselDot.on{background:var(--accent);transform:scale(1.25)}
+.catLine{display:flex;align-items:baseline;gap:12px;border-top:1px solid var(--hair);padding:12px 0}
+.catLine:first-child{border-top:0}
+.catLine span{flex:1;font-weight:600;font-size:14px}
+.catLine strong{font-size:15px;font-variant-numeric:tabular-nums}
+.catLine small{color:var(--ink2)}
+/* Dock: floating glass quick-action bar with proximity magnification. */
+.dock{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:10px;padding:10px 12px;background:rgba(251,252,254,.72);border:1px solid var(--glass-border);border-radius:22px;box-shadow:var(--shadow-lg);-webkit-backdrop-filter:blur(28px) saturate(1.7);backdrop-filter:blur(28px) saturate(1.7)}
+.dockItem{position:relative;width:50px;height:50px;min-height:50px;padding:0;border-radius:15px;background:rgba(238,242,248,.9);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair2);display:grid;place-items:center;transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+.dockItem svg{width:21px;height:21px}
+.dockItem:hover{background:var(--accent);color:#fff;box-shadow:none}
+.dockLabel{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#0f172a;color:#e7edf7;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:9px;opacity:0;pointer-events:none;transition:opacity .15s}
+.dockItem:hover .dockLabel,.dockItem:focus-visible .dockLabel{opacity:1}
+main{padding-bottom:110px}
+/* Table: fill the card; header and footer are solid strips; scrollbar lives between them. */
+.tableSection{padding-right:0}
+.tableSection .tableWrap{padding-right:0;display:block}
+.tableWrap>table{height:100%}
+/* Chat dialog: only the message log scrolls, never the dialog itself. */
+#chatDialog .modalWrap{overflow:hidden}
