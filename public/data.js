@@ -121,11 +121,12 @@ async function loadRows() {
   const COLUMNS = visibleColumns(has);
   // One shared column template drives header, rows, and footer - no filler column can appear.
   const widths = { counter: 'minmax(200px,1.8fr)', retailer: 'minmax(110px,1fr)', category: 'minmax(110px,1fr)', period: 'minmax(110px,auto)', productName: 'minmax(140px,auto)', sku: 'minmax(90px,auto)' };
-  const template = COLUMNS.map(c => c.num ? 'minmax(88px,auto)' : (widths[c.key] || 'minmax(90px,auto)')).concat(dataState.editMode ? ['minmax(160px,auto)'] : []).join(' ');
-  const headCells = COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
-  const body = data.rows.map(row => row.id === dataState.editRow ? editRowHtml(row, COLUMNS) : displayRowHtml(row, COLUMNS)).join('');
+  const template = ['44px'].concat(COLUMNS.map(c => c.num ? 'minmax(88px,auto)' : (widths[c.key] || 'minmax(90px,auto)')), dataState.editMode ? ['minmax(160px,auto)'] : []).join(' ');
+  const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
+  const firstIndex = ((data.page - 1) * (data.pageSize || 50)) + 1;
+  const body = data.rows.map((row, i) => row.id === dataState.editRow ? editRowHtml(row, COLUMNS, firstIndex + i) : displayRowHtml(row, COLUMNS, firstIndex + i)).join('');
   const totals = data.totals || {};
-  const footCells = COLUMNS.map(c => c.key === 'counter'
+  const footCells = '<div class="dsCell"></div>' + COLUMNS.map(c => c.key === 'counter'
     ? `<div class="dsCell counterName">Total (${data.total.toLocaleString()} rows)</div>`
     : `<div class="dsCell ${c.num ? 'num' : ''}">${c.num ? Number(totals[c.key] || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
   $data('#dataTable').innerHTML = `
@@ -168,13 +169,13 @@ const cellText = (row, col) => {
 const sortIndex = columns => columns.findIndex(c => c.sort === dataState.sort);
 const rowCellClass = (col, ci, columns) => `${col.num ? 'num' : ''}${col.cls ? ` ${col.cls}` : ''}${ci === sortIndex(columns) ? ' sortedCol' : ''}`;
 
-const displayRowHtml = (row, columns) => `<div class="dsRow" data-id="${row.id}">
-  ${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${cellText(row, c)}</div>`).join('')}
+const displayRowHtml = (row, columns, index) => `<div class="dsRow" data-id="${row.id}">
+  <div class="dsCell dsIndex">${index}</div>${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${cellText(row, c)}</div>`).join('')}
   ${dataState.editMode ? `<div class="dsCell rowActions"><button type="button" class="secondary" data-edit="${row.id}">Edit</button><button type="button" class="secondary danger" data-del="${row.id}">Delete</button></div>` : ''}</div>`;
 
 const editInput = (row, key, num = false) => `<input value="${row[key] ?? ''}" data-k="${key}" ${num ? 'type="number" step="any"' : ''}>`;
-const editRowHtml = (row, columns) => `<div class="dsRow editing" data-id="${row.id}">
-  ${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${['retailer', 'period'].includes(c.key) ? cellText(row, c) : editInput(row, c.key, c.num)}</div>`).join('')}
+const editRowHtml = (row, columns, index) => `<div class="dsRow editing" data-id="${row.id}">
+  <div class="dsCell dsIndex">${index}</div>${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${['retailer', 'period'].includes(c.key) ? cellText(row, c) : editInput(row, c.key, c.num)}</div>`).join('')}
   <div class="dsCell rowActions"><button type="button" id="dSave">Save</button><button type="button" class="secondary" id="dCancel">Cancel</button></div></div>`;
 
 $data('#dataTable').addEventListener('click', async event => {

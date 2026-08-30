@@ -150,7 +150,10 @@ form,.modalWrap{padding:24px}
 .chatCard th:last-child,.chatCard td:last-child{border-right:0}
 /* Datasheet grid: fixed header strip, scrolling body, fixed totals footer - the scrollbar
    lives physically between header and footer, and no filler column can appear. */
-.dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9}
+/* All three layers reserve the same 11px right gutter (our scrollbar width), so the
+   vertical gridlines of header, rows, and totals land in exactly the same places. */
+.dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9;padding-right:11px}
+.dsBody{scrollbar-gutter:stable}
 .dsHead .dsCell{font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;text-transform:uppercase;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);padding:10px 14px;white-space:nowrap}
 .dsHead .dsCell.sortable{cursor:pointer;user-select:none}
 .dsHead .dsCell.sortable:hover{background:#ccd6e3;color:var(--accent)}
@@ -162,6 +165,7 @@ form,.modalWrap{padding:24px}
 .dsCell:last-child{border-right:0}
 .dsCell.num{text-align:right}
 .dsCell.counterName{font-weight:600}
+.dsCell.dsIndex{text-align:right;color:var(--ink2);font-size:12px}
 .dsCell.mutedcol{color:var(--ink2);font-size:12px}
 .dsCell.sortedCol{background:#f2f6fc}
 .dsRow:hover .dsCell.sortedCol{background:#e2ecf8}
@@ -263,7 +267,7 @@ button:active{filter:brightness(.88);transform:none}
 .chatTickHint{color:var(--muted);font-size:11.5px;font-weight:400}
 .chatTick{font-variant-numeric:tabular-nums;font-weight:600}
 /* Table card: hard top edges, soft bottom; scrollbar inset INSIDE the card, never on its border. */
-.tableSection{border-radius:0 0 20px 20px;padding-right:10px}
+.tableSection{border-radius:20px}
 .tableSection .tableWrap{padding-right:2px}
 /* The container frames the table; the table's own outer border clipped at the scroll edge (the right-side cut-off). */
 /* Fill the card's height so the totals footer always sits at the bottom, even with few rows. */
