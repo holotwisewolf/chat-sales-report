@@ -148,26 +148,26 @@ form,.modalWrap{padding:24px}
 .chatCard th{position:sticky;top:0;background:var(--glass-head);font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink2);border-bottom:1px solid var(--grid);text-transform:uppercase}
 .chatCard td{font-variant-numeric:tabular-nums;border-bottom:1px solid var(--grid)}
 .chatCard th:last-child,.chatCard td:last-child{border-right:0}
-/* border-collapse:separate is REQUIRED: Chromium renders sticky th/tfoot backgrounds
-   transparent with border-collapse:collapse, so rows visibly scroll through the header. */
-.dataTable table{border-collapse:separate;border-spacing:0;width:100%;min-width:1060px;font-size:12.8px;border:1px solid var(--grid)}
-.dataTable th,.dataTable td{padding:6px 12px;text-align:left;white-space:nowrap;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;background:#fff}
-.dataTable th:last-child,.dataTable td:last-child{border-right:0}
-/* NAVY = temporary diagnostic colour the user asked for: if this header is not navy in
-   your browser, you are not being served this file at all. */
-.dataTable th{position:sticky;top:0;z-index:2;background:#1f3a5f;font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#fff;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);text-transform:uppercase;min-width:64px}
-.dataTable th.num{text-align:right}
-.dataTable th.sortable{cursor:pointer;user-select:none}
-.dataTable th.sortable:hover{background:#2c4f7c}
-.dataTable th.on{background:#2c4f7c;color:#fff}
-.dataTable tbody tr:hover td{background:#e8f0fa}
-.dataTable td.sortedCol{background:#f2f6fc}
-.dataTable tbody tr:hover td.sortedCol{background:#e2ecf8}
-.dataTable td.num,.dataTable th.num{text-align:right}
-.dataTable td.counterName{font-weight:600}
-.dataTable td.mutedcol{color:var(--ink2);font-size:12px}
-.dataTable tr.editing td{background:var(--warn-bg)!important;padding:3px 8px}
-.dataTable tr.editing input{width:100%;min-width:70px;padding:5px 8px;border:1px solid var(--hair2);border-radius:7px;font:inherit;font-size:12.8px;margin:0;min-height:34px;background:#fff}
+/* Datasheet grid: fixed header strip, scrolling body, fixed totals footer - the scrollbar
+   lives physically between header and footer, and no filler column can appear. */
+.dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9}
+.dsHead .dsCell{font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;text-transform:uppercase;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);padding:10px 14px;white-space:nowrap}
+.dsHead .dsCell.sortable{cursor:pointer;user-select:none}
+.dsHead .dsCell.sortable:hover{background:#ccd6e3;color:var(--accent)}
+.dsHead .dsCell.on{background:#c8d3e2;color:var(--accent)}
+.dsBody{flex:1;min-height:0;overflow:auto;background:#fff}
+.dsRow{display:grid;grid-template-columns:var(--cols);border-bottom:1px solid var(--grid)}
+.dsRow:hover .dsCell{background:#e8f0fa}
+.dsCell{padding:10px 14px;border-right:1px solid var(--grid);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dsCell:last-child{border-right:0}
+.dsCell.num{text-align:right}
+.dsCell.counterName{font-weight:600}
+.dsCell.mutedcol{color:var(--ink2);font-size:12px}
+.dsCell.sortedCol{background:#f2f6fc}
+.dsRow:hover .dsCell.sortedCol{background:#e2ecf8}
+.dsFoot .dsCell{font-weight:750;border-top:2px solid var(--grid);border-bottom:1px solid var(--grid);color:#10151f}
+.dsRow.editing .dsCell{background:var(--warn-bg)!important;padding:3px 8px}
+.dsRow.editing input{width:100%;min-width:70px;padding:6px 9px;border:1px solid var(--hair2);border-radius:7px;font:inherit;font-size:13px;margin:0;min-height:36px;background:#fff}
 .rowActions{white-space:nowrap;text-align:right}
 .rowActions button{padding:6px 12px;font-size:12px;margin-left:6px;min-height:36px}
 .rowActions .danger{background:var(--bad-bg);color:var(--bad-tx)}
@@ -206,7 +206,6 @@ form,.modalWrap{padding:24px}
 .ppCustom input{min-height:38px;padding:7px 9px;font-size:12.5px}
 .ppFoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
 /* Bigger, calmer, uncramped: larger type and touch areas for the important data surfaces. */
-.dataTable table{font-size:13.8px}.dataTable th,.dataTable td{padding:10px 14px}
 .rowGrid .r{padding:7px 12px;gap:10px;grid-template-columns:1fr 88px 132px 150px 26px 34px}
 .rowGrid .r input{font-size:15px;padding:10px 12px;min-height:44px}
 .rowGrid .r .rm{font-size:20px;min-height:44px;min-width:36px}
@@ -260,8 +259,6 @@ button:active{filter:brightness(.88);transform:none}
 /* Month exclude state (right-click) in the period picker. */
 .ppBtn.excl{background:var(--bad-bg);color:var(--bad-tx);box-shadow:inset 0 0 0 1.5px var(--bad-tx)}
 /* Excel-style totals footer pinned to the bottom of the table. */
-.dataTable tfoot td{position:sticky;bottom:0;z-index:2;background:#1f3a5f;color:#fff;font-weight:750;border-top:2px solid var(--grid);border-right:1px solid var(--grid)}
-.dataTable tfoot td:last-child{border-right:0}
 /* Chat pending ticker hint. */
 .chatTickHint{color:var(--muted);font-size:11.5px;font-weight:400}
 .chatTick{font-variant-numeric:tabular-nums;font-weight:600}
@@ -269,10 +266,7 @@ button:active{filter:brightness(.88);transform:none}
 .tableSection{border-radius:0 0 20px 20px;padding-right:10px}
 .tableSection .tableWrap{padding-right:2px}
 /* The container frames the table; the table's own outer border clipped at the scroll edge (the right-side cut-off). */
-.dataTable table{border:0}
 /* Fill the card's height so the totals footer always sits at the bottom, even with few rows. */
-.tableWrap{display:flex}
-.tableWrap>table{height:100%}
 /* Two distinct chart cards side by side, same proportions as before. */
 .chartRow{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin:6px 0 20px}
 .panel.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);padding:18px}

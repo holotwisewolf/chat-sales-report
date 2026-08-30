@@ -117,15 +117,21 @@ async function loadRows() {
   const params = new URLSearchParams({ page: dataState.page, sort: dataState.sort, dir: dataState.dir, retailer: dataState.retailer, category: dataState.category, from: range.from, to: range.to, months: range.months, exMonths: range.exMonths, q: dataState.q });
   const data = await fetch(`/api/rows?${params}`).then(r => r.json()).catch(() => null);
   if (!data) { $data('#dataTable').innerHTML = '<p class="hint">Couldn\'t load rows.</p>'; return; }
-  // Optional columns only appear when the filtered data actually has them.
   const has = data.columns || {};
   const COLUMNS = visibleColumns(has);
-  const head = `<thead><tr>${COLUMNS.map(c => `<th ${c.sort ? `data-sort="${c.sort}" class="sortable${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`).join('')}${dataState.editMode ? '<th></th>' : ''}</tr></thead>`;
+  // One shared column template drives header, rows, and footer - no filler column can appear.
+  const widths = { counter: 'minmax(200px,1.8fr)', retailer: 'minmax(110px,1fr)', category: 'minmax(110px,1fr)', period: 'minmax(110px,auto)', productName: 'minmax(140px,auto)', sku: 'minmax(90px,auto)' };
+  const template = COLUMNS.map(c => c.num ? 'minmax(88px,auto)' : (widths[c.key] || 'minmax(90px,auto)')).concat(dataState.editMode ? ['minmax(160px,auto)'] : []).join(' ');
+  const headCells = COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
   const body = data.rows.map(row => row.id === dataState.editRow ? editRowHtml(row, COLUMNS) : displayRowHtml(row, COLUMNS)).join('');
-  // Excel-style totals for the whole filtered set, pinned to the bottom of the table.
   const totals = data.totals || {};
-  const foot = `<tfoot><tr>${COLUMNS.map(c => c.key === 'counter' ? `<td class="counterName">Total (${data.total.toLocaleString()} rows)</td>` : `<td class="${c.num ? 'num' : ''}">${c.num ? Number(totals[c.key] || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</td>`).join('')}<td></td></tr></tfoot>`;
-  $data('#dataTable').innerHTML = `<div class="tableWrap"><table>${head}<tbody>${body || `<tr><td colspan="${COLUMNS.length + 1}" class="hint" style="padding:22px">No rows match these filters.</td></tr>`}</tbody>${foot}</table></div>
+  const footCells = COLUMNS.map(c => c.key === 'counter'
+    ? `<div class="dsCell counterName">Total (${data.total.toLocaleString()} rows)</div>`
+    : `<div class="dsCell ${c.num ? 'num' : ''}">${c.num ? Number(totals[c.key] || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
+  $data('#dataTable').innerHTML = `
+    <div class="dsHead" style="--cols:${template}">${headCells}</div>
+    <div class="dsBody" style="--cols:${template}">${body || '<div class="hint" style="padding:22px 14px">No rows match these filters.</div>'}</div>
+    <div class="dsFoot" style="--cols:${template}">${footCells}</div>
     <div class="pageBar"><button type="button" class="secondary" id="dPrev" ${data.page <= 1 ? 'disabled' : ''}>&larr; Previous</button><small>Page ${data.page} of ${data.pages} &middot; ${data.total.toLocaleString()} rows</small><button type="button" class="secondary" id="dNext" ${data.page >= data.pages ? 'disabled' : ''}>Next &rarr;</button></div>`;
   const prev = $data('#dPrev'), next = $data('#dNext');
   if (prev) prev.onclick = () => { dataState.page--; loadRows(); };
@@ -162,19 +168,19 @@ const cellText = (row, col) => {
 const sortIndex = columns => columns.findIndex(c => c.sort === dataState.sort);
 const rowCellClass = (col, ci, columns) => `${col.num ? 'num' : ''}${col.cls ? ` ${col.cls}` : ''}${ci === sortIndex(columns) ? ' sortedCol' : ''}`;
 
-const displayRowHtml = (row, columns) => `<tr data-id="${row.id}" class="${dataState.editMode ? 'editable' : ''}">
-  ${columns.map((c, ci) => `<td class="${rowCellClass(c, ci, columns)}">${cellText(row, c)}</td>`).join('')}
-  ${dataState.editMode ? `<td class="rowActions"><button type="button" class="secondary" data-edit="${row.id}">Edit</button><button type="button" class="secondary danger" data-del="${row.id}">Delete</button></td>` : ''}</tr>`;
+const displayRowHtml = (row, columns) => `<div class="dsRow" data-id="${row.id}">
+  ${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${cellText(row, c)}</div>`).join('')}
+  ${dataState.editMode ? `<div class="dsCell rowActions"><button type="button" class="secondary" data-edit="${row.id}">Edit</button><button type="button" class="secondary danger" data-del="${row.id}">Delete</button></div>` : ''}</div>`;
 
 const editInput = (row, key, num = false) => `<input value="${row[key] ?? ''}" data-k="${key}" ${num ? 'type="number" step="any"' : ''}>`;
-const editRowHtml = (row, columns) => `<tr data-id="${row.id}" class="editing">
-  ${columns.map((c, ci) => `<td class="${rowCellClass(c, ci, columns)}">${['retailer', 'period'].includes(c.key) ? cellText(row, c) : editInput(row, c.key, c.num)}</td>`).join('')}
-  <td class="rowActions"><button type="button" id="dSave">Save</button><button type="button" class="secondary" id="dCancel">Cancel</button></td></tr>`;
+const editRowHtml = (row, columns) => `<div class="dsRow editing" data-id="${row.id}">
+  ${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${['retailer', 'period'].includes(c.key) ? cellText(row, c) : editInput(row, c.key, c.num)}</div>`).join('')}
+  <div class="dsCell rowActions"><button type="button" id="dSave">Save</button><button type="button" class="secondary" id="dCancel">Cancel</button></div></div>`;
 
 $data('#dataTable').addEventListener('click', async event => {
   const edit = event.target.dataset?.edit;
   const del = event.target.dataset?.del;
-  const sortKey = event.target.closest('th')?.dataset?.sort;
+  const sortKey = event.target.closest('.dsCell.sortable')?.dataset?.sort;
   if (edit) { dataState.editRow = Number(edit); loadRows(); return; }
   if (del) {
     if (!confirm('Delete this row? This cannot be undone.')) return;
@@ -185,10 +191,10 @@ $data('#dataTable').addEventListener('click', async event => {
   }
   if (event.target.id === 'dCancel') { dataState.editRow = null; loadRows(); return; }
   if (event.target.id === 'dSave') {
-    const tr = event.target.closest('tr');
+    const rowEl = event.target.closest('.dsRow');
     const body = {};
-    tr.querySelectorAll('input[data-k]').forEach(input => { body[input.dataset.k] = input.value; });
-    const response = await fetch(`/api/rows/${tr.dataset.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    rowEl.querySelectorAll('input[data-k]').forEach(input => { body[input.dataset.k] = input.value; });
+    const response = await fetch(`/api/rows/${rowEl.dataset.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return alert(result.error || 'Could not save that row.');
     dataState.editRow = null;

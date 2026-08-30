@@ -57,9 +57,11 @@ async function renderDashboard() {
   if (clearAll) clearAll.onclick = clearFilters;
   const cats = data.categoryTotals || [];
   const catPane = document.querySelector('#catPane');
-  if (catPane) catPane.innerHTML = cats.length
-    ? cats.map(c => `<div class="catLine"><span>${escapeHtml(c.category)}</span><strong>${money(c.sales)}</strong><small>${Number(c.quantity).toLocaleString()} units</small></div>`).join('')
-    : '<p class="hint">No categories in this filter yet.</p>';
+  if (catPane) {
+    catPane.innerHTML = '';
+    if (cats.length) barList(catPane, cats.map(c => ({ label: c.category, value: c.sales, sub: `${Number(c.quantity).toLocaleString()} units` })), { format: money });
+    else catPane.innerHTML = '<p class="hint">No categories in this filter yet.</p>';
+  }
   // The line chart handles any number of months (one month plots as a single point);
   // with no months at all, show the category comparison instead of an empty panel.
   if (data.trend.length >= 1) {
