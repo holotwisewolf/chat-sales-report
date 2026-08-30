@@ -29,6 +29,41 @@ function chatCard(html) {
   return card; // callers hold this to update/remove the card (the missing return broke the whole flow)
 }
 
+// Chat history persists locally so past questions and answers survive reloads.
+const CHAT_HISTORY_KEY = 'chatHistory';
+function saveChatEntry(entry) {
+  try {
+    const history = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]');
+    history.push(entry);
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(history.slice(-40)));
+  } catch {}
+}
+(function restoreChat() {
+  try {
+    const history = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]');
+    if (!history.length) return;
+    chatLog.innerHTML = '';
+    for (const entry of history) {
+      const q = document.createElement('div');
+      q.className = 'chatQuestion';
+      q.textContent = entry.q;
+      chatLog.appendChild(q);
+      if (entry.a) {
+        const a = document.createElement('div');
+        a.className = 'chatCard';
+        a.innerHTML = entry.a;
+        chatLog.appendChild(a);
+      }
+    }
+  } catch {}
+})();
+const chatClear = document.createElement('button');
+chatClear.type = 'button';
+chatClear.className = 'linkish';
+chatClear.textContent = 'Clear chat history';
+chatClear.onclick = () => { try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch {} chatLog.innerHTML = '<p class="hint">Ask anything about the imported reports &mdash; totals, comparisons, trends, or a specific counter.</p>'; };
+$chat('#chatChips').appendChild(chatClear);
+
 let chatAbort = null;
 const chatSend = $chat('#chatSend');
 
@@ -62,7 +97,11 @@ $chat('#chatForm').onsubmit = async event => {
       ? `<div class="tableWrap"><table><thead><tr>${body.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${body.rows.map(row => `<tr>${body.columns.map(c => `<td>${escapeHtml(String(cellValue(c, row[c])))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
       : '<p class="hint">There is no data for that yet.</p>';
     chatCard(`<p class="chatAnswer">${escapeHtml(body.answer || '')}</p>${table}
-      <details><summary>Where these numbers come from</summary><code>${escapeHtml(body.tool || '')} ${escapeHtml(JSON.stringify(body.args || {}, null, 1))}</code></details>`);
+      <details><summary>Where these numbers come from</summary><code>${escapeHtml(body.tool || '')} ${escapeHtml(JSON.stringify(body.args || {}, null, 1))}</code></details>`)
+      ;(function saveCard() {
+        const last = chatLog.querySelector('.chatCard:last-child');
+        saveChatEntry({ q: question, a: last ? last.innerHTML : '' });
+      })();
   } catch (error) {
     pending.remove();
     done();

@@ -150,10 +150,9 @@ form,.modalWrap{padding:24px}
 .chatCard th:last-child,.chatCard td:last-child{border-right:0}
 /* Datasheet grid: fixed header strip, scrolling body, fixed totals footer - the scrollbar
    lives physically between header and footer, and no filler column can appear. */
-/* All three layers reserve the same 11px right gutter (our scrollbar width), so the
-   vertical gridlines of header, rows, and totals land in exactly the same places. */
-.dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9;padding-right:11px}
-.dsBody{scrollbar-gutter:stable}
+/* Header/footer widths are pinned to the body's content width in JS after each render -
+   CSS alone cannot keep separate scroll/no-scroll boxes pixel-aligned. */
+.dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9;overflow:hidden}
 .dsHead .dsCell{font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;text-transform:uppercase;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);padding:10px 14px;white-space:nowrap}
 .dsHead .dsCell.sortable{cursor:pointer;user-select:none}
 .dsHead .dsCell.sortable:hover{background:#ccd6e3;color:var(--accent)}

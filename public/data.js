@@ -36,7 +36,7 @@ window.resetPeriod = resetPeriod;
 function renderPeriodPicker() {
   $data('#periodBtn').innerHTML = `${escapeHtml(periodLabel())} &darr;`;
   const p = dataState.period;
-  $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">Reset</button>`]
+  $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">All years</button>`]
     .concat(dataState.years.map(y => `<button type="button" class="ppBtn secondary ${p.year === y && !p.from && !p.to ? 'on' : ''}" data-year="${y}">${y}</button>`)).join('');
   $data('#ppMonths').innerHTML = MONTHS.map((m, i) => {
     const state = p.months[i] || '';
@@ -98,6 +98,8 @@ function wirePeriodPicker() {
   $data('#ppFrom').onchange = onRangeChange;
   $data('#ppTo').onchange = onRangeChange;
   $data('#ppReset').onclick = () => { resetPeriod(); applyPeriod(); };
+  const resetLabel = $data('#ppReset');
+  if (resetLabel) resetLabel.textContent = 'Reset everything';
 }
 
 async function populateDataFilters() {
@@ -137,6 +139,23 @@ async function loadRows() {
   const prev = $data('#dPrev'), next = $data('#dNext');
   if (prev) prev.onclick = () => { dataState.page--; loadRows(); };
   if (next) next.onclick = () => { dataState.page++; loadRows(); };
+  // Pin header/footer to the body's exact content width and follow its horizontal scroll:
+  // separate scroll/no-scroll boxes cannot guarantee identical columns from CSS alone.
+  const bodyEl = $data('.dsBody');
+  const strips = [...$data('#dataTable').querySelectorAll('.dsHead,.dsFoot')];
+  if (bodyEl && strips.length) {
+    const sync = () => {
+      const width = bodyEl.clientWidth;
+      strips.forEach(strip => {
+        strip.style.width = `${width}px`;
+        strip.style.paddingRight = '0';
+        strip.style.transform = `translateX(${-bodyEl.scrollLeft}px)`;
+      });
+    };
+    sync();
+    bodyEl.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+  }
 }
 
 const ALL_COLUMNS = [
