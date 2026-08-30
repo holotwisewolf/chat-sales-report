@@ -111,7 +111,9 @@ app.get('/api/dashboard', (req, res) => {
   const summary = db.prepare(`SELECT COALESCE(SUM(s.sales),0) sales, COALESCE(SUM(s.quantity),0) quantity, COUNT(DISTINCT s.counter_id) counters FROM sales_lines s JOIN reports r ON r.id=s.report_id ${where}`).get(...params);
   const allCounters = db.prepare(`SELECT c.name, r.retailer, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity, ROUND(SUM(s.sales)/NULLIF(SUM(s.quantity),0),2) average_price FROM sales_lines s JOIN counters c ON c.id=s.counter_id JOIN reports r ON r.id=s.report_id ${where} GROUP BY c.id, r.retailer ORDER BY sales DESC`).all(...params);
   const retailers = db.prepare(`SELECT r.retailer, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity FROM sales_lines s JOIN reports r ON r.id=s.report_id ${where} GROUP BY r.retailer ORDER BY sales DESC`).all(...params);
-  const periods = db.prepare(`SELECT r.id, r.retailer, r.period_start, r.period_end, r.source_filename, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity FROM reports r JOIN sales_lines s ON s.report_id=r.id ${where} GROUP BY r.id ORDER BY r.period_end DESC`).all(...params);
+  const periods = db.prepare(`SELECT r.id, r.retailer, r.period_start, r.period_end, r.source_filename, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity,
+                                     j.id jobId, j.status jobStatus FROM reports r JOIN sales_lines s ON s.report_id=r.id
+                                     LEFT JOIN import_jobs j ON j.report_id = r.id AND j.status = 'confirmed' ${where} GROUP BY r.id ORDER BY r.period_end DESC`).all(...params);
   const trend = db.prepare(`SELECT substr(r.period_end,1,7) month, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity FROM sales_lines s JOIN reports r ON r.id=s.report_id ${where} GROUP BY month ORDER BY month`).all(...params);
   const options = {
     retailers: db.prepare('SELECT DISTINCT retailer FROM reports ORDER BY retailer').all().map(row => row.retailer),

@@ -14,7 +14,8 @@ const uploadDialog = $import('#uploadDialog');
 const reviewDialog = $import('#reviewDialog');
 let staged = [];
 
-$import('#showUpload').onclick = () => { setState(''); renderStaged(); loadDrafts(); uploadDialog.showModal(); };
+// The header button became Print; the dock calls window.openUpload().
+window.openUpload = () => { setState(''); renderStaged(); loadDrafts(); uploadDialog.showModal(); };
 ['#closeUpload', '#cancelUpload'].forEach(s => $import(s).onclick = () => uploadDialog.close());
 
 function renderStaged() {

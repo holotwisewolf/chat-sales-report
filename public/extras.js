@@ -57,7 +57,7 @@ const $extra = selector => document.querySelector(selector);
   zone.addEventListener('pointerenter', () => { clearTimeout(hideTimer); dockEl.classList.add('show'); });
   zone.addEventListener('pointerleave', () => { hideTimer = setTimeout(() => dockEl.classList.remove('show'), 250); });
   const actions = {
-    upload: () => $extra('#showUpload')?.click(),
+    upload: () => window.openUpload?.(),
     ask: () => window.openChat?.(),
     charts: () => {
       const section = $extra('#collCharts');

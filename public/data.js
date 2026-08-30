@@ -1,10 +1,12 @@
-// Main spreadsheet view: the table IS the page. Filters here also drive the stats strip and charts (via load()).
+// Main spreadsheet view: the table IS the page. Edit mode = click a cell and type;
+// index-cell selection (ctrl for multiple) + right-click delete; undo for edits and deletes.
 const $data = selector => document.querySelector(selector);
-const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', q: '', editRow: null, editMode: false, period: { year: null, months: {}, from: '', to: '' }, years: [] };
+const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', q: '', editRow: null, editMode: false, period: { year: null, months: {}, from: '', to: '' }, years: [], selection: new Set(), lastRows: [] };
+const undoStack = [];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const EDITABLE = new Set(['counter', 'category', 'productName', 'sku', 'quantity', 'sales', 'cost', 'profit']);
+const NUMERIC = new Set(['quantity', 'sales', 'cost', 'profit']);
 
-// Resolved filter: a date range (all time / year / custom), plus multi-month includes and
-// right-click excludes. months/exMonths are '8,9' lists of month numbers.
 function currentPeriod() {
   const p = dataState.period;
   const inc = [], exc = [];
@@ -48,8 +50,6 @@ function renderPeriodPicker() {
 function wirePeriodPicker() {
   const pop = $data('#periodPop');
   $data('#periodBtn').onclick = event => { event.stopPropagation(); pop.hidden = !pop.hidden; if (!pop.hidden) renderPeriodPicker(); };
-  // pointerdown fires before any click handler can re-render (and detach) the button that was
-  // clicked, so inside/outside detection can't be fooled in either direction.
   document.addEventListener('pointerdown', event => {
     if (pop.hidden) return;
     const path = event.composedPath ? event.composedPath() : [event.target];
@@ -59,16 +59,12 @@ function wirePeriodPicker() {
   $data('#ppYears').onclick = event => {
     const year = event.target.dataset?.year;
     if (year === undefined) return;
-    // The re-render below detaches the clicked button before this click reaches the document
-    // listener, which would then see it as "outside" and close the menu - so stop here.
     event.stopPropagation();
     dataState.period.year = year === '' ? null : Number(year);
     dataState.period.from = ''; dataState.period.to = '';
     renderPeriodPicker();
     applyPeriod();
   };
-  // Left click toggles a month on/off; right click marks it as an exception (excluded) and back.
-  // Neither closes the menu - only clicking outside does.
   $data('#ppMonths').onclick = event => {
     const month = event.target.dataset?.month;
     if (month === undefined) return;
@@ -89,7 +85,6 @@ function wirePeriodPicker() {
     renderPeriodPicker();
     applyPeriod();
   };
-  // Custom range applies the moment both dates are picked - no Apply button needed.
   const onRangeChange = () => {
     dataState.period = { year: null, months: {}, from: $data('#ppFrom').value, to: $data('#ppTo').value };
     renderPeriodPicker();
@@ -119,30 +114,30 @@ async function loadRows() {
   const params = new URLSearchParams({ page: dataState.page, sort: dataState.sort, dir: dataState.dir, retailer: dataState.retailer, category: dataState.category, from: range.from, to: range.to, months: range.months, exMonths: range.exMonths, q: dataState.q });
   const data = await fetch(`/api/rows?${params}`).then(r => r.json()).catch(() => null);
   if (!data) { $data('#dataTable').innerHTML = '<p class="hint">Couldn\'t load rows.</p>'; return; }
+  dataState.lastRows = data.rows;
   const has = data.columns || {};
   const COLUMNS = visibleColumns(has);
-  // One shared column template drives header, rows, and footer. Every track is fr-based:
-  // each row is its own grid element, so any 'auto' track would size to that row's content
-  // and walk the gridlines - a long number must ellipsize, never move the line.
   const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,0.9fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
-  const template = ['36px'].concat(COLUMNS.map(c => c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')), dataState.editMode ? ['minmax(0,1.1fr)'] : []).join(' ');
-  const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
+  const template = ['36px'].concat(COLUMNS.map(c => c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)'))).join(' ');
+  const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('');
   const firstIndex = ((data.page - 1) * (data.pageSize || 50)) + 1;
-  const body = data.rows.map((row, i) => row.id === dataState.editRow ? editRowHtml(row, COLUMNS, firstIndex + i) : displayRowHtml(row, COLUMNS, firstIndex + i)).join('');
+  const body = data.rows.map((row, i) => rowHtml(row, COLUMNS, firstIndex + i)).join('');
   const totals = data.totals || {};
   const footCells = '<div class="dsCell"></div>' + COLUMNS.map(c => c.key === 'counter'
     ? `<div class="dsCell counterName">Total (${data.total.toLocaleString()} rows)</div>`
-    : `<div class="dsCell ${c.num ? 'num' : ''}">${c.num ? Number(totals[c.key] || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
+    : `<div class="dsCell ${c.num ? 'num' : ''}">${c.num ? Number(totals[c.key] || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</div>`).join('');
   $data('#dataTable').innerHTML = `
     <div class="dsHead" style="--cols:${template}">${headCells}</div>
     <div class="dsBody" style="--cols:${template}">${body || '<div class="hint" style="padding:22px 14px">No rows match these filters.</div>'}</div>
     <div class="dsFoot" style="--cols:${template}">${footCells}</div>
-    <div class="pageBar"><button type="button" class="secondary" id="dPrev" ${data.page <= 1 ? 'disabled' : ''}>&larr; Previous</button><small>Page ${data.page} of ${data.pages} &middot; ${data.total.toLocaleString()} rows</small><button type="button" class="secondary" id="dNext" ${data.page >= data.pages ? 'disabled' : ''}>Next &rarr;</button></div>`;
+    <div class="pageBar"><button type="button" class="secondary" id="dPrev" ${data.page <= 1 ? 'disabled' : ''}>&larr; Previous</button><small>Page ${data.page} of ${data.pages} &middot; ${data.total.toLocaleString()} rows</small><button type="button" class="secondary" id="dNext" ${data.page >= data.pages ? 'disabled' : ''}>Next &rarr;</button><button type="button" class="secondary" id="undoBtn" ${undoStack.length ? '' : 'disabled'}>↶ Undo (${undoStack.length})</button></div>
+    <div class="resizeHandle" title="Drag to resize the table"></div>`;
   const prev = $data('#dPrev'), next = $data('#dNext');
   if (prev) prev.onclick = () => { dataState.page--; loadRows(); };
   if (next) next.onclick = () => { dataState.page++; loadRows(); };
-  // Pin header/footer to the body's exact content width and follow its horizontal scroll:
-  // separate scroll/no-scroll boxes cannot guarantee identical columns from CSS alone.
+  const undoBtn = $data('#undoBtn');
+  if (undoBtn) undoBtn.onclick = undo;
+  wireResize();
   const bodyEl = $data('.dsBody');
   const strips = [...$data('#dataTable').querySelectorAll('.dsHead,.dsFoot')];
   if (bodyEl && strips.length) {
@@ -190,54 +185,172 @@ const cellText = (row, col) => {
 const sortIndex = columns => columns.findIndex(c => c.sort === dataState.sort);
 const rowCellClass = (col, ci, columns) => `${col.num ? 'num' : ''}${col.cls ? ` ${col.cls}` : ''}${ci === sortIndex(columns) ? ' sortedCol' : ''}`;
 
-const displayRowHtml = (row, columns, index) => `<div class="dsRow" data-id="${row.id}">
-  <div class="dsCell dsIndex">${index}</div>${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${cellText(row, c)}</div>`).join('')}
-  ${dataState.editMode ? `<div class="dsCell rowActions"><button type="button" class="secondary" data-edit="${row.id}">Edit</button><button type="button" class="secondary danger" data-del="${row.id}">Delete</button></div>` : ''}</div>`;
+function rowHtml(row, columns, index) {
+  const selected = dataState.selection.has(row.id) ? ' selected' : '';
+  const cells = columns.map((c, ci) => {
+    const editable = dataState.editMode && EDITABLE.has(c.key);
+    return `<div class="dsCell ${rowCellClass(c, ci, columns)}" ${editable ? `contenteditable="plaintext-only" data-field="${c.key}" data-raw="${c.num ? row[c.key] ?? '' : escapeHtml(String(row[c.key] ?? ''))}"` : ''}>${cellText(row, c)}</div>`;
+  }).join('');
+  return `<div class="dsRow${selected}" data-id="${row.id}"><div class="dsCell dsIndex" ${dataState.editMode ? 'title="Click to select the row"' : ''}>${index}</div>${cells}</div>`;
+}
 
-const editInput = (row, key, num = false) => `<input value="${row[key] ?? ''}" data-k="${key}" ${num ? 'type="number" step="any"' : ''}>`;
-const editRowHtml = (row, columns, index) => `<div class="dsRow editing" data-id="${row.id}">
-  <div class="dsCell dsIndex">${index}</div>${columns.map((c, ci) => `<div class="dsCell ${rowCellClass(c, ci, columns)}">${['retailer', 'period'].includes(c.key) ? cellText(row, c) : editInput(row, c.key, c.num)}</div>`).join('')}
-  <div class="dsCell rowActions"><button type="button" id="dSave">Save</button><button type="button" class="secondary" id="dCancel">Cancel</button></div></div>`;
+// ---- Undo: edits are patched back; deletes are restored through /api/rows/restore. ----
+function pushUndo(entry) { undoStack.push(entry); if (undoStack.length > 50) undoStack.shift(); }
+async function undo() {
+  const entry = undoStack.pop();
+  if (!entry) return;
+  try {
+    if (entry.type === 'edit') {
+      await fetch(`/api/rows/${entry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [entry.field]: entry.oldValue }) });
+    } else if (entry.type === 'delete') {
+      await fetch('/api/rows/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reports: entry.reports, rows: entry.rows }) });
+    }
+  } catch { alert('Could not undo - is the app still running?'); }
+  loadRows();
+  load();
+}
 
-$data('#dataTable').addEventListener('click', async event => {
-  const edit = event.target.dataset?.edit;
-  const del = event.target.dataset?.del;
-  const sortKey = event.target.closest('.dsCell.sortable')?.dataset?.sort;
-  if (edit) { dataState.editRow = Number(edit); loadRows(); return; }
-  if (del) {
-    if (!confirm('Delete this row? This cannot be undone.')) return;
-    await fetch(`/api/rows/${del}`, { method: 'DELETE' });
-    loadRows();
-    load();
-    return;
+// ---- Table interactions: cell editing, row selection, right-click delete. ----
+$data('#dataTable').addEventListener('focusout', async event => {
+  const cell = event.target.closest?.('.dsCell[contenteditable]');
+  if (!cell || cell !== event.target) return;
+  const field = cell.dataset.field;
+  const rowEl = cell.closest('.dsRow');
+  const row = dataState.lastRows.find(r => String(r.id) === rowEl?.dataset.id);
+  if (!row || !field) return;
+  const raw = cell.dataset.raw ?? '';
+  const text = cell.textContent.trim().replace(/,/g, '');
+  let value = NUMERIC.has(field) ? Number(text) : text;
+  if (NUMERIC.has(field) && !Number.isFinite(value)) {
+    cell.textContent = cellText(row, ALL_COLUMNS.find(c => c.key === field));
+    return alert('That needs to be a number - the cell was put back.');
   }
-  if (event.target.id === 'dCancel') { dataState.editRow = null; loadRows(); return; }
-  if (event.target.id === 'dSave') {
-    const rowEl = event.target.closest('.dsRow');
-    const body = {};
-    rowEl.querySelectorAll('input[data-k]').forEach(input => { body[input.dataset.k] = input.value; });
-    const response = await fetch(`/api/rows/${rowEl.dataset.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) return alert(result.error || 'Could not save that row.');
-    dataState.editRow = null;
-    loadRows();
-    load();
-    return;
+  const oldValue = NUMERIC.has(field) ? Number(raw) : raw;
+  if (String(value) === String(oldValue)) return;
+  pushUndo({ type: 'edit', id: row.id, field, oldValue });
+  const response = await fetch(`/api/rows/${row.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) { alert(result.error || 'Could not save that cell.'); undoStack.pop(); }
+  loadRows();
+  load();
+});
+$data('#dataTable').addEventListener('keydown', event => {
+  if (event.key === 'Enter' && event.target.matches('.dsCell[contenteditable]')) { event.preventDefault(); event.target.blur(); }
+  if (event.key === 'Escape' && event.target.matches('.dsCell[contenteditable]')) {
+    event.preventDefault();
+    const row = dataState.lastRows.find(r => String(r.id) === event.target.closest('.dsRow')?.dataset.id);
+    const col = ALL_COLUMNS.find(c => c.key === event.target.dataset.field);
+    if (row && col) event.target.textContent = cellText(row, col);
+    event.target.blur();
   }
-  if (sortKey) {
+});
+
+$data('#dataTable').addEventListener('click', event => {
+  const sortCell = event.target.closest('.dsCell.sortable');
+  if (sortCell) {
+    const sortKey = sortCell.dataset.sort;
     if (dataState.sort === sortKey) dataState.dir = dataState.dir === 'asc' ? 'desc' : 'asc';
     else { dataState.sort = sortKey; dataState.dir = 'desc'; }
     dataState.page = 1;
     loadRows();
+    return;
+  }
+  const indexCell = event.target.closest('.dsIndex');
+  if (indexCell && dataState.editMode) {
+    const id = Number(indexCell.closest('.dsRow').dataset.id);
+    if (event.ctrlKey || event.metaKey) { dataState.selection.has(id) ? dataState.selection.delete(id) : dataState.selection.add(id); }
+    else { dataState.selection.clear(); dataState.selection.add(id); }
+    refreshSelection();
+  }
+});
+function refreshSelection() {
+  $data('#dataTable').querySelectorAll('.dsRow').forEach(rowEl => rowEl.classList.toggle('selected', dataState.selection.has(Number(rowEl.dataset.id))));
+  const undoBtn = $data('#undoBtn');
+  if (undoBtn) { undoBtn.disabled = !undoStack.length; undoBtn.textContent = `↶ Undo (${undoStack.length})`; }
+}
+
+let ctxMenu = null;
+$data('#dataTable').addEventListener('contextmenu', event => {
+  if (!dataState.editMode) return;
+  const rowEl = event.target.closest('.dsRow');
+  if (!rowEl) return;
+  event.preventDefault();
+  const id = Number(rowEl.dataset.id);
+  if (!dataState.selection.has(id)) { dataState.selection.clear(); dataState.selection.add(id); refreshSelection(); }
+  if (ctxMenu) ctxMenu.remove();
+  ctxMenu = document.createElement('div');
+  ctxMenu.className = 'ctxMenu';
+  ctxMenu.innerHTML = `<button type="button" id="ctxDelete">Delete ${dataState.selection.size} selected row${dataState.selection.size > 1 ? 's' : ''}</button>`;
+  document.body.appendChild(ctxMenu);
+  const x = Math.min(event.clientX, window.innerWidth - 220), y = Math.min(event.clientY, window.innerHeight - 70);
+  ctxMenu.style.left = `${x}px`; ctxMenu.style.top = `${y}px`;
+  ctxMenu.querySelector('#ctxDelete').onclick = deleteSelected;
+  setTimeout(() => document.addEventListener('pointerdown', function close(event2) {
+    if (ctxMenu && !ctxMenu.contains(event2.target)) { ctxMenu.remove(); ctxMenu = null; document.removeEventListener('pointerdown', close); }
+  }), 0);
+});
+
+async function deleteSelected() {
+  if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; }
+  const ids = [...dataState.selection];
+  if (!ids.length) return;
+  if (!confirm(`Delete ${ids.length} row${ids.length > 1 ? 's' : ''}? You can undo with the Undo button.`)) return;
+  const rows = dataState.lastRows.filter(r => ids.includes(r.id)).map(r => ({
+    _report: 0, counter: r.counter, retailer: r.retailer, category: r.category, productName: r.productName,
+    sku: r.sku, quantity: r.quantity, sales: r.sales, cost: r.cost, profit: r.profit
+  }));
+  const reports = [];
+  for (const id of ids) {
+    const response = await fetch(`/api/rows/${id}`, { method: 'DELETE' });
+    const result = await response.json().catch(() => ({}));
+    if (result.removedReport) reports.push(result.removedReport);
+  }
+  pushUndo({ type: 'delete', rows, reports });
+  dataState.selection.clear();
+  loadRows();
+  load();
+}
+
+document.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.target.matches('input, textarea, [contenteditable]')) {
+    event.preventDefault();
+    undo();
   }
 });
 
-$data('#editMode').onchange = event => { dataState.editMode = event.target.checked; dataState.editRow = null; loadRows(); };
+$data('#editMode').onchange = event => { dataState.editMode = event.target.checked; dataState.selection.clear(); loadRows(); };
 [['#dRetailer', 'retailer'], ['#dCategory', 'category']].forEach(([selector, key]) => {
   $data(selector).onchange = event => { dataState[key] = event.target.value; dataState.page = 1; loadRows(); load(); };
 });
 let searchTimer;
 $data('#dSearch').oninput = event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { dataState.q = event.target.value.trim(); dataState.page = 1; loadRows(); }, 300); };
+
+// Drag the handle under the table card to set its height; remembered between visits.
+function wireResize() {
+  const handle = $data('.resizeHandle');
+  if (!handle) return;
+  handle.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    const section = $data('.tableSection');
+    const startY = event.clientY;
+    const startHeight = section.getBoundingClientRect().height;
+    handle.setPointerCapture(event.pointerId);
+    const move = ev => {
+      const height = Math.max(280, Math.min(window.innerHeight * 0.92, startHeight + (ev.clientY - startY)));
+      section.style.height = `${height}px`;
+      try { localStorage.setItem('tableHeight', String(height)); } catch {}
+    };
+    const up = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+  });
+}
+(function restoreHeight() {
+  try {
+    const saved = Number(localStorage.getItem('tableHeight'));
+    if (Number.isFinite(saved) && saved >= 280) $data('.tableSection').style.height = `${saved}px`;
+  } catch {}
+})();
 
 wirePeriodPicker();
 populateDataFilters().then(loadRows);
