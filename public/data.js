@@ -121,9 +121,11 @@ async function loadRows() {
   if (!data) { $data('#dataTable').innerHTML = '<p class="hint">Couldn\'t load rows.</p>'; return; }
   const has = data.columns || {};
   const COLUMNS = visibleColumns(has);
-  // One shared column template drives header, rows, and footer - no filler column can appear.
-  const widths = { counter: 'minmax(200px,1.8fr)', retailer: 'minmax(110px,1fr)', category: 'minmax(110px,1fr)', period: 'minmax(110px,auto)', productName: 'minmax(140px,auto)', sku: 'minmax(90px,auto)' };
-  const template = ['44px'].concat(COLUMNS.map(c => c.num ? 'minmax(88px,auto)' : (widths[c.key] || 'minmax(90px,auto)')), dataState.editMode ? ['minmax(160px,auto)'] : []).join(' ');
+  // One shared column template drives header, rows, and footer. Every track is fr-based:
+  // each row is its own grid element, so any 'auto' track would size to that row's content
+  // and walk the gridlines - a long number must ellipsize, never move the line.
+  const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,0.9fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
+  const template = ['36px'].concat(COLUMNS.map(c => c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')), dataState.editMode ? ['minmax(0,1.1fr)'] : []).join(' ');
   const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('') + (dataState.editMode ? '<div class="dsCell"></div>' : '');
   const firstIndex = ((data.page - 1) * (data.pageSize || 50)) + 1;
   const body = data.rows.map((row, i) => row.id === dataState.editRow ? editRowHtml(row, COLUMNS, firstIndex + i) : displayRowHtml(row, COLUMNS, firstIndex + i)).join('');
