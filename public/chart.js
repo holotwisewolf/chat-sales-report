@@ -50,10 +50,9 @@ function lineChart(container, points, { format = value => value.toLocaleString()
         ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 60}ms"><line x1="${padL}" x2="${W - padR}" y1="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" y2="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" stroke="${gridColor()}" stroke-width="1"/><text x="${padL - 8}" y="${(H - padB - t / max * (H - padT - padB) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t === 0 ? '0' : format(t)}</text></g>`).join('')}
         <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="#fff" stroke="${seriesColor()}" stroke-width="2.5"/>
         <circle class="endPulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${seriesColor()}"/>
-        <text x="${px.toFixed(1)}" y="${(py - 14).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="${strongInk()}">${format(points[0].value)}</text>
+        <text x="${px.toFixed(1)}" y="${(py < 48 ? py + 24 : py - 14).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="${strongInk()}">${format(points[0].value)}</text>
         <text x="${px.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(points[0].label)}</text>
-        <text x="${(W - padR + padL) / 2}" y="${padT + 10}" text-anchor="middle" font-size="11" fill="${inkColor()}">One month so far &#8212; the line appears with two or more months</text>
-      </svg>`;
+      </svg><p class="hint chartNote">One month so far &#8212; the line appears with two or more months</p>`;
       return;
     }
     const W = container.clientWidth || 600, H = height;
@@ -79,7 +78,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       <path class="lineDraw" pathLength="1" d="${line}" fill="none" stroke="${seriesColor()}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
       ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="3.2" fill="#fff" stroke="${seriesColor()}" stroke-width="1.5"/>`).join('')}
       <circle class="endPulse" cx="${x(points.length - 1).toFixed(1)}" cy="${y(last.value).toFixed(1)}" r="4" fill="${seriesColor()}"/>
-      <text x="${x(points.length - 1).toFixed(1)}" y="${(y(last.value) - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(last.value)}</text>
+      <text x="${x(points.length - 1).toFixed(1)}" y="${(y(last.value) < 44 ? y(last.value) + 22 : y(last.value) - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(last.value)}</text>
       ${xLabels}
       <line class="crosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" opacity="0"/>
       <circle class="crossdot" r="4.5" opacity="0"/>

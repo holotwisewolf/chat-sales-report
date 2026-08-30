@@ -148,14 +148,18 @@ form,.modalWrap{padding:24px}
 .chatCard th{position:sticky;top:0;background:var(--glass-head);font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink2);border-bottom:1px solid var(--grid);text-transform:uppercase}
 .chatCard td{font-variant-numeric:tabular-nums;border-bottom:1px solid var(--grid)}
 .chatCard th:last-child,.chatCard td:last-child{border-right:0}
-.dataTable table{border-collapse:collapse;width:100%;min-width:1060px;font-size:12.8px;border:1px solid var(--grid)}
+/* border-collapse:separate is REQUIRED: Chromium renders sticky th/tfoot backgrounds
+   transparent with border-collapse:collapse, so rows visibly scroll through the header. */
+.dataTable table{border-collapse:separate;border-spacing:0;width:100%;min-width:1060px;font-size:12.8px;border:1px solid var(--grid)}
 .dataTable th,.dataTable td{padding:6px 12px;text-align:left;white-space:nowrap;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;background:#fff}
 .dataTable th:last-child,.dataTable td:last-child{border-right:0}
-.dataTable th{position:sticky;top:0;z-index:2;background:#d8dfe9;font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);text-transform:uppercase;min-width:64px}
+/* NAVY = temporary diagnostic colour the user asked for: if this header is not navy in
+   your browser, you are not being served this file at all. */
+.dataTable th{position:sticky;top:0;z-index:2;background:#1f3a5f;font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#fff;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);text-transform:uppercase;min-width:64px}
 .dataTable th.num{text-align:right}
 .dataTable th.sortable{cursor:pointer;user-select:none}
-.dataTable th.sortable:hover{background:#ccd6e3;color:var(--accent)}
-.dataTable th.on{background:#c8d3e2;color:var(--accent)}
+.dataTable th.sortable:hover{background:#2c4f7c}
+.dataTable th.on{background:#2c4f7c;color:#fff}
 .dataTable tbody tr:hover td{background:#e8f0fa}
 .dataTable td.sortedCol{background:#f2f6fc}
 .dataTable tbody tr:hover td.sortedCol{background:#e2ecf8}
@@ -256,7 +260,7 @@ button:active{filter:brightness(.88);transform:none}
 /* Month exclude state (right-click) in the period picker. */
 .ppBtn.excl{background:var(--bad-bg);color:var(--bad-tx);box-shadow:inset 0 0 0 1.5px var(--bad-tx)}
 /* Excel-style totals footer pinned to the bottom of the table. */
-.dataTable tfoot td{position:sticky;bottom:0;z-index:2;background:#d8dfe9;font-weight:750;border-top:2px solid var(--grid);border-right:1px solid var(--grid)}
+.dataTable tfoot td{position:sticky;bottom:0;z-index:2;background:#1f3a5f;color:#fff;font-weight:750;border-top:2px solid var(--grid);border-right:1px solid var(--grid)}
 .dataTable tfoot td:last-child{border-right:0}
 /* Chat pending ticker hint. */
 .chatTickHint{color:var(--muted);font-size:11.5px;font-weight:400}
@@ -307,3 +311,4 @@ main{padding-bottom:110px}
 /* Charts scale to their pane (viewBox); keep them block-level and proportional. */
 .trend svg,.carouselPane svg,.catLine{display:block}
 .trend svg,.carouselPane svg{width:100%;height:auto}
+.chartNote{margin:8px 2px 0;text-align:center}
