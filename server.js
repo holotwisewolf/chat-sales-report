@@ -149,8 +149,8 @@ app.post('/api/import/manual', (req, res) => {
   res.json({ imported: count });
 });
 
-require('./lib/importjobs')(app, db, { counterId, categoryId });
-require('./lib/chat')(app, db);
+require('./lib/importjobs')(app, db, { counterId, categoryId, pruneOrphans });
+require('./lib/chat')(app, db, { pruneOrphans });
 require('./lib/data')(app, db, { counterId, categoryId, pruneOrphans });
 
 // Local-only branding: the published repo ships a generic label; BUSINESS_NAME in .env personalizes it.
