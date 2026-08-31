@@ -7,6 +7,24 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+where git >nul 2>nul
+if not errorlevel 1 (
+  if exist ".git" (
+    echo Checking for updates...
+    git fetch origin main --quiet --timeout=5 >nul 2>nul
+    for /f "tokens=*" %%i in ('git rev-parse HEAD 2^>nul') do set CURRENT_REV=%%i
+    for /f "tokens=*" %%i in ('git rev-parse origin/main 2^>nul') do set REMOTE_REV=%%i
+    if defined CURRENT_REV if defined REMOTE_REV (
+      if not "%CURRENT_REV%"=="%REMOTE_REV%" (
+        echo New update found! Updating...
+        git pull --ff-only origin main
+        echo Update finished.
+        if exist package.json call npm install --quiet
+      )
+    )
+  )
+)
+
 if not exist node_modules (
   echo First run - installing. This takes a few minutes, once only.
   call npm install

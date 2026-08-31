@@ -67,25 +67,18 @@ function categoryId(name) {
   return db.prepare('INSERT INTO categories (name) VALUES (?)').run(cleanName).lastInsertRowid;
 }
 
-function seed() {
-  if (db.prepare('SELECT COUNT(*) count FROM reports').get().count) return;
-  const rows = [
-    ['Mydin Sejati Ujana Hypermarket',157,7376.77],['Mydin Subang Jaya Hypermarket',97,5226.03],['Mydin Tunjong Hypermarket',88,4964.12],['Mydin Melaka Hypermarket',80,4145.21],['Mydin Ruru Raya Hypermarket',79,4069.01],['Mydin Bertam Hypermarket',64,3244.36],['Mydin Seremban 2 Hypermarket',60,3243.41],['Mydin Jasin Hypermarket',47,2404.55],['Mydin Kuala Terengganu Hypermarket',48,2337.52],['Mydin Taman Saga Hypermarket',44,2321.56],['Mydin Cantar Emporium',44,2241.58],['Mydin Sinar Kota Emporium',36,2192.71],['Mydin Sawangan Hypermarket',38,2006.66],['Mydin Bukit Mertajam Hypermarket',31,1699.69],['Mydin Semenyih Hypermarket',28,1470.72],['Mydin Shah Alam',30,1444.77],['Mydin Wholesale Teman Gopeng',16,831.84],['Mydin Mutiara Rini Hypermarket',14,827.87],['Mydin Mart Sri Muda',14,662.86],['Mydin Wholesale Emporium Penang',11,489.89],['Mydin Jalan Sebang Hypermarket',9,472.95],['Mydin Gong Badak Hypermarket',7,338.93]
-  ];
-  const hero = [['MY HERO HYPERMARKET SDN BHD (PUCHONG BT14)',84,2762.78],['MY HERO HYPERMARKET SDN BHD (PUTRAJAYA)',65,2140.13],['MY HERO HYPERMARKET SDN BHD (BANDAR PUTERI PUCHONG)',53,2124.61],['MY HERO HYPERMARKET SDN BHD (SUNGAI MAS PLAZA)',27,989.39],['MY HERO HYPERMARKET SDN BHD (ANGSANA JOHOR BAHRU)',22,852.98],['MY HERO HYPERMARKET SDN BHD (H031 SELAYANG)',23,651.88],['MY HERO HYPERMARKET SDN BHD (KIMPAL BANGUN)',9,449.65],['MY HERO HYPERMARKET SDN BHD (KOTA KEMUNING)',16,373.49],['MY HERO HYPERMARKET SDN BHD (JELUTONG SHAH ALAM)',15,350.50],['MY HERO HYPERMARKET SDN BHD (WANGSA MAJU)',10,272.10]];
-  const insertReport = db.prepare('INSERT INTO reports (retailer, period_start, period_end, source_filename, source_type) VALUES (?, ?, ?, ?, ?)');
-  const insertLine = db.prepare('INSERT INTO sales_lines (report_id,counter_id,product_category,quantity,sales) VALUES (?, ?, ?, ?, ?)');
-  for (const [retailer, list, filename] of [['Mydin', rows, 'mydin sales report.jpg'], ['Hero Market', hero, 'hero market sales report.jpg']]) {
-    const reportId = insertReport.run(retailer, '2026-08-01', '2026-08-17', filename, 'image-review').lastInsertRowid;
-    for (const [name, quantity, sales] of list) insertLine.run(reportId, counterId(name, retailer), 'School Shoes', quantity, sales);
-  }
-}
-seed();
-
 app.use(express.json());
-// The HTML document must never be cached (it carries the asset version numbers);
-// the versioned JS/CSS behind it can cache forever.
-app.use((req, res, next) => { if (req.path === '/' || req.path === '/index.html') res.set('Cache-Control', 'no-store'); next(); });
+// Prevent stale caching:
+// - HTML document and API routes must never be cached so dynamic data and updates appear immediately.
+// - Static assets (JS/CSS) have ?v= query strings and can cache.
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path === '/index.html' || req.path.startsWith('/api/')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 // '08,09' -> validated ['08','09']; invalid tokens dropped.
