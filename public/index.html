@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sales Dashboard</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"><link rel="stylesheet" href="/styles.css?v=14"></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sales Dashboard</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"><link rel="stylesheet" href="/styles.css?v=15"></head><body>
 <header><div><p class="eyebrow" id="brandEyebrow">SALES REPORTS</p><h1>Sales dashboard</h1></div><div class="headerActions"><button id="printBtn">Print report</button></div></header>
 <main><section class="toolbar"><div class="searchWrap"><input id="dSearch" placeholder="Search counter, retailer, SKU, product&hellip;" autocomplete="off"><div id="searchMenu" class="searchMenu" hidden></div></div><select id="dRetailer"><option value="">All retailers</option></select><select id="dCategory"><option value="">All categories</option></select><div class="periodPicker"><button type="button" class="secondary" id="periodBtn">All time &darr;</button><div id="periodPop" class="periodPop" hidden><p class="ppLabel">Year</p><div class="ppRow" id="ppYears"></div><p class="ppLabel">Month &mdash; left-click to pick months, right-click to exclude one</p><div class="ppRow" id="ppMonths"></div><p class="ppLabel">Custom range</p><div class="ppCustom"><input type="date" id="ppFrom" aria-label="From date"><span>to</span><input type="date" id="ppTo" aria-label="To date"></div><div class="ppFoot"><button type="button" class="linkish" id="ppReset">Reset</button></div></div></div><label class="modeToggle"><input type="checkbox" id="editMode"> Edit mode</label><div class="exportDropdown"><button type="button" class="secondary" id="exportMenuBtn">Export &darr;</button><div id="exportMenu" class="exportMenu" hidden><button type="button" id="exportCsv">Export CSV (.csv)</button><button type="button" id="exportXls">Export Excel (.xls)</button><button type="button" id="exportPrintBtn">Print Report / PDF</button></div></div></section>
 <p class="hint tableHint">Read-only by default &mdash; tick Edit mode to fix a row. New counter or category names you type are created automatically.</p>
@@ -13,28 +13,38 @@
 <dialog id="reviewDialog"><div class="modalWrap reviewOuter"><div class="modalTop"><div><p class="eyebrow">CHECK THE LABELS &amp; NUMBERS</p><h2 id="reviewTitle">Review</h2></div><button type="button" class="modalClose" id="closeReview" aria-label="Close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>
 <div class="stepper" id="reviewStepper">
   <div class="stepIndicatorRow">
-    <div class="stepIndicatorContainer"><button type="button" class="stepIndicator active" data-step="1">1</button><span class="stepLabel">Summary &amp; Meta</span></div>
+    <div class="stepIndicatorContainer"><button type="button" class="stepIndicator active" data-step="1">1</button><span class="stepLabel">Summary</span></div>
     <div class="stepConnector" id="revConn1"></div>
-    <div class="stepIndicatorContainer"><button type="button" class="stepIndicator" data-step="2">2</button><span class="stepLabel">Warnings &amp; Image</span></div>
+    <div class="stepIndicatorContainer"><button type="button" class="stepIndicator" data-step="2">2</button><span class="stepLabel">Issues</span></div>
     <div class="stepConnector" id="revConn2"></div>
-    <div class="stepIndicatorContainer"><button type="button" class="stepIndicator" data-step="3">3</button><span class="stepLabel">Edit &amp; Import</span></div>
+    <div class="stepIndicatorContainer"><button type="button" class="stepIndicator" data-step="3">3</button><span class="stepLabel">Edit</span></div>
   </div>
   <div class="stepContentWrapper">
-    <!-- Step 1: Summary & General Labels -->
+    <!-- Step 1: Summary, Labels & Document View -->
     <div class="stepPanel active" id="revStep1">
       <p class="hint">The reader extracted these details from your uploaded documents. Check that the retailer and period match.</p>
-      <div class="fields"><label>Retailer &mdash; all pages<input id="reviewRetailer" placeholder="from the pages"></label><label>Category &mdash; all pages<input id="reviewCategory" list="categoryList" placeholder="from the pages"></label><label>Start date &mdash; all pages<input type="date" id="reviewStart"></label><label>End date &mdash; all pages<input type="date" id="reviewEnd"></label></div>
+      <div class="fields">
+        <label>Retailer<input id="reviewRetailer" placeholder="from the pages"></label>
+        <label>Category<input id="reviewCategory" list="categoryList" placeholder="from the pages"></label>
+        <label>Start date<input type="date" id="reviewStart"></label>
+        <label>End date<input type="date" id="reviewEnd"></label>
+      </div>
       <datalist id="categoryList"><option value="School Shoes"></option><option value="Other Shoes"></option><option value="Shoes"></option></datalist>
-    </div>
-    <!-- Step 2: Warnings, Overlap, & Original Document View -->
-    <div class="stepPanel" id="revStep2">
-      <div id="overlapNote" class="banner" hidden></div>
-      <div id="reconBanner" class="banner"></div>
-      <div class="sourceView" style="margin-top:12px">
+      <div class="sourceView" style="margin-top:14px">
         <p class="hint">Original file preview &mdash; click tabs to toggle pages</p>
         <div id="fileTabs" class="fileTabs"></div>
         <div class="sourceFrame"><img id="sourceImg" alt="Original report page" hidden><iframe id="sourcePdf" title="Original report page" hidden></iframe></div>
         <div id="fileErrors"></div>
+      </div>
+    </div>
+    <!-- Step 2: Issues, Warnings, Overlap & Reconciliation Check -->
+    <div class="stepPanel" id="revStep2">
+      <div id="noIssuesBanner" class="banner ok" hidden>✓ No issues found! Totals and dates match the original report.</div>
+      <div id="overlapNote" class="banner" hidden></div>
+      <div id="reconBanner" class="banner"></div>
+      <div id="issueOverrideContainer" style="margin-top:16px">
+        <label class="override" id="overrideWrap"><input type="checkbox" id="overrideTotals"> I&rsquo;ve checked these numbers against the original &mdash; import anyway</label>
+        <p class="hint" id="overrideHint" style="margin-top:4px">If there are discrepancies or overlaps, check this box to confirm you manually reviewed the original document.</p>
       </div>
     </div>
     <!-- Step 3: Spacious Table Edit & Confirm -->
@@ -42,14 +52,17 @@
       <p class="hint">Review each sales row below. Fix anything wrong &mdash; especially rows marked &ldquo;Needs review&rdquo;.</p>
       <div id="rowGrid" class="rowGrid"></div>
       <button type="button" class="secondary" id="addRowBtn" style="margin-top:10px">+ Add a row</button>
-      <label class="override" id="overrideWrap" hidden><input type="checkbox" id="overrideTotals"> I&rsquo;ve checked these numbers against the original &mdash; import anyway</label>
     </div>
   </div>
   <!-- Bottom Footer with Note for Reader & Step Nav -->
-  <label class="noteLabel" style="margin-top:12px">Note for the reader (used when re-reading)<textarea id="reviewNote" rows="1" placeholder="e.g. The year is 2027"></textarea></label>
+  <label class="noteLabel" style="margin-top:10px">Note for the reader (used when re-reading)<textarea id="reviewNote" rows="1" placeholder="e.g. The year is 2027"></textarea></label>
   <div class="stepFooterNav">
-    <div class="leftActions"><button type="button" class="secondary" id="revBackBtn" disabled>&larr; Back</button><button type="button" class="secondary" id="saveDraft">Save as draft</button></div>
-    <div class="rightActions"><button type="button" id="revNextBtn">Next &rarr;</button><button type="button" id="confirmImport" style="display:none" disabled>Confirm import</button></div>
+    <div class="leftActions"><button type="button" class="secondary" id="revBackBtn" disabled>&larr; Back</button></div>
+    <div class="rightActions">
+      <button type="button" class="secondary" id="saveDraft">Save as draft</button>
+      <button type="button" id="revNextBtn">Next &rarr;</button>
+      <button type="button" id="confirmImport" style="display:none" disabled>Confirm</button>
+    </div>
   </div>
 </div></div></dialog>
 <dialog id="printDialog"><div class="modalWrap printModalWrap"><div class="modalTop"><div><p class="eyebrow">CUSTOMIZE PRINT &amp; PDF</p><h2>Print Report</h2></div><button type="button" class="modalClose" id="closePrint" aria-label="Close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>

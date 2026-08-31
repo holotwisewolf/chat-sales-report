@@ -250,6 +250,39 @@ const revBackBtn = $import('#revBackBtn');
 const revNextBtn = $import('#revNextBtn');
 const confirmImportBtn = $import('#confirmImport');
 
+function updateIssuesStepState() {
+  const reconWarn = $import('#reconBanner')?.classList.contains('warn');
+  const overlapWarn = $import('#overlapNote') && !$import('#overlapNote').hidden && $import('#overlapNote').textContent.trim().length > 0;
+  const dupWarn = !!state.job?.duplicateOf;
+  const hasIssues = reconWarn || overlapWarn || dupWarn;
+
+  const noIssuesBanner = $import('#noIssuesBanner');
+  const overrideTotals = $import('#overrideTotals');
+  const overrideWrap = $import('#overrideWrap');
+
+  if (hasIssues) {
+    if (noIssuesBanner) noIssuesBanner.hidden = true;
+    if (overrideWrap) {
+      overrideWrap.classList.remove('disabledOverride');
+      overrideTotals.disabled = false;
+    }
+    // Next button in step 2 requires checkbox to be checked
+    if (reviewCurrentStep === 2) {
+      revNextBtn.disabled = !overrideTotals.checked;
+    }
+  } else {
+    if (noIssuesBanner) noIssuesBanner.hidden = false;
+    if (overrideWrap) {
+      overrideWrap.classList.add('disabledOverride');
+      overrideTotals.checked = true;
+      overrideTotals.disabled = true;
+    }
+    if (reviewCurrentStep === 2) {
+      revNextBtn.disabled = false;
+    }
+  }
+}
+
 function setReviewStep(step) {
   reviewCurrentStep = step;
   revSteps.forEach((panel, i) => {
@@ -271,15 +304,30 @@ function setReviewStep(step) {
       conn.classList.toggle('active', i + 1 === step - 1);
     }
   });
+
   if (revBackBtn) revBackBtn.disabled = step === 1;
-  if (step === 3) {
+
+  if (step === 2) {
+    updateIssuesStepState();
+  } else if (step === 3) {
     if (revNextBtn) revNextBtn.style.display = 'none';
     if (confirmImportBtn) confirmImportBtn.style.display = 'inline-block';
+    updateConfirmState();
   } else {
-    if (revNextBtn) revNextBtn.style.display = 'inline-block';
+    if (revNextBtn) {
+      revNextBtn.style.display = 'inline-block';
+      revNextBtn.disabled = false;
+    }
     if (confirmImportBtn) confirmImportBtn.style.display = 'none';
   }
 }
+
+$import('#overrideTotals').addEventListener('change', () => {
+  if (reviewCurrentStep === 2) {
+    updateIssuesStepState();
+  }
+  updateConfirmState();
+});
 
 revIndicators.forEach(ind => {
   ind.onclick = () => setReviewStep(Number(ind.dataset.step));
@@ -438,8 +486,8 @@ function updateConfirmState() {
   const mismatch = $import('#reconBanner').className.includes('warn');
   const ok = !(mismatch && !$import('#overrideTotals').checked) && !invalidCount() && state.rows.length;
   $import('#confirmImport').disabled = !ok;
-  if (invalidCount()) $import('#confirmImport').textContent = `Confirm import (${invalidCount()} row${invalidCount() > 1 ? 's' : ''} to fix)`;
-  else $import('#confirmImport').textContent = 'Confirm import';
+  if (invalidCount()) $import('#confirmImport').textContent = `Confirm (${invalidCount()} row${invalidCount() > 1 ? 's' : ''} to fix)`;
+  else $import('#confirmImport').textContent = 'Confirm';
 }
 $import('#overrideTotals').onchange = updateConfirmState;
 

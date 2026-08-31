@@ -104,6 +104,7 @@ async function populateDataFilters() {
   fill('#dRetailer', options.retailers, 'All retailers');
   fill('#dCategory', options.categories, 'All categories');
   allAvailableCounters = options.counters || [];
+  allAvailableRetailers = options.retailers || [];
   dataState.years = [...new Set((options.months || []).map(m => m.slice(0, 4)))].sort().reverse().map(Number);
   $data('#dRetailer').value = dataState.retailer; $data('#dCategory').value = dataState.category;
   renderPeriodPicker();
@@ -164,7 +165,7 @@ const ALL_COLUMNS = [
   { key: 'sales', label: 'Sales (RM)', sort: 'sales', num: true },
   { key: 'cost', label: 'Cost', num: true, optional: 'cost' },
   { key: 'profit', label: 'Profit', num: true, optional: 'profit' },
-  { key: 'period', label: 'Period', sort: 'period', cls: 'mutedcol' }
+  { key: 'period', label: 'Period', sort: 'period' }
 ];
 const visibleColumns = has => ALL_COLUMNS.filter(c => !c.optional || has[c.optional]);
 
@@ -452,8 +453,10 @@ if (closePrint) closePrint.onclick = () => printDialog?.close();
 if (cancelPrint) cancelPrint.onclick = () => printDialog?.close();
 
 // ---- Custom Animated Search Dropdown Autocomplete ----
-// Limit to 10 suggestions. If blank: recent searches (from localStorage) + alphabetical counters.
+// Limit to 10 suggestions. If blank: recent searches (from localStorage) + alphabetical retailers/counters.
+// When querying: shortest match first (e.g. "mydin" shows retailer "Mydin" first).
 let allAvailableCounters = [];
+let allAvailableRetailers = [];
 const searchMenu = $data('#searchMenu');
 const searchInput = $data('#dSearch');
 
@@ -482,44 +485,65 @@ function renderSearchSuggestions(query = '') {
     if (recents.length) {
       html += `<div class="searchSectionHead">Recent Searches</div>`;
       html += recents.map(term => `
-        <button type="button" class="searchItem" data-val="${escapeHtml(term)}">
+        <button type="button" class="searchItem" data-val="${escapeHtml(term)}" data-type="recent">
           <span>${escapeHtml(term)}</span>
           <small>Recent</small>
         </button>
       `).join('');
     }
     const remainingSlots = Math.max(0, 10 - recents.length);
-    if (remainingSlots > 0 && allAvailableCounters.length) {
-      const alphaCounters = allAvailableCounters.filter(c => !recents.some(r => r.toLowerCase() === c.toLowerCase())).slice(0, remainingSlots);
-      if (alphaCounters.length) {
-        html += `<div class="searchSectionHead">Counters</div>`;
-        html += alphaCounters.map(c => `
-          <button type="button" class="searchItem" data-val="${escapeHtml(c)}">
-            <span>${escapeHtml(c)}</span>
-            <small>Counter</small>
+    if (remainingSlots > 0) {
+      const recentsLower = new Set(recents.map(r => r.toLowerCase()));
+      const availableRetailers = (allAvailableRetailers || []).filter(r => !recentsLower.has(r.toLowerCase()));
+      const availableCounters = (allAvailableCounters || []).filter(c => !recentsLower.has(c.toLowerCase()));
+      const combined = [
+        ...availableRetailers.map(r => ({ name: r, type: 'Retailer' })),
+        ...availableCounters.map(c => ({ name: c, type: 'Counter' }))
+      ].slice(0, remainingSlots);
+
+      if (combined.length) {
+        html += `<div class="searchSectionHead">Quick Suggestions</div>`;
+        html += combined.map(item => `
+          <button type="button" class="searchItem" data-val="${escapeHtml(item.name)}" data-type="${item.type.toLowerCase()}">
+            <span>${escapeHtml(item.name)}</span>
+            <small>${item.type}</small>
           </button>
         `).join('');
       }
     }
   } else {
-    // Matching counters first, capped at 10 items
-    const matches = allAvailableCounters.filter(c => c.toLowerCase().includes(q)).slice(0, 10);
+    // Search across retailers and counters. Shortest length first!
+    const retailerMatches = (allAvailableRetailers || [])
+      .filter(r => r.toLowerCase().includes(q))
+      .map(r => ({ name: r, type: 'Retailer' }));
+    const counterMatches = (allAvailableCounters || [])
+      .filter(c => c.toLowerCase().includes(q))
+      .map(c => ({ name: c, type: 'Counter' }));
+
+    const combined = [...retailerMatches, ...counterMatches];
+    // Shortest match first, then alphabetical
+    combined.sort((a, b) => {
+      if (a.name.length !== b.name.length) return a.name.length - b.name.length;
+      return a.name.localeCompare(b.name);
+    });
+    const matches = combined.slice(0, 10);
+
     if (matches.length) {
-      html += `<div class="searchSectionHead">Matching Counters (${matches.length})</div>`;
-      html += matches.map(c => {
-        const idx = c.toLowerCase().indexOf(q);
+      html += `<div class="searchSectionHead">Suggestions (${matches.length})</div>`;
+      html += matches.map(item => {
+        const idx = item.name.toLowerCase().indexOf(q);
         const highlighted = idx >= 0
-          ? `${escapeHtml(c.slice(0, idx))}<mark>${escapeHtml(c.slice(idx, idx + q.length))}</mark>${escapeHtml(c.slice(idx + q.length))}`
-          : escapeHtml(c);
+          ? `${escapeHtml(item.name.slice(0, idx))}<mark>${escapeHtml(item.name.slice(idx, idx + q.length))}</mark>${escapeHtml(item.name.slice(idx + q.length))}`
+          : escapeHtml(item.name);
         return `
-          <button type="button" class="searchItem" data-val="${escapeHtml(c)}">
+          <button type="button" class="searchItem" data-val="${escapeHtml(item.name)}" data-type="${item.type.toLowerCase()}">
             <span>${highlighted}</span>
-            <small>Counter</small>
+            <small>${item.type}</small>
           </button>
         `;
       }).join('');
     } else {
-      html = `<div class="searchEmpty">No counters match &ldquo;${escapeHtml(query)}&rdquo;. Press Enter to search anyway.</div>`;
+      html = `<div class="searchEmpty">No matches for &ldquo;${escapeHtml(query)}&rdquo;. Press Enter to search anyway.</div>`;
     }
   }
   searchMenu.innerHTML = html;
