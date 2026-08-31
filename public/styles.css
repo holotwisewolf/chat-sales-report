@@ -70,10 +70,10 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .trend{color:var(--ink2)}
 .singlePoint{padding:22px 4px}.singlePoint small{color:var(--ink2);font-weight:600}.singlePoint strong{display:block;font-size:28px;margin:6px 0 4px;font-variant-numeric:tabular-nums}
 .chartTip b{font-size:11px;color:var(--ink2)}
-.barRow{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub';align-items:center;gap:4px 10px;padding:10px 2px;border-top:1px solid var(--hair)}
+.barRow{display:grid;grid-template-columns:minmax(100px,160px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub';align-items:center;gap:4px 10px;padding:10px 2px;border-top:1px solid var(--hair)}
 .barRow:first-child{border-top:0}
-.barRow.indexed{grid-template-columns:auto minmax(80px,140px) 1fr auto;grid-template-areas:'idx label track value' 'idx sub sub sub'}
-.barIndex{grid-area:idx;display:inline-block;min-width:18px;color:var(--ink2);font-size:12px;font-weight:600;text-align:center}
+.barRow.indexed{grid-template-columns:minmax(100px,160px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub'}
+.barIndexInline{font-size:12px;font-weight:700;color:var(--accent);margin-right:2px}
 .barLabel{grid-area:label;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .barTrack{grid-area:track;height:9px;background:rgba(21,42,80,.07);border-radius:5px;overflow:hidden}
 .barTrack i{display:block;height:100%;background:var(--chart-series);border-radius:0 5px 5px 0;transition:width .5s cubic-bezier(.2,.8,.2,1)}
@@ -91,10 +91,11 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .alert strong,.alertCard strong{display:block;font-size:13px}
 .alert.low strong,.alertCard.low strong{color:var(--bad-tx)}.alert.high strong,.alertCard.high strong{color:var(--ok-tx)}
 
-/* Discuss with AI cursor context popup */
-.discussContextMenu{position:fixed;z-index:1100;background:rgba(255,255,255,.98);border:1px solid var(--hair2);border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.18);padding:5px;animation:menuDrop .15s cubic-bezier(.16, 1, .3, 1) forwards;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
-.discussAiBtn{display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:650;cursor:pointer;white-space:nowrap;min-height:36px;transition:transform .12s ease,filter .12s ease}
-.discussAiBtn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+/* Discuss with AI cursor context popup (Speech Bubble Button) */
+.discussContextMenu{position:fixed;z-index:1100;background:transparent;border:0;box-shadow:none;padding:0;animation:menuDrop .18s cubic-bezier(.16, 1, .3, 1) forwards}
+.discussAiBtn,.discussSpeechBubbleBtn{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:0;border-radius:16px 16px 4px 16px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:38px;box-shadow:0 8px 24px rgba(11,87,199,.35);transition:transform .14s ease,filter .14s ease}
+.discussAiBtn:hover,.discussSpeechBubbleBtn:hover{filter:brightness(1.1);transform:translateY(-2px) scale(1.03)}
+.discussAiBtn::after,.discussSpeechBubbleBtn::after{content:'';position:absolute;bottom:-7px;right:14px;width:0;height:0;border-left:8px solid transparent;border-right:2px solid transparent;border-top:9px solid var(--accent)}
 
 dialog{border:1px solid rgba(122,141,172,.35);border-radius:24px;box-shadow:0 24px 60px rgba(15,23,42,.22), 0 0 0 1px rgba(255,255,255,.4) inset;width:min(760px,94vw);background:#f4f6fa;-webkit-backdrop-filter:blur(30px) saturate(1.7);backdrop-filter:blur(30px) saturate(1.7);color:var(--ink);overflow:hidden;padding:0}
 dialog::backdrop{background:rgba(15,23,42,.45);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
@@ -141,7 +142,7 @@ form,.modalWrap{padding:24px}
 .saleRow{display:grid;grid-template-columns:1fr 110px 150px;gap:8px;margin:8px 0}
 .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
 
-.drop{border:1.5px dashed var(--hair2);border-radius:16px;padding:34px 18px;text-align:center;color:var(--ink2);font-weight:600;cursor:pointer;background:rgba(255,255,255,.4);transition:border-color .15s,color .15s}
+.drop{border:1.5px dashed var(--hair2);border-radius:16px;padding:46px 24px;min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--ink2);font-weight:600;cursor:pointer;background:rgba(255,255,255,.4);transition:border-color .15s,color .15s}
 .drop.drag,.drop:hover{border-color:var(--accent-bright);color:var(--accent)}
 .drop input{display:none}
 .stagedFile{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--hair);padding:10px 0;font-size:13px}
@@ -150,8 +151,10 @@ form,.modalWrap{padding:24px}
 .spinner{width:16px;height:16px;border:2.5px solid var(--hair2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 #draftsWrap{margin-top:20px}
-.draftRow{display:flex;align-items:center;gap:12px;border-top:1px solid var(--hair);padding:11px 0;font-size:13px}
-.draftRow div{flex:1}.draftRow button{min-height:36px;padding:6px 14px}
+.draftRow{display:flex;align-items:center;justify-content:space-between;width:100%;border-top:1px solid var(--hair);padding:11px 0;font-size:13px}
+.draftRow div{flex:1}
+.draftRow button{min-height:36px;padding:6px 14px}
+.draftActions{margin-left:auto;display:flex;align-items:center;gap:8px}
 .chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
 .chip.warn{background:var(--warn-bg);color:var(--warn-tx)}.chip.bad{background:var(--bad-bg);color:var(--bad-tx)}
 .noteLabel{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin:14px 0 4px}
@@ -205,28 +208,38 @@ form,.modalWrap{padding:24px}
 .chatAnswer{margin:0 0 8px;font-size:14.5px}
 .chatPending{display:flex;align-items:center;gap:10px;color:var(--ink2);font-size:14px}
 .chatError{color:var(--bad-tx);font-size:14px;font-weight:600}
-.chatChips{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:10px 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chatChips{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:8px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .chatChips::-webkit-scrollbar{display:none}
-.chatChips button{flex-shrink:0;white-space:nowrap;padding:8px 14px;font-size:12.5px;min-height:36px;border-radius:20px}
+.chatChips button{flex-shrink:0;white-space:nowrap;padding:6px 12px;font-size:11.5px;min-height:32px;border-radius:20px}
 .chatForm{display:flex;gap:8px;align-items:center}
 .chatInputWrap{position:relative;flex:1;display:flex;align-items:center}
 .chatInputWrap input{width:100%;padding-right:36px}
-.clearPromptBtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;border:0;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;line-height:1;transition:all .15s ease;padding:0;min-height:0}
+.clearPromptBtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;border:0;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;line-height:1;transition:all .15s ease;padding:0;margin:0;min-height:0}
 .clearPromptBtn:hover{background:rgba(239,68,68,.15);color:#ef4444;transform:translateY(-50%) scale(1.1)}
 .chatSettingsBtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;border-radius:12px;border:1px solid var(--hair2);background:rgba(240,244,249,.85);color:var(--ink2);cursor:pointer;transition:all .2s ease;padding:0;flex-shrink:0}
 .chatSettingsBtn:hover{border-color:var(--accent);color:var(--accent);background:#fff}
 .chatSettingsBtn:hover .gearSvg{transform:rotate(90deg);transition:transform .4s cubic-bezier(.16, 1, .3, 1)}
 
-/* GooeyNav Recent Conversations Overlay */
+/* GooeyNav Recent Conversations & Settings Overlay */
 .gooeyOverlay{position:absolute;inset:0;z-index:100;background:rgba(15,23,42,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;border-radius:24px;animation:fadeIn .2s ease forwards}
 .gooeyParticlesContainer{position:absolute;inset:0;pointer-events:none;overflow:hidden;filter:url('#gooeyFilter')}
-.gooeyParticle{position:absolute;width:24px;height:24px;border-radius:50%;background:var(--accent);opacity:0;animation:gooeyBubble .6s cubic-bezier(.16, 1, .3, 1) forwards}
-@keyframes gooeyBubble{0%{transform:scale(0) translate(0,0);opacity:1}50%{opacity:.8}100%{transform:scale(1.8) translate(var(--dx),var(--dy));opacity:0}}
-.gooeyContentCard{width:min(480px,94%);max-height:80vh;background:#fff;border:1px solid var(--hair2);border-radius:20px;box-shadow:0 20px 50px rgba(15,23,42,.22);padding:20px;display:flex;flex-direction:column;z-index:10;animation:popIn .25s cubic-bezier(.16, 1, .3, 1) forwards}
-.gooeyHeader{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--hair2);margin-bottom:12px}
-.gooeyHeader h3{margin:0;font-size:16px;font-weight:750}
-.recentChatsList{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:360px}
-.recentChatItem{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:12px;border:1px solid var(--hair2);background:rgba(240,244,249,.5);cursor:pointer;transition:all .15s ease}
+.gooeyParticle{position:absolute;width:28px;height:28px;border-radius:50%;background:#ffffff;box-shadow:0 2px 8px rgba(0,0,0,.08);opacity:0;animation:gooeyBubbleIn .65s cubic-bezier(.16, 1, .3, 1) forwards}
+@keyframes gooeyBubbleIn{0%{transform:translate(var(--dx),var(--dy)) scale(1.6);opacity:.9}60%{opacity:.8}100%{transform:translate(0,0) scale(0.2);opacity:0}}
+.settingsOverlayCard{width:min(680px,94%);max-height:84vh;background:#fff;border:1px solid var(--hair2);border-radius:22px;box-shadow:0 24px 60px rgba(15,23,42,.25);padding:22px;display:flex;flex-direction:column;gap:16px;z-index:10;animation:popIn .28s cubic-bezier(.16, 1, .3, 1) forwards}
+.gooeyHeader{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--hair2)}
+.gooeyHeader h3{margin:0;font-size:17px;font-weight:750}
+
+.settingsPanel{background:var(--accent-soft);border:1px solid rgba(42,120,214,.2);border-radius:14px;padding:14px 16px}
+.settingsInfoRow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.settingsLabel{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--accent);text-transform:uppercase}
+.settingsVal{display:block;font-size:14px;font-weight:700;color:var(--ink);margin-top:2px}
+.settingsActions{display:flex;align-items:center;gap:8px}
+.settingsActions button{min-height:36px;padding:6px 14px;font-size:12.5px}
+
+.recentSection{display:flex;flex-direction:column;flex:1;min-height:0;margin-top:4px}
+.recentSectionTitle{font-size:13px;font-weight:700;color:var(--ink2);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.recentChatsList{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:320px}
+.recentChatItem{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-radius:12px;border:1px solid var(--hair2);background:rgba(240,244,249,.5);cursor:pointer;transition:all .15s ease}
 .recentChatItem:hover{background:var(--accent-soft);border-color:var(--accent)}
 .recentChatItem.active{border-color:var(--accent);background:var(--accent-soft)}
 .recentChatItem.archived{opacity:.7}
@@ -247,15 +260,15 @@ form,.modalWrap{padding:24px}
    lives physically between header and footer, and no filler column can appear. */
 /* Header/footer widths are pinned to the body's content width in JS after each render -
    CSS alone cannot keep separate scroll/no-scroll boxes pixel-aligned. */
-.dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9;overflow:hidden}
-.dsHead .dsCell{font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;text-transform:uppercase;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);padding:10px 14px;white-space:nowrap}
+.dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9;overflow:hidden;box-sizing:border-box}
+.dsHead .dsCell{font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;text-transform:uppercase;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);padding:10px 14px;white-space:nowrap;box-sizing:border-box}
 .dsHead .dsCell.sortable{cursor:pointer;user-select:none}
 .dsHead .dsCell.sortable:hover{background:#ccd6e3;color:var(--accent)}
 .dsHead .dsCell.on{background:#c8d3e2;color:var(--accent)}
-.dsBody{flex:1;min-height:0;overflow:auto;background:#fff}
-.dsRow{display:grid;grid-template-columns:var(--cols);border-bottom:1px solid var(--grid)}
+.dsBody{flex:1;min-height:0;overflow:auto;background:#fff;box-sizing:border-box}
+.dsRow{display:grid;grid-template-columns:var(--cols);border-bottom:1px solid var(--grid);box-sizing:border-box}
 .dsRow:hover .dsCell{background:#e8f0fa}
-.dsCell{padding:10px 14px;border-right:1px solid var(--grid);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dsCell{padding:10px 14px;border-right:1px solid var(--grid);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
 .dsCell:last-child{border-right:0}
 .dsCell.num{text-align:right}
 .dsCell.counterName{font-weight:600}
@@ -263,7 +276,7 @@ form,.modalWrap{padding:24px}
 .dsCell.mutedcol{color:var(--ink);font-size:inherit}
 .dsCell.sortedCol{background:#f2f6fc}
 .dsRow:hover .dsCell.sortedCol{background:#e2ecf8}
-.dsFoot .dsCell{font-weight:750;border-top:2px solid var(--grid);border-bottom:1px solid var(--grid);color:#10151f}
+.dsFoot .dsCell{font-weight:750;border-top:2px solid var(--grid);border-bottom:1px solid var(--grid);color:#10151f;box-sizing:border-box}
 .dsRow.editing .dsCell{background:var(--warn-bg)!important;padding:3px 8px}
 .dsRow.editing input{width:100%;min-width:70px;padding:6px 9px;border:1px solid var(--hair2);border-radius:7px;font:inherit;font-size:13px;margin:0;min-height:36px;background:#fff}
 .rowActions{white-space:nowrap;text-align:right}
@@ -872,12 +885,12 @@ main{padding-bottom:110px}
 .yearSelector{color:var(--accent);cursor:pointer;padding:2px 8px;border-radius:6px;background:var(--accent-soft);transition:all .15s ease;user-select:none;font-weight:800}
 .yearSelector:hover{background:rgba(42,120,214,.2);filter:brightness(1.15)}
 
-.yearWheelPopup{position:absolute;top:calc(100% + 6px);left:120px;z-index:100;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.15);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35);padding:10px;width:160px;height:180px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:popIn .2s cubic-bezier(.16, 1, .3, 1) forwards}
-.option-wheel{position:relative;width:100%;height:100%;overflow:hidden;cursor:grab;user-select:none;touch-action:none}
+.yearWheelPopup{position:absolute;top:calc(100% + 6px);left:120px;z-index:100;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.18);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.4);padding:10px;width:160px;height:180px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:popIn .2s cubic-bezier(.16, 1, .3, 1) forwards}
+.option-wheel-3d,.option-wheel{position:relative;width:100%;height:100%;perspective:1000px;transform-style:preserve-3d;cursor:grab;user-select:none;touch-action:none}
 .option-wheel--dragging{cursor:grabbing}
-.option-wheel__item{position:absolute;top:50%;left:50%;white-space:nowrap;font-size:1.4rem;line-height:1;font-weight:500;transform-origin:center center;cursor:pointer;will-change:transform,opacity,filter;color:#fff;transition:color .15s ease}
-.option-wheel__item:hover{color:var(--accent)}
-.option-wheel__item--selected{font-weight:800;color:#38bdf8}
+.option-wheel__item{position:absolute;top:50%;left:50%;white-space:nowrap;font-size:1.4rem;line-height:1;font-weight:600;cursor:pointer;will-change:transform,opacity;color:rgba(255,255,255,.7);transition:transform .22s cubic-bezier(.16, 1, .3, 1),opacity .22s ease,color .15s ease;backface-visibility:hidden}
+.option-wheel__item:hover{color:#fff}
+.option-wheel__item--selected{font-weight:850;color:#38bdf8;text-shadow:0 0 12px rgba(56,189,248,.5)}
 
 .lightboxBody {
   flex: 1;
@@ -1028,14 +1041,32 @@ main{padding-bottom:110px}
 /* ==========================================================================
    React Bits Pro "Simple Graph" Tooltip & Percentage Styling
    ========================================================================== */
+.bentoGraphInner, .bentoRetailersInner {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.bentoGraphs .carouselDots, .bentoRetailers .carouselDots {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  z-index: 10;
+}
+
+/* SimpleGraph Tip Theme Sync */
 .simpleGraphTip {
   min-width: 140px;
   padding: 9px 12px;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--hair2);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .sgTipHead {
@@ -1049,7 +1080,7 @@ main{padding-bottom:110px}
 .sgTipHead b {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--ink2);
   letter-spacing: .05em;
   text-transform: uppercase;
 }
@@ -1062,19 +1093,19 @@ main{padding-bottom:110px}
 }
 
 .sgDiff.up {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
 }
 
 .sgDiff.down {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
 }
 
 .sgTipVal {
   font-size: 15px;
   font-weight: 800;
-  color: #60a5fa;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 

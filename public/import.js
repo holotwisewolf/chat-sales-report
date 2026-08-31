@@ -205,7 +205,7 @@ async function loadDrafts() {
         <strong>${escapeHtml(j.retailer || j.files[0]?.filename || 'Draft')}</strong>
         <small> ${escapeHtml(j.periodStart || '?')} to ${escapeHtml(j.periodEnd || '?')} &middot; ${j.rows.length} rows</small>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
+      <div class="draftActions">
         <span class="chip ${j.status === 'review' ? '' : 'warn'}">${j.status === 'review' ? 'ready to check' : j.status.replace('failed_', '')}</span>
         <button type="button" class="secondary" data-resume="${j.id}">Resume</button>
         <button type="button" class="draftDel" data-del-draft="${j.id}" title="Delete this draft">&times;</button>

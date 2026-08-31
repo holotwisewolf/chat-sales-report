@@ -451,10 +451,12 @@ if (pNextBtn) pNextBtn.onclick = () => { if (printCurrentStep < 3) setPrintStep(
 function openPrintModal() {
   if (exportMenu) exportMenu.hidden = true;
   if (!printDialog) return;
-  // Render column checkboxes based on available columns
+  // Render column checkboxes dynamically based on available data headers
   const colsList = $data('#psColumnsList');
   if (colsList) {
-    colsList.innerHTML = ALL_COLUMNS.map(col => `
+    const activeCols = visibleColumns(dataState.columns || {});
+    const cols = activeCols.length ? activeCols : ALL_COLUMNS;
+    colsList.innerHTML = cols.map(col => `
       <label class="psCheck">
         <div class="checkbox-comp"><input type="checkbox" class="psColToggle" data-col="${col.key}" ${['productName', 'sku', 'cost', 'profit'].includes(col.key) ? '' : 'checked'}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         ${escapeHtml(col.label)}

@@ -196,8 +196,7 @@ function barList(container, items, { format = value => value.toLocaleString(), m
     const max = maxOverride || Math.max(...items.map(item => item.value), 1);
     container.innerHTML = items.map((item, i) => `
       <div class="barRow${indexes ? ' indexed' : ''}" title="${escapeChartText(item.label)} — ${escapeChartText(format(item.value))}${item.sub ? ` (${escapeChartText(item.sub)})` : ''}">
-        ${indexes ? `<b class="barIndex">${i + 1}</b>` : ''}
-        <span class="barLabel">${escapeChartText(item.label)}</span>
+        <span class="barLabel">${indexes ? `<span class="barIndexInline">${i + 1}. </span>` : ''}${escapeChartText(item.label)}</span>
         <div class="barTrack"><i style="width:${Math.max(2, item.value / max * 100).toFixed(1)}%"></i></div>
         <strong class="barValueCell">${escapeChartText(format(item.value))}</strong>
         ${item.sub ? `<small class="barSub">${escapeChartText(item.sub)}</small>` : ''}

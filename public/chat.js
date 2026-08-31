@@ -133,25 +133,43 @@ function renderChatSession(session) {
   renderChatSession(active);
 })();
 
-// React Bits GooeyNav Particle Generator
+// React Bits GooeyNav Particle Generator (Flows from outside inward to build the card)
 function triggerGooeyParticles() {
   const container = $chat('#gooeyParticles');
   if (!container) return;
   container.innerHTML = '';
-  const colors = ['var(--accent)', '#3b82f6', '#60a5fa', '#93c5fd'];
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 22; i++) {
     const p = document.createElement('span');
     p.className = 'gooeyParticle';
-    const dx = (Math.random() - 0.5) * 340;
-    const dy = (Math.random() - 0.5) * 340;
-    p.style.left = `${50 + (Math.random() - 0.5) * 20}%`;
-    p.style.top = `${50 + (Math.random() - 0.5) * 20}%`;
-    p.style.setProperty('--dx', `${dx}px`);
-    p.style.setProperty('--dy', `${dy}px`);
-    p.style.background = colors[Math.floor(Math.random() * colors.length)];
-    p.style.animationDelay = `${i * 15}ms`;
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 220 + Math.random() * 180;
+    const startDx = Math.cos(angle) * distance;
+    const startDy = Math.sin(angle) * distance;
+    p.style.left = '50%';
+    p.style.top = '50%';
+    p.style.setProperty('--dx', `${startDx}px`);
+    p.style.setProperty('--dy', `${startDy}px`);
+    p.style.animationDelay = `${i * 20}ms`;
     container.appendChild(p);
   }
+}
+
+// Change API Key Handler
+const changeApiKeyBtn = $chat('#changeApiKeyBtn');
+if (changeApiKeyBtn) {
+  changeApiKeyBtn.onclick = () => {
+    const currentKey = localStorage.getItem('custom_gemini_key') || '';
+    const newKey = prompt('Enter your custom Gemini API Key (leave blank to use default system key):', currentKey);
+    if (newKey !== null) {
+      if (newKey.trim()) {
+        localStorage.setItem('custom_gemini_key', newKey.trim());
+        alert('API Key updated for local session!');
+      } else {
+        localStorage.removeItem('custom_gemini_key');
+        alert('Reset to default system API Key.');
+      }
+    }
+  };
 }
 
 // Settings gear menu open/close

@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=20">
+  <link rel="stylesheet" href="/styles.css?v=21">
 </head>
 
 <body>
@@ -579,7 +579,7 @@
           </svg>
         </button>
       </form>
-      <!-- GooeyNav Recent Conversations Overlay -->
+      <!-- GooeyNav Settings & Conversations Overlay -->
       <div id="chatGooeyOverlay" class="gooeyOverlay" hidden>
         <svg style="display:none">
           <defs>
@@ -591,13 +591,34 @@
           </defs>
         </svg>
         <div class="gooeyParticlesContainer" id="gooeyParticles"></div>
-        <div class="gooeyContentCard">
+        <div class="gooeyContentCard settingsOverlayCard">
           <div class="gooeyHeader">
-            <h3>Recent Conversations</h3>
-            <button type="button" class="linkish" id="newChatSessionBtn">+ New Chat</button>
+            <div>
+              <h3>Settings &amp; Conversations</h3>
+              <small style="color:var(--ink2)">Manage AI configuration, model parameters &amp; chat history</small>
+            </div>
             <button type="button" class="modalClose" id="closeGooeyMenu" aria-label="Close">&times;</button>
           </div>
-          <div id="recentChatsList" class="recentChatsList"></div>
+
+          <!-- Model & System Info Panel -->
+          <div class="settingsPanel">
+            <div class="settingsInfoRow">
+              <div>
+                <span class="settingsLabel">CURRENT MODEL</span>
+                <strong class="settingsVal" id="currentModelInfo">Gemini 2.5 Flash &middot; Analytical Engine</strong>
+              </div>
+              <div class="settingsActions">
+                <button type="button" class="secondary" id="changeApiKeyBtn">Change API Key</button>
+                <button type="button" class="primary" id="newChatSessionBtn">+ Create New Chat</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Conversations Section -->
+          <div class="recentSection">
+            <h4 class="recentSectionTitle">Recent Conversations</h4>
+            <div id="recentChatsList" class="recentChatsList"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -632,12 +653,12 @@
         <path d="M3 7v6h6" />
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
       </svg><span class="dockLabel">Undo</span></button></nav>
-  <script src="/chart.js?v=19"></script>
-  <script src="/app.js?v=19"></script>
-  <script src="/import.js?v=19"></script>
-  <script src="/chat.js?v=19"></script>
-  <script src="/data.js?v=19"></script>
-  <script src="/extras.js?v=19"></script>
+  <script src="/chart.js?v=20"></script>
+  <script src="/app.js?v=20"></script>
+  <script src="/import.js?v=20"></script>
+  <script src="/chat.js?v=20"></script>
+  <script src="/data.js?v=20"></script>
+  <script src="/extras.js?v=20"></script>
 </body>
 
 </html>

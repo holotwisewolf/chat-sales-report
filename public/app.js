@@ -105,7 +105,7 @@ if (alertsWrap && !alertsWrap.dataset.wired) {
       const chatInput = document.querySelector('#chatInput');
       const chatForm = document.querySelector('#chatForm');
       if (chatInput) {
-        chatInput.value = `Can you analyze this insight: ${fullInsight}`;
+        chatInput.value = `Can you explain what this means: "${fullInsight}"? Also give me some questions that help me critically think about what changed for that particular month or sales period.`;
         chatInput.dispatchEvent(new Event('input', { bubbles: true }));
         setTimeout(() => {
           chatForm?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
@@ -445,12 +445,12 @@ function initOptionWheel(container, items, initialIndex, onChange) {
     const itemEls = wheelEl.querySelectorAll('.option-wheel__item');
     itemEls.forEach((el, i) => {
       const dist = i - curIndex;
-      const offset = dist * 36;
-      const scale = Math.max(0.6, 1 - Math.abs(dist) * 0.2);
-      const opacity = Math.max(0.15, 1 - Math.abs(dist) * 0.4);
-      el.style.transform = `translate(-50%, calc(-50% + ${offset}px)) scale(${scale})`;
+      const rotateX = dist * 24;
+      const opacity = Math.max(0.2, 1 - Math.abs(dist) * 0.35);
+      const isSelected = (i === curIndex);
+      el.style.transform = `translate(-50%, -50%) rotateX(${rotateX}deg) translateZ(${isSelected ? 65 : 45}px)`;
       el.style.opacity = opacity;
-      el.classList.toggle('option-wheel__item--selected', i === curIndex);
+      el.classList.toggle('option-wheel__item--selected', isSelected);
     });
   }
 
