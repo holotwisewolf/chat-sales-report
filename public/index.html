@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=18">
+  <link rel="stylesheet" href="/styles.css?v=19">
 </head>
 
 <body>
@@ -48,7 +48,7 @@
           <option value="">All categories</option>
         </select>
       </div>
-      <div class="periodPicker"><button type="button" class="secondary" id="periodBtn">All time &darr;</button>
+      <div class="periodPicker"><button type="button" class="customSelectBtn" id="periodBtn" aria-haspopup="true" aria-expanded="false"><span class="customSelectLabel" id="periodBtnLabel">All time</span><span class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="16"></line><polyline points="7 11 12 16 17 11"></polyline><line x1="4" y1="20" x2="20" y2="20"></line></svg></span></button>
         <div id="periodPop" class="periodPop" hidden>
           <p class="ppLabel">Year</p>
           <div class="ppRow" id="ppYears"></div>
@@ -59,8 +59,8 @@
               id="ppTo" aria-label="To date"></div>
           <div class="ppFoot"><button type="button" class="linkish" id="ppReset">Reset</button></div>
         </div>
-      </div><label class="modeToggle"><input type="checkbox" id="editMode"> Edit mode</label>
-      <div class="exportDropdown"><button type="button" class="secondary" id="exportMenuBtn">Export &darr;</button>
+      </div><label class="modeToggle"><div class="checkbox-comp"><input type="checkbox" id="editMode"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Edit mode</label>
+      <div class="exportDropdown"><button type="button" class="customSelectBtn" id="exportMenuBtn" aria-haspopup="menu" aria-expanded="false"><span class="customSelectLabel">Export</span><span class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="16"></line><polyline points="7 11 12 16 17 11"></polyline><line x1="4" y1="20" x2="20" y2="20"></line></svg></span></button>
         <div id="exportMenu" class="exportMenu" hidden><button type="button" id="exportCsv">Export CSV
             (.csv)</button><button type="button" id="exportXls">Export Excel (.xls)</button><button type="button"
             id="exportPrintBtn">Print Report / PDF</button></div>
@@ -265,7 +265,7 @@
     <div class="modalWrap reviewOuter">
       <div class="modalTop">
         <div>
-          <p class="eyebrow">CHECK THE LABELS &amp; NUMBERS</p>
+          <p class="eyebrow">IMPORT</p>
           <h2 id="reviewTitle">Review</h2>
         </div><button type="button" class="modalClose" id="closeReview" aria-label="Close"><svg viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -310,8 +310,7 @@
             <div id="overlapNote" class="banner" hidden></div>
             <div id="reconBanner" class="banner"></div>
             <div id="issueOverrideContainer" style="margin-top:16px">
-              <label class="psCheck"><input type="checkbox" id="overrideIssuesCheck"> I reviewed these issues and
-                confirm the extracted numbers are correct</label>
+              <label class="psCheck"><div class="checkbox-comp"><input type="checkbox" id="overrideIssuesCheck"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> I reviewed these issues and confirm the extracted numbers are correct</label>
             </div>
           </div>
           <div class="stepPanel" id="revStep3">
@@ -379,10 +378,8 @@
                   placeholder="e.g. Consignment Sales Report"></label>
               <label class="psField">Subtitle / Note<input id="psSubtitle"
                   placeholder="e.g. Confidential · Prepared for Retail Operations"></label>
-              <label class="psCheck"><input type="checkbox" id="psShowPeriod" checked> Include active filter / period
-                line</label>
-              <label class="psCheck"><input type="checkbox" id="psShowSummary"> Include top summary cards (Total Sales,
-                Units, Counters)</label>
+              <label class="psCheck"><div class="checkbox-comp"><input type="checkbox" id="psShowPeriod" checked><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Include active filter / period line</label>
+              <label class="psCheck"><div class="checkbox-comp"><input type="checkbox" id="psShowSummary"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Include top summary cards (Total Sales, Units, Counters)</label>
             </div>
             <div class="psSection" style="margin-top:12px">
               <h3>Columns to Include</h3>
@@ -495,9 +492,8 @@
                 </label>
               </div>
               <div class="psRow2">
-                <label class="psCheck"><input type="checkbox" id="psBoldHeaders" checked> Bold headers &amp;
-                  totals</label>
-                <label class="psCheck"><input type="checkbox" id="psGridLines" checked> Crisp cell gridlines</label>
+                <label class="psCheck"><div class="checkbox-comp"><input type="checkbox" id="psBoldHeaders" checked><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Bold headers &amp; totals</label>
+                <label class="psCheck"><div class="checkbox-comp"><input type="checkbox" id="psGridLines" checked><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Crisp cell gridlines</label>
               </div>
             </div>
           </div>
@@ -599,12 +595,12 @@
         <path d="M3 7v6h6" />
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
       </svg><span class="dockLabel">Undo</span></button></nav>
-  <script src="/chart.js?v=17"></script>
-  <script src="/app.js?v=17"></script>
-  <script src="/import.js?v=17"></script>
-  <script src="/chat.js?v=17"></script>
-  <script src="/data.js?v=17"></script>
-  <script src="/extras.js?v=17"></script>
+  <script src="/chart.js?v=18"></script>
+  <script src="/app.js?v=18"></script>
+  <script src="/import.js?v=18"></script>
+  <script src="/chat.js?v=18"></script>
+  <script src="/data.js?v=18"></script>
+  <script src="/extras.js?v=18"></script>
 </body>
 
 </html>

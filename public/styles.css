@@ -38,8 +38,14 @@ input,select,textarea{display:block;width:100%;padding:10px 12px;border:1px soli
 [hidden]{display:none!important}
 input::placeholder,textarea::placeholder{color:var(--muted)}
 select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink2) 50%),linear-gradient(135deg,var(--ink2) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
-label{font-size:12.5px;font-weight:600;color:var(--ink2)}
-input[type=checkbox]{width:18px;min-height:18px;height:18px;accent-color:var(--accent)}
+.checkbox-comp{position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--hair2);background:rgba(240,244,249,.85);transition:background 150ms ease-in-out,border-color 150ms ease-in-out;user-select:none;margin-right:8px;height:18px;width:18px;flex-shrink:0;cursor:pointer;vertical-align:middle}
+.checkbox-comp:hover{border-color:var(--accent);background:#fff}
+.checkbox-comp:has(:focus-visible){outline:2px solid var(--accent-soft);outline-offset:2px}
+.checkbox-comp>input[type=checkbox]{appearance:none;all:unset;height:18px;width:18px;position:absolute;top:0;left:0;margin:0;padding:0;cursor:pointer;min-height:0;display:block}
+.checkbox-comp>svg{position:absolute;top:1px;left:1px;height:14px;width:14px;pointer-events:none}
+.checkbox-comp>svg>path{stroke-dashoffset:0;stroke-dasharray:100%;transition:stroke-dashoffset 150ms ease-in-out}
+.checkbox-comp:has(input:checked){background:var(--accent-soft);border-color:var(--accent)}
+.checkbox-comp>input:not(:checked)~svg>path{stroke-dashoffset:100%}
 
 .toolbar{display:grid;grid-template-columns:minmax(210px,1.5fr) 1fr 1fr 1fr auto auto;gap:9px;align-items:center;margin:16px 0 10px}
 .tableHint{margin:0 0 10px;font-size:12.5px}
@@ -164,13 +170,14 @@ form,.modalWrap{padding:24px}
 .rowGrid .r{display:grid;grid-template-columns:1fr 70px 104px 116px 24px 30px;gap:8px;align-items:center;padding:4px 10px}
 .rowGrid .r.sku{grid-template-columns:1fr 120px 96px 64px 100px 88px 78px 54px 30px}
 .rowGrid .r.head{position:sticky;top:0;background:var(--glass-head);font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink2);z-index:1;border-bottom:1px solid var(--hair2);text-transform:uppercase}
-.rowGrid .r.group{display:flex;align-items:center;justify-content:space-between;gap:10px;grid-column:1/-1;background:rgba(21,42,80,.045);font-size:12px;font-weight:700;color:var(--ink2);margin-top:4px;border-radius:8px}
+.rowGrid .r.group{background:rgba(21,42,80,.045);font-size:12px;font-weight:700;color:var(--ink2);margin-top:4px;border-radius:8px;align-items:center}
+.rowGrid .r.group .groupTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:4px}
 .rowGrid .r input{margin:0;padding:7px 9px;font-size:13px;min-height:38px;border-radius:9px;background:rgba(255,255,255,.85)}
 .rowGrid .r.flag{box-shadow:inset 3px 0 0 #e08900;background:rgba(255,159,10,.08)}
 .rowGrid .r input.bad{border-color:var(--bad-tx);background:var(--bad-bg)}
 .rowGrid .r .rm{border:0;background:transparent;color:var(--bad-tx);font-size:17px;cursor:pointer;padding:2px 6px;font-weight:700;min-height:34px}
 .needsChip{font-size:10px;font-weight:800;color:var(--warn-tx);letter-spacing:.04em}
-.groupCat{max-width:200px;padding:6px 10px!important;font-size:12px!important;min-height:34px!important;margin-left:10px!important}
+.groupCat{width:100%!important;max-width:none!important;padding:6px 10px!important;font-size:12.5px!important;min-height:36px!important;margin:0!important;border-radius:9px}
 .override{display:flex;gap:9px;align-items:center;font-size:13px;font-weight:600;color:var(--warn-tx);margin:12px 2px;cursor:pointer}
 .override.disabledOverride{color:var(--muted);cursor:default;opacity:.7}
 .override.disabledOverride input{cursor:default}
@@ -415,20 +422,18 @@ main{padding-bottom:110px}
 .alignBtn:hover{background:rgba(0,0,0,.07);color:var(--ink)}
 .alignBtn.active{background:#cbd5e1;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.15)}
 
-/* Print modal scheme (user-specified): light outer card, dark cards inside. The stepper and
-   footer sit on the light outer surface and keep their light-optimized colors. */
-#printDialog .psSection{background:rgba(15,23,42,.82);border-color:rgba(255,255,255,.09)}
-#printDialog .psSection h3{color:#e7edf7}
-#printDialog .psField{color:#c7d2e4}
-#printDialog .psFieldLabel{color:#8a97ad}
-#printDialog .psField input,#printDialog .psField select{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#e7edf7}
-#printDialog .psCheck{color:#c7d2e4}
-#printDialog .psCheck input[type="checkbox"]{accent-color:#2a78d6}
-#printDialog .alignGroup{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}
-#printDialog .alignBtn{color:#8a97ad}
-#printDialog .alignBtn:hover{background:rgba(255,255,255,.08)}
-#printDialog .alignBtn.active{background:#3b4a5f;color:#fff;box-shadow:none}
-#printDialog .printPreviewWrap{background:#232c3b}
+/* Print modal scheme: soft light cards inside */
+#printDialog .psSection{background:#ffffff;border-color:var(--hair2);box-shadow:0 1px 3px rgba(21,42,80,.04)}
+#printDialog .psSection h3{color:var(--ink)}
+#printDialog .psField{color:var(--ink)}
+#printDialog .psFieldLabel{color:var(--ink2)}
+#printDialog .psField input,#printDialog .psField select{background:rgba(240,244,249,.85);border-color:var(--hair2);color:var(--ink)}
+#printDialog .psCheck{color:var(--ink)}
+#printDialog .alignGroup{background:rgba(240,244,249,.85);border-color:var(--hair2)}
+#printDialog .alignBtn{color:var(--ink2)}
+#printDialog .alignBtn:hover{background:rgba(0,0,0,.06);color:var(--ink)}
+#printDialog .alignBtn.active{background:var(--accent-soft);color:var(--accent);box-shadow:none}
+#printDialog .printPreviewWrap{background:#e2e8f0;border-radius:14px}
 .alignBtn svg{display:block}
 
 /* Custom Search Dropdown Autocomplete */
@@ -768,6 +773,7 @@ main{padding-bottom:110px}
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
 
 .imageLightbox[open] {

@@ -381,7 +381,7 @@ function renderTabs(activeId) {
     grid.querySelectorAll('.thumbCard').forEach(card => {
       card.onclick = () => {
         const fileId = card.dataset.fileId;
-        const file = files.find(f => f.id === fileId);
+        const file = files.find(f => String(f.id) === String(fileId));
         if (!file) return;
         openLightbox(file);
       };
@@ -445,8 +445,12 @@ function renderGrid() {
     if (g.start) {
       const f = state.job.files.find(x => x.id === g.fileId);
       const fileRows = state.rows.filter(r => r.fileId === g.fileId);
+      const titleSpan = `<span class="groupTitle">${escapeHtml(f?.filename || 'file')} &middot; ${fileRows.length} rows</span>`;
       const sharedCategory = fileRows.length && [...new Set(fileRows.map(r => (r.category || '').trim()))].length === 1 ? fileRows[0].category || '' : '';
-      return `<div class="r group" style="grid-column:1/-1"><span style="overflow:hidden;text-overflow:ellipsis">${escapeHtml(f?.filename || 'file')} &middot; ${fileRows.length} rows</span><input class="groupCat" data-setcat="${g.fileId}" list="categoryList" placeholder="Set category for this page" value="${escapeHtml(sharedCategory)}"></div>`;
+      const catInp = `<input class="groupCat" data-setcat="${g.fileId}" list="categoryList" placeholder="Set category for this page" value="${escapeHtml(sharedCategory)}">`;
+      return sku
+        ? `<div class="r sku group"><span class="groupTitle" style="grid-column:1/span 6">${escapeHtml(f?.filename || 'file')} &middot; ${fileRows.length} rows</span>${catInp}<span></span><span></span></div>`
+        : `<div class="r group"><span class="groupTitle" style="grid-column:1/span 3">${escapeHtml(f?.filename || 'file')} &middot; ${fileRows.length} rows</span>${catInp}<span></span><span></span></div>`;
     }
     const { row, i } = g;
     const reasons = state.flags.get(`${row.fileId}:${i}`);
@@ -574,7 +578,7 @@ function renderOverlapNote(job) {
   if (!overlaps.length || job.status !== 'review') { el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false;
   el.className = 'banner warn';
-  el.innerHTML = `<div>An earlier ${escapeHtml(job.retailer || '')} report (${escapeHtml(job.category || 'Uncategorised')}) already covers some of these days: ${overlaps.map(o => `${escapeHtml(o.periodStart)} to ${escapeHtml(o.periodEnd)}`).join(', ')}.</div><label class="override"><input type="checkbox" id="replaceOverlapping" checked> Replace the earlier report (recommended &mdash; the new one restates those days, so adding both would count them twice)</label>`;
+  el.innerHTML = `<div>An earlier ${escapeHtml(job.retailer || '')} report (${escapeHtml(job.category || 'Uncategorised')}) already covers some of these days: ${overlaps.map(o => `${escapeHtml(o.periodStart)} to ${escapeHtml(o.periodEnd)}`).join(', ')}.</div><label class="override"><div class="checkbox-comp"><input type="checkbox" id="replaceOverlapping" checked><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--warn-tx)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Replace the earlier report (recommended &mdash; the new one restates those days, so adding both would count them twice)</label>`;
 }
 
 function syncFromServer(job) {

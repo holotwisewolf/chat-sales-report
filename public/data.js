@@ -36,7 +36,9 @@ window.periodLabel = periodLabel;
 window.resetPeriod = resetPeriod;
 
 function renderPeriodPicker() {
-  $data('#periodBtn').innerHTML = `${escapeHtml(periodLabel())} &darr;`;
+  const lbl = $data('#periodBtnLabel');
+  if (lbl) lbl.textContent = periodLabel();
+  else $data('#periodBtn').innerHTML = `${escapeHtml(periodLabel())} &darr;`;
   const p = dataState.period;
   $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">All</button>`]
     .concat(dataState.years.map(y => `<button type="button" class="ppBtn secondary ${p.year === y && !p.from && !p.to ? 'on' : ''}" data-year="${y}">${y}</button>`)).join('');
@@ -49,13 +51,27 @@ function renderPeriodPicker() {
 
 function wirePeriodPicker() {
   const pop = $data('#periodPop');
-  $data('#periodBtn').onclick = event => { event.stopPropagation(); pop.hidden = !pop.hidden; if (!pop.hidden) renderPeriodPicker(); };
+  const btn = $data('#periodBtn');
+  btn.onclick = event => {
+    event.stopPropagation();
+    pop.hidden = !pop.hidden;
+    btn.classList.toggle('open', !pop.hidden);
+    if (!pop.hidden) renderPeriodPicker();
+  };
   document.addEventListener('pointerdown', event => {
     if (pop.hidden) return;
     const path = event.composedPath ? event.composedPath() : [event.target];
-    if (!path.some(el => el.classList && el.classList.contains('periodPicker'))) pop.hidden = true;
+    if (!path.some(el => el.classList && el.classList.contains('periodPicker'))) {
+      pop.hidden = true;
+      btn.classList.remove('open');
+    }
   });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !pop.hidden) pop.hidden = true; });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !pop.hidden) {
+      pop.hidden = true;
+      btn.classList.remove('open');
+    }
+  });
   $data('#ppYears').onclick = event => {
     const year = event.target.dataset?.year;
     if (year === undefined) return;
@@ -355,11 +371,15 @@ if (exportMenuBtn && exportMenu) {
   exportMenuBtn.onclick = event => {
     event.stopPropagation();
     exportMenu.hidden = !exportMenu.hidden;
+    exportMenuBtn.classList.toggle('open', !exportMenu.hidden);
   };
   document.addEventListener('pointerdown', event => {
     if (exportMenu.hidden) return;
     const path = event.composedPath ? event.composedPath() : [event.target];
-    if (!path.some(el => el.classList && el.classList.contains('exportDropdown'))) exportMenu.hidden = true;
+    if (!path.some(el => el.classList && el.classList.contains('exportDropdown'))) {
+      exportMenu.hidden = true;
+      exportMenuBtn.classList.remove('open');
+    }
   });
 }
 
@@ -437,7 +457,7 @@ function openPrintModal() {
   if (colsList) {
     colsList.innerHTML = ALL_COLUMNS.map(col => `
       <label class="psCheck">
-        <input type="checkbox" class="psColToggle" data-col="${col.key}" ${['productName', 'sku', 'cost', 'profit'].includes(col.key) ? '' : 'checked'}>
+        <div class="checkbox-comp"><input type="checkbox" class="psColToggle" data-col="${col.key}" ${['productName', 'sku', 'cost', 'profit'].includes(col.key) ? '' : 'checked'}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         ${escapeHtml(col.label)}
       </label>
     `).join('');
