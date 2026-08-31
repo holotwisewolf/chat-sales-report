@@ -4224,7 +4224,8 @@ main {
 .chartYearMenu {
   position: absolute;
   top: calc(100% + 4px);
-  left: 120px;
+  right: 0;
+  left: auto;
   z-index: 1000;
   width: 130px;
   max-height: 185px;

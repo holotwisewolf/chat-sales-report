@@ -572,12 +572,15 @@ function setupYearWheel(years) {
   yearBtn.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
-    menu.hidden = !menu.hidden;
+    const isHidden = menu.hidden || menu.style.display === 'none';
+    menu.hidden = !isHidden;
+    menu.style.display = isHidden ? 'block' : 'none';
   };
 
   document.addEventListener('pointerdown', e => {
     if (menu && !menu.hidden && !menu.contains(e.target) && !yearBtn.contains(e.target)) {
       menu.hidden = true;
+      menu.style.display = 'none';
     }
   });
 }

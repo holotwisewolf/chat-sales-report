@@ -83,9 +83,15 @@ function lineChart(container, points, { format = defaultCurrencyFormat, height =
       const hair = container.querySelector('.crosshair');
 
       svg.addEventListener('pointermove', () => {
-        hair.setAttribute('x1', px);
-        hair.setAttribute('x2', px);
-        hair.setAttribute('opacity', '0.65');
+        if (points[0].value > 0) {
+          hair.setAttribute('x1', px);
+          hair.setAttribute('x2', px);
+          hair.setAttribute('y1', py);
+          hair.setAttribute('y2', baseY);
+          hair.setAttribute('opacity', '0.65');
+        } else {
+          hair.setAttribute('opacity', '0');
+        }
         tip.classList.add('show');
         tip.innerHTML = `
           <div class="sgTipHead"><b>${escapeChartText(points[0].label)}</b></div>
@@ -189,13 +195,20 @@ function lineChart(container, points, { format = defaultCurrencyFormat, height =
         }
       }
 
-      hair.setAttribute('x1', curr.x);
-      hair.setAttribute('x2', curr.x);
-      hair.setAttribute('opacity', '0.65');
+      if (curr && curr.value > 0) {
+        hair.setAttribute('x1', curr.x);
+        hair.setAttribute('x2', curr.x);
+        hair.setAttribute('y1', curr.y);
+        hair.setAttribute('y2', H - padB);
+        hair.setAttribute('opacity', '0.65');
 
-      dot.setAttribute('cx', curr.x);
-      dot.setAttribute('cy', curr.y);
-      dot.setAttribute('opacity', '1');
+        dot.setAttribute('cx', curr.x);
+        dot.setAttribute('cy', curr.y);
+        dot.setAttribute('opacity', '1');
+      } else {
+        hair.setAttribute('opacity', '0');
+        dot.setAttribute('opacity', '0');
+      }
 
       tip.classList.add('show');
       tip.innerHTML = `
