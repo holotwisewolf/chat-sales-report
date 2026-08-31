@@ -452,6 +452,24 @@ if (exportPrintBtn) exportPrintBtn.onclick = openPrintModal;
 if (closePrint) closePrint.onclick = () => printDialog?.close();
 if (cancelPrint) cancelPrint.onclick = () => printDialog?.close();
 
+// Setup segmented alignment buttons (Text & Numeric alignments)
+function setupAlignButtonGroup(groupId, hiddenInputId) {
+  const group = $data(groupId);
+  const hiddenInput = $data(hiddenInputId);
+  if (!group || !hiddenInput) return;
+  const btns = group.querySelectorAll('.alignBtn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      hiddenInput.value = btn.dataset.align;
+      if (printCurrentStep === 3) updatePrintPreview();
+    });
+  });
+}
+setupAlignButtonGroup('#groupTextAlign', '#psTextAlign');
+setupAlignButtonGroup('#groupNumAlign', '#psNumAlign');
+
 // ---- Custom Animated Search Dropdown Autocomplete ----
 // Limit to 10 suggestions. If blank: recent searches (from localStorage) + alphabetical retailers/counters.
 // When querying: shortest match first (e.g. "mydin" shows retailer "Mydin" first).

@@ -2,9 +2,9 @@
 const $extra = selector => document.querySelector(selector);
 
 // Carousel: horizontal panes you can drag or click through, with dot indicators.
-(function carousel() {
-  const track = $extra('#carouselTrack');
-  const dots = $extra('#carouselDots');
+// Any markup pairing <div class="carousel"><div class="carouselTrack">…</div></div> with a
+// following <div class="carouselDots"> gets the same drag/dot behaviour.
+function makeCarousel(track, dots) {
   if (!track || !dots) return;
   const panes = () => [...track.children];
   let index = 0;
@@ -13,7 +13,7 @@ const $extra = selector => document.querySelector(selector);
 
   const render = () => {
     track.style.transform = `translateX(${-index * 100}%)`;
-    dots.innerHTML = panes().map((_, i) => `<button type="button" class="carouselDot ${i === index ? 'on' : ''}" data-pane="${i}" aria-label="Show graph ${i + 1}"></button>`).join('');
+    dots.innerHTML = panes().map((_, i) => `<button type="button" class="carouselDot ${i === index ? 'on' : ''}" data-pane="${i}" aria-label="Go to slide ${i + 1}"></button>`).join('');
   };
   dots.onclick = event => { const pane = event.target.dataset?.pane; if (pane !== undefined) { index = Number(pane); render(); } };
 
@@ -40,7 +40,13 @@ const $extra = selector => document.querySelector(selector);
   track.addEventListener('pointerup', release);
   track.addEventListener('pointercancel', release);
   render();
-})();
+}
+
+document.querySelectorAll('.carouselTrack').forEach(track => {
+  const wrapper = track.closest('.carousel');
+  const dots = wrapper && wrapper.nextElementSibling?.classList.contains('carouselDots') ? wrapper.nextElementSibling : null;
+  makeCarousel(track, dots);
+});
 
 // Dock: floating glass quick-action bar with hover magnification and labels.
 // It hides below the screen edge and slides up when the pointer nears the bottom.
@@ -60,10 +66,10 @@ const $extra = selector => document.querySelector(selector);
     upload: () => window.openUpload?.(),
     ask: () => window.openChat?.(),
     charts: () => {
-      const section = $extra('#collCharts');
+      const section = $extra('#collOverview');
       if (!section) return;
       section.classList.remove('closed');
-      localStorage.setItem('collapsible-collCharts', 'open');
+      localStorage.setItem('collapsible-collOverview', 'open');
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
     manual: () => window.openManual?.(),

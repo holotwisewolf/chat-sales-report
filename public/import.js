@@ -198,10 +198,9 @@ function showFailure(job) {
 
 async function loadDrafts() {
   const jobs = await fetch('/api/import-jobs?open=1').then(r => r.json()).then(b => b.jobs).catch(() => []);
-  const wrap = $import('#draftsWrap');
-  wrap.hidden = !jobs.length;
-  $import('#draftList').innerHTML = jobs.map(j => `
+  $import('#draftList').innerHTML = jobs.length ? jobs.map((j, i) => `
     <div class="draftRow">
+      <b class="draftIdx">${i + 1}</b>
       <div>
         <strong>${escapeHtml(j.retailer || j.files[0]?.filename || 'Draft')}</strong>
         <small> ${escapeHtml(j.periodStart || '?')} to ${escapeHtml(j.periodEnd || '?')} &middot; ${j.rows.length} rows</small>
@@ -212,8 +211,18 @@ async function loadDrafts() {
         <button type="button" class="draftDel" data-del-draft="${j.id}" title="Delete this draft">&times;</button>
       </div>
     </div>
-  `).join('');
+  `).join('') : '<p class="hint">No saved drafts. Unfinished reviews keep themselves here.</p>';
 }
+
+// Upload dialog tabs: Upload | Saved drafts.
+const uploadTabBtns = document.querySelectorAll('#uploadTabs button');
+uploadTabBtns.forEach(btn => {
+  btn.onclick = () => {
+    uploadTabBtns.forEach(b => b.classList.toggle('on', b === btn));
+    $import('#utabUpload').hidden = btn.dataset.utab !== 'upload';
+    $import('#utabDrafts').hidden = btn.dataset.utab !== 'drafts';
+  };
+});
 
 $import('#draftList')?.addEventListener('click', async e => {
   const resumeId = e.target.closest('[data-resume]')?.dataset?.resume;
@@ -248,7 +257,7 @@ const revIndicators = document.querySelectorAll('.stepIndicator[data-step]');
 const revConns = [$import('#revConn1'), $import('#revConn2')];
 const revBackBtn = $import('#revBackBtn');
 const revNextBtn = $import('#revNextBtn');
-const confirmImportBtn = $import('#confirmImport');
+const confirmReviewBtn = $import('#confirmReview');
 
 function updateIssuesStepState() {
   const reconWarn = $import('#reconBanner')?.classList.contains('warn');
@@ -257,25 +266,20 @@ function updateIssuesStepState() {
   const hasIssues = reconWarn || overlapWarn || dupWarn;
 
   const noIssuesBanner = $import('#noIssuesBanner');
-  const overrideTotals = $import('#overrideTotals');
-  const overrideWrap = $import('#overrideWrap');
+  const issuesCheck = $import('#overrideIssuesCheck');
 
   if (hasIssues) {
     if (noIssuesBanner) noIssuesBanner.hidden = true;
-    if (overrideWrap) {
-      overrideWrap.classList.remove('disabledOverride');
-      overrideTotals.disabled = false;
-    }
+    if (issuesCheck) issuesCheck.disabled = false;
     // Next button in step 2 requires checkbox to be checked
     if (reviewCurrentStep === 2) {
-      revNextBtn.disabled = !overrideTotals.checked;
+      revNextBtn.disabled = !issuesCheck?.checked;
     }
   } else {
     if (noIssuesBanner) noIssuesBanner.hidden = false;
-    if (overrideWrap) {
-      overrideWrap.classList.add('disabledOverride');
-      overrideTotals.checked = true;
-      overrideTotals.disabled = true;
+    if (issuesCheck) {
+      issuesCheck.checked = true;
+      issuesCheck.disabled = true;
     }
     if (reviewCurrentStep === 2) {
       revNextBtn.disabled = false;
@@ -311,18 +315,18 @@ function setReviewStep(step) {
     updateIssuesStepState();
   } else if (step === 3) {
     if (revNextBtn) revNextBtn.style.display = 'none';
-    if (confirmImportBtn) confirmImportBtn.style.display = 'inline-block';
+    if (confirmReviewBtn) confirmReviewBtn.style.display = 'inline-block';
     updateConfirmState();
   } else {
     if (revNextBtn) {
       revNextBtn.style.display = 'inline-block';
       revNextBtn.disabled = false;
     }
-    if (confirmImportBtn) confirmImportBtn.style.display = 'none';
+    if (confirmReviewBtn) confirmReviewBtn.style.display = 'none';
   }
 }
 
-$import('#overrideTotals').addEventListener('change', () => {
+$import('#overrideIssuesCheck')?.addEventListener('change', () => {
   if (reviewCurrentStep === 2) {
     updateIssuesStepState();
   }
@@ -344,7 +348,6 @@ function openReview(job) {
   $import('#reviewCategory').value = job.category || '';
   $import('#reviewStart').value = job.periodStart || '';
   $import('#reviewEnd').value = job.periodEnd || '';
-  $import('#reviewNote').value = job.note || '';
   renderTabs(job.files[0]?.id);
   renderGrid();
   syncFromServer(job);
@@ -353,15 +356,78 @@ function openReview(job) {
 }
 
 function renderTabs(activeId) {
-  const files = state.job.files;
+  const files = state.job.files || [];
   state.currentFileId = activeId ?? files[0]?.id;
-  $import('#fileTabs').innerHTML = files.map((f, i) => `<button type="button" class="${f.id === state.currentFileId ? 'on' : ''}" data-tab="${f.id}" title="${escapeHtml(f.filename)}">${i + 1}. ${escapeHtml(f.filename.length > 22 ? f.filename.slice(0, 20) + '…' : f.filename)}</button>`).join('');
-  const file = files.find(f => f.id === state.currentFileId);
-  const isPdf = file?.mime === 'application/pdf';
-  $import('#sourceImg').hidden = isPdf; $import('#sourcePdf').hidden = !isPdf;
-  if (isPdf) $import('#sourcePdf').src = file.fileUrl; else $import('#sourceImg').src = file?.fileUrl || '';
-  $import('#fileErrors').innerHTML = state.job.files.filter(f => f.status === 'no_table' || f.status === 'failed_read').map(f =>
+
+  const grid = $import('#sourceThumbGrid');
+  if (grid) {
+    grid.innerHTML = files.map((f, i) => {
+      const isPdf = f.mime === 'application/pdf';
+      return `
+        <div class="thumbCard ${f.id === state.currentFileId ? 'active' : ''}" data-file-id="${f.id}">
+          <div class="thumbVisual">
+            ${isPdf
+              ? `<div class="pdfPlaceholder"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg><span>PDF</span></div>`
+              : `<img src="${escapeHtml(f.fileUrl || '')}" alt="${escapeHtml(f.filename)}" loading="lazy">`
+            }
+            <div class="thumbOverlay"><span>Click to expand</span></div>
+          </div>
+          <div class="thumbMeta" title="${escapeHtml(f.filename)}">${i + 1}. ${escapeHtml(f.filename)}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Wire thumbnail clicks to lightbox
+    grid.querySelectorAll('.thumbCard').forEach(card => {
+      card.onclick = () => {
+        const fileId = card.dataset.fileId;
+        const file = files.find(f => f.id === fileId);
+        if (!file) return;
+        openLightbox(file);
+      };
+    });
+  }
+
+  $import('#fileErrors').innerHTML = files.filter(f => f.status === 'no_table' || f.status === 'failed_read').map(f =>
     `<div class="fileErr"><strong>${escapeHtml(f.filename)}:</strong> ${escapeHtml(f.errorMessage || '')} <button type="button" class="secondary" data-retry-file="${f.id}">Try again</button></div>`).join('');
+}
+
+// Lightbox helper
+function openLightbox(file) {
+  const lightbox = document.querySelector('#imageLightbox');
+  const title = document.querySelector('#lightboxTitle');
+  const img = document.querySelector('#lightboxImg');
+  const pdf = document.querySelector('#lightboxPdf');
+  if (!lightbox) return;
+
+  if (title) title.textContent = file.filename || 'Document Preview';
+  const isPdf = file.mime === 'application/pdf';
+
+  if (isPdf) {
+    if (img) img.hidden = true;
+    if (pdf) {
+      pdf.hidden = false;
+      pdf.src = file.fileUrl;
+    }
+  } else {
+    if (pdf) {
+      pdf.hidden = true;
+      pdf.src = '';
+    }
+    if (img) {
+      img.hidden = false;
+      img.src = file.fileUrl;
+    }
+  }
+  lightbox.showModal();
+}
+
+const closeLightboxBtn = document.querySelector('#closeLightbox');
+if (closeLightboxBtn) {
+  closeLightboxBtn.onclick = () => {
+    const lightbox = document.querySelector('#imageLightbox');
+    if (lightbox) lightbox.close();
+  };
 }
 
 function renderGrid() {
@@ -433,13 +499,6 @@ reviewDialog.addEventListener('click', async e => {
   }
 });
 
-$import('#addRowBtn').onclick = () => {
-  state.rows.push({ fileId: state.currentFileId ?? state.job.files[0]?.id, counter: '', sku: null, product_name: null, quantity: null, sales: null, cost: null, profit: null, margin_percent: null, low_confidence: false, note: null });
-  state.dirty = true;
-  renderGrid();
-  $import('#rowGrid').scrollTop = $import('#rowGrid').scrollHeight;
-};
-
 function fileSums(fileId) {
   const rows = state.rows.filter(r => r.fileId === fileId);
   return { qty: rows.reduce((s, r) => s + (Number.isFinite(r.quantity) ? r.quantity : 0), 0), sales: round2c(rows.reduce((s, r) => s + (Number.isFinite(r.sales) ? r.sales : 0), 0)) };
@@ -475,7 +534,7 @@ function renderBanner() {
     banner.textContent = 'No printed totals were found to check against.';
   }
   if (dup) banner.innerHTML += `<small class="chip warn">Already imported once before (${escapeHtml(dup.retailer)} ${escapeHtml(dup.period_start)} to ${escapeHtml(dup.period_end)}) - make sure this is a new report, not the same file.</small>`;
-  $import('#overrideWrap').hidden = status !== 'mismatch';
+  $import('#issueOverrideContainer').hidden = status !== 'mismatch';
 }
 
 function invalidCount() {
@@ -484,17 +543,16 @@ function invalidCount() {
 
 function updateConfirmState() {
   const mismatch = $import('#reconBanner').className.includes('warn');
-  const ok = !(mismatch && !$import('#overrideTotals').checked) && !invalidCount() && state.rows.length;
-  $import('#confirmImport').disabled = !ok;
-  if (invalidCount()) $import('#confirmImport').textContent = `Confirm (${invalidCount()} row${invalidCount() > 1 ? 's' : ''} to fix)`;
-  else $import('#confirmImport').textContent = 'Confirm';
+  const ok = !(mismatch && !$import('#overrideIssuesCheck')?.checked) && !invalidCount() && state.rows.length;
+  $import('#confirmReview').disabled = !ok;
+  if (invalidCount()) $import('#confirmReview').textContent = `Confirm (${invalidCount()} row${invalidCount() > 1 ? 's' : ''} to fix)`;
+  else $import('#confirmReview').textContent = 'Confirm & import';
 }
-$import('#overrideTotals').onchange = updateConfirmState;
 
 function metaValues() {
-  return { retailer: $import('#reviewRetailer').value, category: $import('#reviewCategory').value, periodStart: $import('#reviewStart').value, periodEnd: $import('#reviewEnd').value, note: $import('#reviewNote').value };
+  return { retailer: $import('#reviewRetailer').value, category: $import('#reviewCategory').value, periodStart: $import('#reviewStart').value, periodEnd: $import('#reviewEnd').value };
 }
-['#reviewRetailer', '#reviewCategory', '#reviewStart', '#reviewEnd', '#reviewNote'].forEach(s => $import(s).addEventListener('input', () => { state.dirty = true; scheduleSave(); }));
+['#reviewRetailer', '#reviewCategory', '#reviewStart', '#reviewEnd'].forEach(s => $import(s).addEventListener('input', () => { state.dirty = true; scheduleSave(); }));
 
 function scheduleSave() {
   clearTimeout(state.saveTimer);
@@ -537,14 +595,17 @@ function syncFromServer(job) {
   updateConfirmState();
 }
 
-$import('#saveDraft').onclick = async () => { await saveDraft(); reviewDialog.close(); };
-$import('#closeReview').onclick = () => { saveDraft(); reviewDialog.close(); };
+const closeReviewBtn = $import('#closeReview');
+if (closeReviewBtn) closeReviewBtn.onclick = () => { saveDraft(); reviewDialog.close(); };
+const cancelReviewBtn = $import('#cancelReview');
+if (cancelReviewBtn) cancelReviewBtn.onclick = () => { saveDraft(); reviewDialog.close(); };
 
-$import('#confirmImport').onclick = async () => {
-  const button = $import('#confirmImport');
+const confirmReviewClick = $import('#confirmReview');
+if (confirmReviewClick) confirmReviewClick.onclick = async () => {
+  const button = $import('#confirmReview');
   button.disabled = true; button.textContent = 'Importing…';
   await saveDraft();
-  const response = await fetch(`/api/import-jobs/${state.job.id}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ overrideTotals: $import('#overrideTotals').checked, replaceOverlapping: $import('#replaceOverlapping') ? $import('#replaceOverlapping').checked : true }) });
+  const response = await fetch(`/api/import-jobs/${state.job.id}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ overrideTotals: $import('#overrideIssuesCheck')?.checked, replaceOverlapping: $import('#replaceOverlapping') ? $import('#replaceOverlapping').checked : true }) });
   const body = await response.json().catch(() => ({}));
   if (response.ok) {
     reviewDialog.close();
@@ -560,6 +621,6 @@ $import('#confirmImport').onclick = async () => {
   } else {
     alert(body.error || 'Something went wrong on our side. Your draft was saved - try again.');
   }
-  button.textContent = 'Confirm import';
+  button.textContent = 'Confirm & import';
   updateConfirmState();
 };

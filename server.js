@@ -127,7 +127,7 @@ app.get('/api/dashboard', (req, res) => {
                                       AND (? = '' OR (r.period_start <= ? AND r.period_end >= ?)) AND (? = '' OR substr(r.period_end, 6, 2) = ?)${monthClauses}
                                       AND s.product_category IS NOT NULL AND s.product_category != ''
                                     GROUP BY s.product_category ORDER BY sales DESC`).all(retailer, retailer, month, month, from, to, from, monthOfYear, monthOfYear, ...monthParams);
-  res.json({ summary, ranking: allCounters.slice(0, 12), allCounters, retailers, periods, trend, options, categoryTotals });
+  res.json({ summary, ranking: allCounters.slice(0, 10), allCounters, retailers, periods, trend, options, categoryTotals });
 });
 
 app.post('/api/import/manual', (req, res) => {

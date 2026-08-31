@@ -48,9 +48,10 @@ async function renderDashboard() {
   const chips = Object.entries(FILTER_IDS).filter(([selector]) => filterValue(selector));
   const periodChip = window.periodLabel && window.periodLabel() !== 'All time'
     ? `<span class="filterChip">Period: ${escapeHtml(window.periodLabel())}<button type="button" id="clearPeriod" aria-label="Clear period">&times;</button></span>` : '';
+  // The bar only exists to hold active filter chips - with nothing filtered there is nothing to say.
   document.querySelector('#activeFilters').innerHTML = (chips.length || periodChip)
     ? '<span class="statusLabel">Showing</span>' + periodChip + chips.map(([selector, key]) => `<span class="filterChip">${labels[key]}: ${escapeHtml(filterValue(selector))}<button type="button" data-clear="${selector}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
-    : '<span class="statusLabel">Showing</span><span class="filterChip all">everything &mdash; use the filters above the table to focus.</span>';
+    : '';
   const clearPeriod = document.querySelector('#clearPeriod');
   if (clearPeriod) clearPeriod.onclick = () => { if (window.resetPeriod) window.resetPeriod(); loadRows(); load(); };
   const clearAll = document.querySelector('#clearAll');
@@ -73,10 +74,12 @@ async function renderDashboard() {
     lineChart(document.querySelector('#trend'), [], { format: money });
   }
   barList(document.querySelector('#retailers'), data.retailers.map(row => ({ label: row.retailer, value: row.sales, sub: `${row.quantity} units` })), { format: money });
-  document.querySelector('#ranking').innerHTML = data.ranking.map((row, index) => `<div class="rank"><b>${index + 1}</b><div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.retailer)} &middot; ${row.quantity} units &middot; ${money(row.average_price)} avg/unit</small></div><em>${money(row.sales)}</em></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
+  renderChannelCounters(document.querySelector('#channelCounters'), data.allCounters);
+  renderAnimatedRanking(document.querySelector('#ranking'), data.allCounters || []);
   const signals = buildSignals(data.allCounters);
-  document.querySelector('#alerts').innerHTML = signals.length ? signals.map(signal => `<div class="alert ${signal.type}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
+  document.querySelector('#alerts').innerHTML = signals.length ? signals.map(signal => `<div class="alert alertCard ${signal.type}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
   document.querySelector('#reports').innerHTML = data.periods.map(row => `<div class="report"><div><strong>${escapeHtml(row.retailer)}</strong><small>${row.period_start} to ${row.period_end}${row.source_filename ? ` &middot; ${escapeHtml(row.source_filename)}` : ''}</small></div><div><strong>${money(row.sales)}</strong><small>${row.quantity} units &middot; ${row.jobId ? `<button type="button" class="linkish" data-deimport="${row.jobId}">Undo import</button>` : `<button type="button" class="linkish" data-remove-report="${row.id}">Remove</button>`}</small></div></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
+
 const reportsWrap = document.querySelector('#reports');
 if (reportsWrap) reportsWrap.onclick = async event => {
   const jobId = event.target.dataset?.deimport;
@@ -152,7 +155,211 @@ document.querySelectorAll('.collapsible').forEach(section => {
     section.classList.toggle('closed');
     localStorage.setItem(`collapsible-${section.id}`, section.classList.contains('closed') ? 'closed' : 'open');
     // Charts rendered while hidden had no width to measure; re-measure on reveal.
-    if (section.id === 'collCharts' && !section.classList.contains('closed')) load();
+    if (section.id === 'collOverview' && !section.classList.contains('closed')) load();
   };
 });
+// ---- ReactBits AnimatedList Component for Best Counters (Top 10) ----
+let animatedListKeyNavSetup = false;
+let currentAnimatedListRef = null;
+
+function renderAnimatedRanking(container, items) {
+  if (!container) return;
+  if (!items || !items.length) {
+    container.innerHTML = '<p class="hint">No data matches these filters.</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="scroll-list-container ranking-animated-list">
+      <div class="scroll-list" id="animatedRankingList" tabindex="0" role="listbox" aria-label="All counters by sales">
+        ${items.map((row, index) => `
+          <div class="animated-item" data-index="${index}" style="animation-delay: ${index * 0.05}s">
+            <div class="item ${index === 0 ? 'selected' : ''}" data-counter="${escapeHtml(row.name)}">
+              <div class="rank">
+                <b>${index + 1}</b>
+                <div>
+                  <strong class="item-text">${escapeHtml(row.name)}</strong>
+                  <small>${escapeHtml(row.retailer)} &middot; ${row.quantity} units &middot; ${money(row.average_price)} avg/unit</small>
+                </div>
+                <em>${money(row.sales)}</em>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="top-gradient" id="rankTopGradient" style="opacity: 0"></div>
+      <div class="bottom-gradient" id="rankBottomGradient" style="opacity: 1"></div>
+    </div>
+  `;
+
+  const listEl = container.querySelector('#animatedRankingList');
+  const topGrad = container.querySelector('#rankTopGradient');
+  const botGrad = container.querySelector('#rankBottomGradient');
+  currentAnimatedListRef = listEl;
+
+  if (listEl) {
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = listEl;
+      if (topGrad) topGrad.style.opacity = String(Math.min(scrollTop / 40, 1));
+      const bottomDistance = scrollHeight - (scrollTop + clientHeight);
+      if (botGrad) botGrad.style.opacity = String(scrollHeight <= clientHeight ? 0 : Math.min(bottomDistance / 40, 1));
+    };
+    listEl.addEventListener('scroll', handleScroll, { passive: true });
+    // Initial check
+    setTimeout(handleScroll, 50);
+
+    // Hover and Click item selection
+    const itemEls = listEl.querySelectorAll('.item');
+    itemEls.forEach((el, idx) => {
+      el.addEventListener('mouseenter', () => {
+        itemEls.forEach(other => other.classList.remove('selected'));
+        el.classList.add('selected');
+      });
+      el.addEventListener('click', () => {
+        itemEls.forEach(other => other.classList.remove('selected'));
+        el.classList.add('selected');
+        // Quick filter shortcut if available
+        const sInput = document.querySelector('#dSearch');
+        if (sInput) {
+          sInput.value = el.dataset.counter || '';
+          sInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+    });
+  }
+
+  // Keyboard navigation across arrow keys / Tab / Enter
+  if (!animatedListKeyNavSetup) {
+    animatedListKeyNavSetup = true;
+    window.addEventListener('keydown', e => {
+      if (!currentAnimatedListRef || !document.body.contains(currentAnimatedListRef)) return;
+      if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
+        // Only trigger if active element is body or within animated list or panel
+        const active = document.activeElement;
+        const inInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        if (inInput) return;
+
+        const items = [...currentAnimatedListRef.querySelectorAll('.item')];
+        if (!items.length) return;
+        let selectedIdx = items.findIndex(el => el.classList.contains('selected'));
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextIdx = Math.min(selectedIdx + 1, items.length - 1);
+          items.forEach(el => el.classList.remove('selected'));
+          items[nextIdx].classList.add('selected');
+          items[nextIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prevIdx = Math.max(selectedIdx - 1, 0);
+          items.forEach(el => el.classList.remove('selected'));
+          items[prevIdx].classList.add('selected');
+          items[prevIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+    });
+  }
+}
+
+// ---- By-counters pane in the Channels carousel: same bar format as By retailer, plus an index; scrollable ----
+function renderChannelCounters(container, counters) {
+  if (!container) return;
+  if (!counters || !counters.length) {
+    container.innerHTML = '<p class="hint">No counters match these filters yet.</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="scroll-list-container channelCountersWrap">
+      <div class="channelCounterList"></div>
+      <div class="top-gradient"></div>
+      <div class="bottom-gradient"></div>
+    </div>
+  `;
+  const listEl = container.querySelector('.channelCounterList');
+  barList(listEl, counters.map(row => ({ label: row.name, value: row.sales, sub: `${row.retailer} · ${row.quantity} units · ${money(row.average_price)} avg/unit` })), { format: money, indexes: true });
+  const topGrad = container.querySelector('.top-gradient');
+  const botGrad = container.querySelector('.bottom-gradient');
+  const handleScroll = () => {
+    const { scrollTop, scrollHeight, clientHeight } = listEl;
+    if (topGrad) topGrad.style.opacity = String(Math.min(scrollTop / 40, 1));
+    const bottomDistance = scrollHeight - (scrollTop + clientHeight);
+    if (botGrad) botGrad.style.opacity = String(scrollHeight <= clientHeight ? 0 : Math.min(bottomDistance / 40, 1));
+  };
+  listEl.addEventListener('scroll', handleScroll, { passive: true });
+  setTimeout(handleScroll, 50);
+}
+
+// ---- Custom Animated Dropdowns for "All Retailers" & "All Categories" ----
+function setupCustomSelect(selectId, wrapId, btnId, menuId, defaultLabel) {
+  const select = document.querySelector(selectId);
+  const wrap = document.querySelector(wrapId);
+  const btn = document.querySelector(btnId);
+  const menu = document.querySelector(menuId);
+  if (!select || !wrap || !btn || !menu) return;
+
+  const updateDisplay = () => {
+    const selectedOption = select.options[select.selectedIndex];
+    const label = selectedOption && selectedOption.value ? selectedOption.text : defaultLabel;
+    const labelSpan = btn.querySelector('.customSelectLabel');
+    if (labelSpan) labelSpan.textContent = label;
+  };
+
+  const syncMenuOptions = () => {
+    menu.innerHTML = [...select.options].map(opt => `
+      <button type="button" class="customSelectItem ${opt.selected ? 'active' : ''}" data-value="${escapeHtml(opt.value)}">
+        <span>${escapeHtml(opt.text)}</span>
+        ${opt.selected ? '<span class="customSelectCheck">&#10003;</span>' : ''}
+      </button>
+    `).join('');
+  };
+
+  // Close when clicking outside
+  document.addEventListener('pointerdown', e => {
+    if (!wrap.contains(e.target) && !menu.hidden) {
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('open');
+    }
+  });
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    // Close any other open custom select
+    document.querySelectorAll('.customSelectMenu').forEach(m => { m.hidden = true; });
+    document.querySelectorAll('.customSelectBtn').forEach(b => { b.setAttribute('aria-expanded', 'false'); b.classList.remove('open'); });
+
+    if (willOpen) {
+      syncMenuOptions();
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      btn.classList.add('open');
+    }
+  });
+
+  menu.addEventListener('click', e => {
+    const item = e.target.closest('.customSelectItem');
+    if (!item) return;
+    const val = item.dataset.value;
+    select.value = val;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    updateDisplay();
+    menu.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.classList.remove('open');
+  });
+
+  // Observe select changes (e.g. data loading or clearing filters)
+  select.addEventListener('change', updateDisplay);
+  const observer = new MutationObserver(() => {
+    updateDisplay();
+    syncMenuOptions();
+  });
+  observer.observe(select, { childList: true, subtree: true });
+  updateDisplay();
+}
+
+setupCustomSelect('#dRetailer', '#wrapRetailer', '#btnRetailer', '#menuRetailer', 'All retailers');
+setupCustomSelect('#dCategory', '#wrapCategory', '#btnCategory', '#menuCategory', 'All categories');
+
 load();

@@ -1,6 +1,6 @@
-// Dependency-free SVG charts following the house chart system: CSS-keyframe draw-on (pathLength),
-// staged timeline (grid -> line -> area -> endpoint pulse), hairline grid, ~6 x-labels, dark sharp
-// tooltip, relative y-domain. Series color is a validated step for the light glass surface.
+// React Bits Pro "Simple Graph" Adaptation
+// High-performance SVG line graph with smooth cubic Bezier curves, animated line drawing,
+// gradient area fill, glowing cursor tracking, and percentage difference calculations.
 
 const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 const seriesColor = () => cssVar('--chart-series', '#2a78d6');
@@ -14,31 +14,51 @@ const remember = (container, render) => { registry.set(container, render); rende
 
 const escapeChartText = value => String(value).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
 
-// Round an axis maximum up to a pleasant number (1/2/2.5/5 x powers of ten).
 const niceCeil = value => {
   const magnitude = Math.pow(10, Math.floor(Math.log10(value || 1)));
   for (const step of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (step * magnitude >= value) return step * magnitude;
   return 10 * magnitude;
 };
 
-// points: [{label, value}]. Single series - the panel title names it, so no legend.
-function lineChart(container, points, { format = value => value.toLocaleString(), height = 220 } = {}) {
+// Generates smooth cubic Bezier path from a sequence of (x, y) coordinates
+function buildBezierPath(points) {
+  if (!points || points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
+  if (points.length === 2) return `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`;
+
+  let d = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i === 0 ? i : i - 1];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+function lineChart(container, points, { format = value => value.toLocaleString(), height = 230 } = {}) {
   remember(container, () => {
     if (!points.length) {
-      // No data still gets a real chart: empty axes with a flat line drawn along the baseline.
       const W = container.clientWidth || 600, H = height;
       const padL = 62, padR = 18, padT = 20, padB = 30;
       container.classList.add('chartAnim');
       container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="No data yet">
         <line x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${gridColor()}" stroke-width="1"/>
         <text x="${padL - 8}" y="${H - padB + 4}" text-anchor="end" font-size="11" fill="${inkColor()}">0</text>
-        <line class="lineDraw" pathLength="1" x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${seriesColor()}" stroke-width="2" opacity="0.4"/>
+        <line class="lineDraw" pathLength="1" x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${seriesColor()}" stroke-width="2.5" opacity="0.4"/>
         <text x="${(W + padL) / 2}" y="${(H - padB) / 2}" text-anchor="middle" font-size="13" fill="${inkColor()}">No sales in the current filter &#8212; try Reset in the period picker</text>
       </svg>`;
       return;
     }
+
     if (points.length === 1) {
-      // One month still gets a real chart: full axes with the value plotted as a point.
       const W = container.clientWidth || 600, H = height;
       const padL = 62, padR = 18, padT = 20, padB = 30;
       const max = niceCeil(points[0].value);
@@ -47,70 +67,136 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => t * max);
       container.classList.add('chartAnim');
       container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Monthly sales">
-        ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 60}ms"><line x1="${padL}" x2="${W - padR}" y1="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" y2="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" stroke="${gridColor()}" stroke-width="1"/><text x="${padL - 8}" y="${(H - padB - t / max * (H - padT - padB) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t === 0 ? '0' : format(t)}</text></g>`).join('')}
-        <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="#fff" stroke="${seriesColor()}" stroke-width="2.5"/>
-        <circle class="endPulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${seriesColor()}"/>
+        ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 60}ms"><line x1="${padL}" x2="${W - padR}" y1="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" y2="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" stroke="${gridColor()}" stroke-width="1" stroke-dasharray="3 3"/><text x="${padL - 8}" y="${(H - padB - t / max * (H - padT - padB) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t === 0 ? '0' : format(t)}</text></g>`).join('')}
+        <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="6" fill="#fff" stroke="${seriesColor()}" stroke-width="3"/>
+        <circle class="endPulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="${seriesColor()}"/>
         <text x="${px.toFixed(1)}" y="${(py < 48 ? py + 24 : py - 14).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="${strongInk()}">${format(points[0].value)}</text>
         <text x="${px.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(points[0].label)}</text>
-      </svg><p class="hint chartNote">One month so far &#8212; the line appears with two or more months</p>`;
+      </svg><p class="hint chartNote">One month so far &#8212; line draws across two or more months</p>`;
       return;
     }
+
     const W = container.clientWidth || 600, H = height;
-    const padL = 62, padR = 18, padT = 20, padB = 30;
+    const padL = 62, padR = 18, padT = 20, padB = 32;
     const values = points.map(p => p.value);
-    // Relative domain: data min/max padded 2%, floored at zero (sales magnitude stays readable).
     const loRaw = Math.min(...values), hiRaw = Math.max(...values);
-    const pad = Math.max((hiRaw - loRaw) * 0.02, hiRaw * 0.02, 1);
+    const pad = Math.max((hiRaw - loRaw) * 0.05, hiRaw * 0.05, 1);
     const lo = Math.max(0, loRaw - pad), hi = hiRaw + pad;
-    const x = i => padL + (W - padL - padR) * (i / (points.length - 1));
-    const y = v => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
-    const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join('');
-    const baseline = y(Math.max(lo, 0));
-    const area = `${line} L${x(points.length - 1).toFixed(1)},${baseline.toFixed(1)} L${x(0).toFixed(1)},${baseline.toFixed(1)} Z`;
+
+    const getX = i => padL + (W - padL - padR) * (i / (points.length - 1));
+    const getY = v => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+    const coordPoints = points.map((p, i) => ({ x: getX(i), y: getY(p.value), value: p.value, label: p.label }));
+    const curveD = buildBezierPath(coordPoints);
+    const baseline = getY(Math.max(lo, 0));
+    const lastX = coordPoints[coordPoints.length - 1].x;
+    const firstX = coordPoints[0].x;
+    const areaD = `${curveD} L ${lastX.toFixed(1)},${baseline.toFixed(1)} L ${firstX.toFixed(1)},${baseline.toFixed(1)} Z`;
+
     const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => lo + t * (hi - lo));
-    const skip = Math.ceil(points.length / Math.max(3, Math.floor((W - padL - padR) / 92)));
-    const xLabels = points.map((p, i) => (i % skip === 0 || i === points.length - 1) ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(p.label)}</text>` : '').join('');
-    const last = points[points.length - 1];
+    const skip = Math.ceil(points.length / Math.max(3, Math.floor((W - padL - padR) / 88)));
+    const xLabels = points.map((p, i) => (i % skip === 0 || i === points.length - 1) ? `<text x="${getX(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(p.label)}</text>` : '').join('');
+
+    const lastPt = coordPoints[coordPoints.length - 1];
+    const gradId = `sgGradient_${Math.random().toString(36).substr(2, 9)}`;
+
     container.classList.add('chartAnim');
-    container.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="Sales trend">
-      ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 60}ms"><line x1="${padL}" x2="${W - padR}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="${gridColor()}" stroke-width="1"/><text x="${padL - 8}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t.toFixed(0) === t ? format(t) : ''}</text></g>`).join('')}
-      <path class="areaFill" d="${area}" fill="${seriesColor()}" fill-opacity="0.18"/>
-      <path class="lineDraw" pathLength="1" d="${line}" fill="none" stroke="${seriesColor()}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-      ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="3.2" fill="#fff" stroke="${seriesColor()}" stroke-width="1.5"/>`).join('')}
-      <circle class="endPulse" cx="${x(points.length - 1).toFixed(1)}" cy="${y(last.value).toFixed(1)}" r="4" fill="${seriesColor()}"/>
-      <text x="${x(points.length - 1).toFixed(1)}" y="${(y(last.value) < 44 ? y(last.value) + 22 : y(last.value) - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(last.value)}</text>
-      ${xLabels}
-      <line class="crosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" opacity="0"/>
-      <circle class="crossdot" r="4.5" opacity="0"/>
-    </svg><div class="chartTip"></div>`;
+    container.innerHTML = `
+      <svg width="${W}" height="${H}" role="img" aria-label="Sales trend" style="overflow:visible">
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${seriesColor()}" stop-opacity="0.32" />
+            <stop offset="60%" stop-color="${seriesColor()}" stop-opacity="0.10" />
+            <stop offset="100%" stop-color="${seriesColor()}" stop-opacity="0.0" />
+          </linearGradient>
+          <filter id="sgGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+
+        ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 50}ms">
+          <line x1="${padL}" x2="${W - padR}" y1="${getY(t).toFixed(1)}" y2="${getY(t).toFixed(1)}" stroke="${gridColor()}" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="${padL - 8}" y="${(getY(t) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${format(Math.round(t))}</text>
+        </g>`).join('')}
+
+        <path class="areaFill" d="${areaD}" fill="url(#${gradId})" />
+        <path class="lineDraw" pathLength="1" d="${curveD}" fill="none" stroke="${seriesColor()}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+
+        ${coordPoints.map(p => `
+          <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#fff" stroke="${seriesColor()}" stroke-width="2"/>
+        `).join('')}
+
+        <circle class="endPulse" cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${seriesColor()}"/>
+        <text x="${lastPt.x.toFixed(1)}" y="${(lastPt.y < 44 ? lastPt.y + 20 : lastPt.y - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(lastPt.value)}</text>
+
+        ${xLabels}
+
+        <line class="crosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" opacity="0" stroke="${seriesColor()}" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <circle class="crossdot" r="6" opacity="0" fill="${seriesColor()}" stroke="#fff" stroke-width="2.5" filter="url(#sgGlow)"/>
+      </svg>
+      <div class="chartTip simpleGraphTip"></div>
+    `;
+
     const svg = container.querySelector('svg');
     const tip = container.querySelector('.chartTip');
     const hair = container.querySelector('.crosshair');
     const dot = container.querySelector('.crossdot');
+
     svg.addEventListener('pointermove', event => {
       const rect = svg.getBoundingClientRect();
-      // The SVG scales to its pane; map the on-screen x into the coordinate space it was drawn with.
       const relX = (event.clientX - rect.left) * (W / rect.width);
       const index = Math.max(0, Math.min(points.length - 1, Math.round((relX - padL) / (W - padL - padR) * (points.length - 1))));
-      const px = x(index), py = y(points[index].value);
-      hair.setAttribute('x1', px); hair.setAttribute('x2', px); hair.setAttribute('opacity', '0.55');
-      dot.setAttribute('cx', px); dot.setAttribute('cy', py); dot.setAttribute('opacity', '1');
+      const curr = coordPoints[index];
+
+      // Percentage difference calculation vs previous month
+      let diffHtml = '';
+      if (index > 0) {
+        const prev = coordPoints[index - 1];
+        if (prev.value > 0) {
+          const diffPct = ((curr.value - prev.value) / prev.value) * 100;
+          const isUp = diffPct >= 0;
+          diffHtml = `<span class="sgDiff ${isUp ? 'up' : 'down'}">${isUp ? '▲ +' : '▼ '}${Math.abs(diffPct).toFixed(1)}%</span>`;
+        }
+      }
+
+      hair.setAttribute('x1', curr.x);
+      hair.setAttribute('x2', curr.x);
+      hair.setAttribute('opacity', '0.65');
+
+      dot.setAttribute('cx', curr.x);
+      dot.setAttribute('cy', curr.y);
+      dot.setAttribute('opacity', '1');
+
       tip.classList.add('show');
-      tip.innerHTML = `<b>${escapeChartText(points[index].label)}</b><span>${format(points[index].value)}</span>`;
-      tip.style.left = `${Math.min(Math.max(px - 62, 4), W - 140)}px`;
-      tip.style.top = '4px';
+      tip.innerHTML = `
+        <div class="sgTipHead">
+          <b>${escapeChartText(curr.label)}</b>
+          ${diffHtml}
+        </div>
+        <span class="sgTipVal">${format(curr.value)}</span>
+      `;
+
+      const tipX = Math.min(Math.max(curr.x - 70, 8), W - 150);
+      tip.style.left = `${tipX}px`;
+      tip.style.top = '6px';
     });
-    svg.addEventListener('pointerleave', () => { tip.classList.remove('show'); hair.setAttribute('opacity', '0'); dot.setAttribute('opacity', '0'); });
+
+    svg.addEventListener('pointerleave', () => {
+      tip.classList.remove('show');
+      hair.setAttribute('opacity', '0');
+      dot.setAttribute('opacity', '0');
+    });
   });
 }
 
-// items: [{label, value, sub?}] ranked by position; one hue, values direct-labeled (never color-by-rank).
-function barList(container, items, { format = value => value.toLocaleString(), max: maxOverride } = {}) {
+function barList(container, items, { format = value => value.toLocaleString(), max: maxOverride, indexes = false } = {}) {
   remember(container, () => {
     if (!items.length) { container.innerHTML = '<p class="hint">No data matches these filters yet.</p>'; return; }
     const max = maxOverride || Math.max(...items.map(item => item.value), 1);
-    container.innerHTML = items.map(item => `
-      <div class="barRow" title="${escapeChartText(item.label)} — ${escapeChartText(format(item.value))}${item.sub ? ` (${escapeChartText(item.sub)})` : ''}">
+    container.innerHTML = items.map((item, i) => `
+      <div class="barRow${indexes ? ' indexed' : ''}" title="${escapeChartText(item.label)} — ${escapeChartText(format(item.value))}${item.sub ? ` (${escapeChartText(item.sub)})` : ''}">
+        ${indexes ? `<b class="barIndex">${i + 1}</b>` : ''}
         <span class="barLabel">${escapeChartText(item.label)}</span>
         <div class="barTrack"><i style="width:${Math.max(2, item.value / max * 100).toFixed(1)}%"></i></div>
         <strong class="barValueCell">${escapeChartText(format(item.value))}</strong>
