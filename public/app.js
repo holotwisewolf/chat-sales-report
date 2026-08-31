@@ -543,29 +543,41 @@ function initOptionWheel(container, items, initialIndex, onChange) {
 
 function setupYearWheel(years) {
   const yearBtn = document.querySelector('#chartYearVal');
-  const popup = document.querySelector('#yearWheelPopup');
-  const container = document.querySelector('#optionWheelContainer');
-  if (!yearBtn || !popup || !container) return;
+  const menu = document.querySelector('#chartYearMenu');
+  if (!yearBtn || !menu) return;
 
-  const currentIdx = Math.max(0, years.indexOf(Number(selectedChartYear)));
-  initOptionWheel(container, years.map(String), currentIdx, (idx, yearVal) => {
-    selectedChartYear = Number(yearVal);
-    if (yearBtn) yearBtn.textContent = selectedChartYear;
-    if (window.lastDashboardData) {
-      renderMonthlySalesTrend(window.lastDashboardData.trend, years);
-    }
+  const sortedYears = Array.from(years).sort((a, b) => b - a);
+  menu.innerHTML = sortedYears.map(yr => `
+    <div class="yearMenuItem ${Number(yr) === Number(selectedChartYear) ? 'selected' : ''}" data-year="${yr}">
+      <span>${yr}</span>
+      ${Number(yr) === Number(selectedChartYear) ? '✓' : ''}
+    </div>
+  `).join('');
+
+  menu.querySelectorAll('.yearMenuItem').forEach(item => {
+    item.onclick = e => {
+      e.stopPropagation();
+      const yr = Number(item.dataset.year);
+      selectedChartYear = yr;
+      if (yearBtn) yearBtn.textContent = selectedChartYear;
+      menu.hidden = true;
+      if (window.lastDashboardData) {
+        renderMonthlySalesTrend(window.lastDashboardData.trend, years);
+      }
+      setupYearWheel(years);
+    };
   });
 
   yearBtn.style.cursor = 'pointer';
   yearBtn.onclick = e => {
     e.preventDefault();
     e.stopPropagation();
-    popup.hidden = !popup.hidden;
+    menu.hidden = !menu.hidden;
   };
 
   document.addEventListener('pointerdown', e => {
-    if (popup && !popup.hidden && !popup.contains(e.target) && !yearBtn.contains(e.target)) {
-      popup.hidden = true;
+    if (menu && !menu.hidden && !menu.contains(e.target) && !yearBtn.contains(e.target)) {
+      menu.hidden = true;
     }
   });
 }

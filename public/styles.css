@@ -4221,26 +4221,65 @@ main {
   filter: brightness(1.15)
 }
 
-.chartTip, .simpleGraphTip {
-  z-index: 500 !important;
-  pointer-events: none;
+.chartYearMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 120px;
+  z-index: 1000;
+  width: 130px;
+  max-height: 185px;
+  overflow-y: auto;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .4);
+  padding: 6px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: popIn .18s cubic-bezier(.16, 1, .3, 1) forwards
 }
 
-.yearWheelPopup {
+.chartYearMenu::-webkit-scrollbar {
+  width: 4px
+}
+
+.chartYearMenu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .25);
+  border-radius: 4px
+}
+
+.yearMenuItem {
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all .15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between
+}
+
+.yearMenuItem:hover {
+  background: rgba(255, 255, 255, .1);
+  color: #f8fafc
+}
+
+.yearMenuItem.selected {
+  background: var(--accent-soft);
+  color: #38bdf8;
+  font-weight: 850
+}
+
+.carouselPane, .trend {
+  position: relative
+}
+
+.chartTip, .simpleGraphTip {
+  z-index: 500 !important;
   position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 9999;
-  background: rgba(15, 23, 42, .95);
-  border: 1px solid rgba(255, 255, 255, .2);
-  border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .5);
-  padding: 10px;
-  width: 170px;
-  height: 190px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  animation: popIn .2s cubic-bezier(.16, 1, .3, 1) forwards
+  pointer-events: none
 }
 
 .option-wheel-3d,
