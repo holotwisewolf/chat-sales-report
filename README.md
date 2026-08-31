@@ -13,6 +13,14 @@ npm start
 
 Open http://localhost:3000 in a browser. Use `PORT=3001` style env vars if 3000 is taken.
 
+## Set up on a new computer (e.g. for the user of the reports)
+
+1. Install the **Node.js LTS** from https://nodejs.org (default options).
+2. Get the app: download the ZIP from the green **Code** button on GitHub and extract it (or `git clone`).
+3. Double-click **`start.bat`**. On first run it installs everything (a few minutes, once), then asks you to fill in `.env` - paste your `GEMINI_API_KEY` and the business name to show in the header - and opens the dashboard in the browser. Every later run is just: double-click `start.bat`.
+4. If Windows asks about firewall access on the first run, allow it - the dashboard only listens on this computer.
+5. To make it a one-click icon: right-click `start.bat` → **Send to → Desktop (create shortcut)**.
+
 ## AI report reader (optional)
 
 The upload flow can send your report photos/PDFs to Google Gemini for transcription.
