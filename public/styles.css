@@ -918,7 +918,8 @@ main{padding-bottom:110px}
 .yearSelector{color:var(--accent);cursor:pointer;padding:2px 8px;border-radius:6px;background:var(--accent-soft);transition:all .15s ease;user-select:none;font-weight:800}
 .yearSelector:hover{background:rgba(42,120,214,.2);filter:brightness(1.15)}
 
-.yearWheelPopup{position:absolute;top:calc(100% + 6px);left:120px;z-index:100;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.18);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.4);padding:10px;width:160px;height:180px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:popIn .2s cubic-bezier(.16, 1, .3, 1) forwards}
+.carouselPane{overflow:visible}
+.yearWheelPopup{position:absolute;top:calc(100% + 6px);left:0;z-index:9999;background:rgba(15,23,42,.95);border:1px solid rgba(255,255,255,.2);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.5);padding:10px;width:170px;height:190px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:popIn .2s cubic-bezier(.16, 1, .3, 1) forwards}
 .option-wheel-3d,.option-wheel{position:relative;width:100%;height:100%;perspective:1000px;transform-style:preserve-3d;cursor:grab;user-select:none;touch-action:none}
 .option-wheel--dragging{cursor:grabbing}
 .option-wheel__item{position:absolute;top:50%;left:50%;white-space:nowrap;font-size:1.4rem;line-height:1;font-weight:600;cursor:pointer;will-change:transform,opacity;color:rgba(255,255,255,.7);transition:transform .22s cubic-bezier(.16, 1, .3, 1),opacity .22s ease,color .15s ease;backface-visibility:hidden}

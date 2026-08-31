@@ -43,7 +43,9 @@ function buildBezierPath(points) {
   return d;
 }
 
-function lineChart(container, points, { format = value => value.toLocaleString(), height = 230 } = {}) {
+const defaultCurrencyFormat = v => typeof v === 'number' ? 'RM ' + v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(v);
+
+function lineChart(container, points, { format = defaultCurrencyFormat, height = 230 } = {}) {
   remember(container, () => {
     if (!points.length) {
       const W = container.clientWidth || 600, H = height;
@@ -121,6 +123,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
     const skip = Math.ceil(points.length / Math.max(3, Math.floor((W - padL - padR) / 88)));
     const xLabels = points.map((p, i) => (i % skip === 0 || i === points.length - 1) ? `<text x="${getX(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(p.label)}</text>` : '').join('');
 
+    const allZero = values.every(v => v === 0);
     const lastPt = coordPoints[coordPoints.length - 1];
     const gradId = `sgGradient_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -151,8 +154,10 @@ function lineChart(container, points, { format = value => value.toLocaleString()
           <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#fff" stroke="${seriesColor()}" stroke-width="2"/>
         `).join('')}
 
-        <circle class="endPulse" cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${seriesColor()}"/>
-        <text x="${lastPt.x.toFixed(1)}" y="${(lastPt.y < 44 ? lastPt.y + 20 : lastPt.y - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(lastPt.value)}</text>
+        ${allZero ? '' : `
+          <circle class="endPulse" cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${seriesColor()}"/>
+          <text x="${lastPt.x.toFixed(1)}" y="${(lastPt.y < 44 ? lastPt.y + 20 : lastPt.y - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(lastPt.value)}</text>
+        `}
 
         ${xLabels}
 

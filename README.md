@@ -1,4 +1,4 @@
-# Sales Report & Analytics Dashboard 📊
+# Sales Report & Analytics Dashboard
 
 An intelligent, interactive sales dashboard and report management application built with Node.js, Express, SQLite, and Google Gemini AI. Features real-time bento analytics, drag-and-drop report processing (PDF, Excel, Images), Excel-style interactive table data editing, custom print report builder, and conversational AI data analysis.
 
@@ -62,7 +62,7 @@ An intelligent, interactive sales dashboard and report management application bu
 
 ---
 
-## Running with Docker 🐳
+## Running with Docker
 
 1. **Build the Docker image**:
    ```bash

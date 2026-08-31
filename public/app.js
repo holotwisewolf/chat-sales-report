@@ -556,13 +556,15 @@ function setupYearWheel(years) {
     }
   });
 
+  yearBtn.style.cursor = 'pointer';
   yearBtn.onclick = e => {
+    e.preventDefault();
     e.stopPropagation();
     popup.hidden = !popup.hidden;
   };
 
   document.addEventListener('pointerdown', e => {
-    if (popup && !popup.hidden && !popup.contains(e.target) && e.target !== yearBtn) {
+    if (popup && !popup.hidden && !popup.contains(e.target) && !yearBtn.contains(e.target)) {
       popup.hidden = true;
     }
   });

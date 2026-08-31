@@ -177,6 +177,8 @@ if (chatSettingsBtn && chatGooeyOverlay) {
     renderRecentChatsList();
     chatGooeyOverlay.hidden = false;
   };
+}
+
 if (chatModal) {
   chatModal.onclick = event => {
     if (event.target === chatModal) {
