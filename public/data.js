@@ -38,7 +38,7 @@ window.resetPeriod = resetPeriod;
 function renderPeriodPicker() {
   $data('#periodBtn').innerHTML = `${escapeHtml(periodLabel())} &darr;`;
   const p = dataState.period;
-  $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">All years</button>`]
+  $data('#ppYears').innerHTML = [`<button type="button" class="ppBtn secondary ${p.year == null && !p.from && !p.to ? 'on' : ''}" data-year="">All</button>`]
     .concat(dataState.years.map(y => `<button type="button" class="ppBtn secondary ${p.year === y && !p.from && !p.to ? 'on' : ''}" data-year="${y}">${y}</button>`)).join('');
   $data('#ppMonths').innerHTML = MONTHS.map((m, i) => {
     const state = p.months[i] || '';
@@ -94,7 +94,7 @@ function wirePeriodPicker() {
   $data('#ppTo').onchange = onRangeChange;
   $data('#ppReset').onclick = () => { resetPeriod(); applyPeriod(); };
   const resetLabel = $data('#ppReset');
-  if (resetLabel) resetLabel.textContent = 'Reset everything';
+  if (resetLabel) resetLabel.textContent = 'Reset';
 }
 
 async function populateDataFilters() {
@@ -203,7 +203,12 @@ function rowHtml(row, columns, index) {
 }
 
 // ---- Undo: edits are patched back; deletes are restored through /api/rows/restore. ----
-function pushUndo(entry) { undoStack.push(entry); if (undoStack.length > 50) undoStack.shift(); window.updateUndoDock?.(); }
+function pushUndo(entry) {
+  undoStack.push(entry);
+  if (undoStack.length > 50) undoStack.shift();
+  window.updateUndoDock?.();
+  window.revealDock?.();
+}
 window.undo = undo;
 window.undoCount = () => undoStack.length;
 async function undo() {
@@ -306,8 +311,20 @@ async function deleteSelected() {
   if (!ids.length) return;
   if (!confirm(`Delete ${ids.length} row${ids.length > 1 ? 's' : ''}? You can undo with the Undo button.`)) return;
   const rows = dataState.lastRows.filter(r => ids.includes(r.id)).map(r => ({
-    _report: 0, counter: r.counter, retailer: r.retailer, category: r.category, productName: r.productName,
-    sku: r.sku, quantity: r.quantity, sales: r.sales, cost: r.cost, profit: r.profit
+    _report: 0,
+    reportId: r.reportId,
+    counter: r.counter,
+    retailer: r.retailer,
+    category: r.category,
+    periodStart: r.periodStart,
+    periodEnd: r.periodEnd,
+    productName: r.productName,
+    sku: r.sku,
+    quantity: r.quantity,
+    sales: r.sales,
+    cost: r.cost,
+    profit: r.profit,
+    margin_percent: r.margin_percent
   }));
   const reports = [];
   for (const id of ids) {
@@ -363,6 +380,29 @@ const executePrint = $data('#executePrint');
 const exportPrintBtn = $data('#exportPrintBtn');
 const topPrintBtn = $data('#printBtn');
 
+// Print tabs and preview logic
+const ptSettingsTab = $data('#ptSettingsTab'), ptPreviewTab = $data('#ptPreviewTab');
+const printSettingsView = $data('#printSettingsView'), printPreviewView = $data('#printPreviewView');
+const previewContainer = $data('#previewContainer');
+
+function switchPrintTab(tab) {
+  if (tab === 'preview') {
+    ptPreviewTab?.classList.add('on');
+    ptSettingsTab?.classList.remove('on');
+    if (printSettingsView) printSettingsView.hidden = true;
+    if (printPreviewView) printPreviewView.hidden = false;
+    updatePrintPreview();
+  } else {
+    ptSettingsTab?.classList.add('on');
+    ptPreviewTab?.classList.remove('on');
+    if (printSettingsView) printSettingsView.hidden = false;
+    if (printPreviewView) printPreviewView.hidden = true;
+  }
+}
+
+if (ptSettingsTab) ptSettingsTab.onclick = () => switchPrintTab('settings');
+if (ptPreviewTab) ptPreviewTab.onclick = () => switchPrintTab('preview');
+
 function openPrintModal() {
   if (exportMenu) exportMenu.hidden = true;
   if (!printDialog) return;
@@ -375,7 +415,10 @@ function openPrintModal() {
         ${escapeHtml(col.label)}
       </label>
     `).join('');
+    // Auto update preview when checkboxes change
+    colsList.querySelectorAll('input').forEach(inp => inp.onchange = () => { if (!printPreviewView?.hidden) updatePrintPreview(); });
   }
+  switchPrintTab('settings');
   printDialog.showModal();
 }
 
@@ -384,21 +427,16 @@ if (exportPrintBtn) exportPrintBtn.onclick = openPrintModal;
 if (closePrint) closePrint.onclick = () => printDialog?.close();
 if (cancelPrint) cancelPrint.onclick = () => printDialog?.close();
 
-async function generateAndPrint() {
+async function buildPrintHtml() {
   const range = currentPeriod();
   const params = new URLSearchParams({
     retailer: dataState.retailer, category: dataState.category,
     from: range.from, to: range.to, months: range.months, exMonths: range.exMonths,
     q: dataState.q, sort: dataState.sort, dir: dataState.dir
   });
-  // Fetch all rows matching filters (export endpoint gives full unpaginated list)
-  const fullData = await fetch(`/api/export?${params}&format=csv`).catch(() => null);
-  // Also get the rows via /api/rows with page size or direct query
-  // Let's query /api/dashboard for totals and /api/rows for all rows
   const countRes = await fetch(`/api/rows?${params}&page=1`).then(r => r.json()).catch(() => ({ rows: [] }));
   let rows = countRes.rows || [];
   if (countRes.total > countRes.rows.length) {
-    // If more rows exist, fetch up to 2000 rows
     const allRowsRes = await fetch(`/api/rows?${params}&page=1&limit=${Math.min(2000, countRes.total)}`).then(r => r.json()).catch(() => null);
     if (allRowsRes?.rows) rows = allRowsRes.rows;
   }
@@ -413,14 +451,15 @@ async function generateAndPrint() {
   const theme = $data('#psTheme')?.value || 'clean';
   const boldHeaders = $data('#psBoldHeaders')?.checked;
   const gridLines = $data('#psGridLines')?.checked;
+  const textAlign = $data('#psTextAlign')?.value || 'left';
+  const numAlign = $data('#psNumAlign')?.value || 'right';
 
   const selectedColKeys = new Set(
     [...document.querySelectorAll('.psColToggle:checked')].map(el => el.dataset.col)
   );
   const activeCols = ALL_COLUMNS.filter(c => selectedColKeys.has(c.key));
   if (!activeCols.length) {
-    alert('Please select at least one column to print.');
-    return;
+    return { error: 'Please select at least one column to print.' };
   }
 
   // Calculate totals
@@ -433,9 +472,6 @@ async function generateAndPrint() {
   });
 
   const totalsObj = { quantity: totalQty, sales: totalSales, cost: totalCost, profit: totalProfit };
-
-  const printArea = $data('#printOutput');
-  if (!printArea) return;
 
   const classes = [
     `size-${fontSize}`,
@@ -467,10 +503,12 @@ async function generateAndPrint() {
 
   const stamp = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
+  const getColAlign = col => col.num ? numAlign : textAlign;
+
   const renderTableRows = slice => slice.map((row, idx) => `
     <tr>
       <td style="text-align:right;width:32px;color:#666">${idx + 1}</td>
-      ${activeCols.map(col => `<td class="${col.num ? 'num' : ''}">${cellText(row, col)}</td>`).join('')}
+      ${activeCols.map(col => `<td class="${col.num ? 'num' : ''}" style="text-align:${getColAlign(col)}">${cellText(row, col)}</td>`).join('')}
     </tr>
   `).join('');
 
@@ -478,7 +516,7 @@ async function generateAndPrint() {
     <thead>
       <tr>
         <th style="width:32px;text-align:right">#</th>
-        ${activeCols.map(col => `<th class="${col.num ? 'num' : ''}">${escapeHtml(col.label)}</th>`).join('')}
+        ${activeCols.map(col => `<th class="${col.num ? 'num' : ''}" style="text-align:${getColAlign(col)};${boldHeaders ? 'font-weight:800;' : ''}">${escapeHtml(col.label)}</th>`).join('')}
       </tr>
     </thead>
   `;
@@ -488,8 +526,8 @@ async function generateAndPrint() {
       <tr>
         <td></td>
         ${activeCols.map(col => col.key === 'counter'
-          ? `<td>Total (${rows.length.toLocaleString()} rows)</td>`
-          : `<td class="${col.num ? 'num' : ''}">${col.num ? formatNum(totalsObj[col.key] || 0, MONEY_FIELDS.has(col.key)) : ''}</td>`
+          ? `<td style="text-align:${textAlign};${boldHeaders ? 'font-weight:800;' : ''}">Total (${rows.length.toLocaleString()} rows)</td>`
+          : `<td class="${col.num ? 'num' : ''}" style="text-align:${getColAlign(col)};${boldHeaders ? 'font-weight:800;' : ''}">${col.num ? formatNum(totalsObj[col.key] || 0, MONEY_FIELDS.has(col.key)) : ''}</td>`
         ).join('')}
       </tr>
     </tfoot>
@@ -521,8 +559,7 @@ async function generateAndPrint() {
     `;
   }
 
-  printArea.className = `printOutput ${classes}`;
-  printArea.innerHTML = `
+  const fullHtml = `
     <div class="printHeader">
       <h1>${escapeHtml(title)}</h1>
       ${subtitle ? `<p class="printSubtitle">${escapeHtml(subtitle)}</p>` : ''}
@@ -532,6 +569,32 @@ async function generateAndPrint() {
     ${summaryHtml}
     ${tablesHtml}
   `;
+
+  return { classes, fullHtml };
+}
+
+async function updatePrintPreview() {
+  if (!previewContainer) return;
+  previewContainer.innerHTML = '<div style="padding:40px;text-align:center;color:#666">Generating live preview...</div>';
+  const result = await buildPrintHtml();
+  if (result.error) {
+    previewContainer.innerHTML = `<div style="padding:40px;text-align:center;color:#bb3a30">${escapeHtml(result.error)}</div>`;
+    return;
+  }
+  previewContainer.className = `previewSheet ${result.classes}`;
+  previewContainer.innerHTML = result.fullHtml;
+}
+
+async function generateAndPrint() {
+  const printArea = $data('#printOutput');
+  if (!printArea) return;
+  const result = await buildPrintHtml();
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+  printArea.className = `printOutput ${result.classes}`;
+  printArea.innerHTML = result.fullHtml;
 
   printDialog.close();
   setTimeout(() => window.print(), 100);

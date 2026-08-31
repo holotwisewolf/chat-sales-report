@@ -69,19 +69,37 @@ const $extra = selector => document.querySelector(selector);
     manual: () => window.openManual?.(),
     undo: () => window.undo?.()
   };
+
+  let autoHideTimer = null;
+  window.revealDock = (duration = 4500) => {
+    clearTimeout(hideTimer);
+    clearTimeout(autoHideTimer);
+    dockEl.classList.add('show');
+    if (duration > 0) {
+      autoHideTimer = setTimeout(() => {
+        // Only hide if pointer is not hovering the zone
+        if (!zone.matches(':hover')) dockEl.classList.remove('show');
+      }, duration);
+    }
+  };
+
   // The dock's Undo item is greyed out with nothing to undo - it teaches that undo exists.
   window.updateUndoDock = () => {
     const item = dockEl.querySelector('[data-action="undo"]');
     if (item) {
       const count = window.undoCount ? window.undoCount() : 0;
-      item.dataset.disabled = count ? '' : '1';
+      if (count > 0) {
+        item.removeAttribute('data-disabled');
+      } else {
+        item.setAttribute('data-disabled', '1');
+      }
       item.querySelector('.dockLabel').textContent = count ? `Undo (${count})` : 'Undo';
     }
   };
   window.updateUndoDock();
   dockEl.addEventListener('click', event => {
     const item = event.target.closest('.dockItem');
-    if (item && !item.dataset.disabled) actions[item.dataset.action]?.();
+    if (item && !item.hasAttribute('data-disabled')) actions[item.dataset.action]?.();
   });
   // Proximity magnification: nearest items grow as the pointer sweeps across the dock.
   dockEl.addEventListener('pointermove', event => {
