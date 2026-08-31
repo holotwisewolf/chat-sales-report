@@ -47,7 +47,6 @@ const defaultCurrencyFormat = v => typeof v === 'number' ? 'RM ' + v.toLocaleStr
 
 function lineChart(container, points, { format = defaultCurrencyFormat, height = 230 } = {}) {
   remember(container, () => {
-    container.style.position = 'relative';
     if (!points.length) {
       const W = container.clientWidth || 600, H = height;
       const padL = 62, padR = 18, padT = 20, padB = 30;
