@@ -105,7 +105,7 @@ async function renderDashboard() {
     else catPane.innerHTML = '<p class="hint">No categories in this filter yet.</p>';
   }
   window.lastDashboardData = data;
-  const defaultYears = [2024, 2025, 2026, 2027];
+  const defaultYears = [2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
   const dataYears = data.options?.years || [];
   const availableYears = Array.from(new Set([...dataYears, ...defaultYears])).sort((a, b) => a - b);
   if (!availableYears.includes(selectedChartYear)) {
@@ -463,7 +463,11 @@ function renderMonthlySalesTrend(trendData, optionsYears) {
     };
   });
 
-  lineChart(trendEl, fullYearTrend, { format: money });
+  const hasData = fullYearTrend.some(m => m.value > 0);
+  if (trendEl) {
+    trendEl.style.filter = hasData ? 'none' : 'grayscale(1) opacity(0.5)';
+  }
+  lineChart(trendEl, fullYearTrend, { format: hasData ? money : () => '—' });
 }
 
 function initOptionWheel(container, items, initialIndex, onChange) {

@@ -210,13 +210,19 @@ function renderRecentChatsList() {
     const isCurrent = s.id === currentSessionId;
     const timeStr = new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const dateStr = new Date(s.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    
+    // Derive conversation title from first user message if no custom title is set
+    const firstUserMsg = s.entries?.find(m => m.role === 'user')?.content || '';
+    let rawTitle = s.title || firstUserMsg || 'New Conversation';
+    let displayTitle = rawTitle.length > 34 ? rawTitle.slice(0, 34) + '...' : rawTitle;
+
     return `
       <div class="recentChatItem ${isCurrent ? 'active' : ''} ${isArchived ? 'archived' : ''}" data-sess-id="${s.id}">
-        <div>
-          <strong>${escapeHtml(s.title || 'Untitled Chat')}</strong>
+        <div style="flex:1;min-width:0">
+          <strong class="recentChatTitle" data-edit-title="${s.id}" title="Click to rename conversation" tabindex="0">${escapeHtml(displayTitle)}</strong>
           <small style="display:block;color:var(--ink2);margin-top:2px">${dateStr} ${timeStr} &middot; ${s.entries.length} messages</small>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <span class="recentChatBadge ${isArchived ? 'archived' : 'active'}">${isArchived ? 'Archived' : 'Active'}</span>
           <button type="button" class="recentChatDel" data-del-sess="${s.id}" title="Delete conversation">&times;</button>
         </div>
@@ -225,7 +231,8 @@ function renderRecentChatsList() {
   }).join('');
 
   recentChatsList.querySelectorAll('.recentChatItem').forEach(el => {
-    el.onclick = () => {
+    el.onclick = e => {
+      if (e.target.closest('.recentChatTitle') || e.target.closest('.recentChatDel')) return;
       const id = el.dataset.sessId;
       const sess = sessions.find(x => x.id === id);
       if (sess) {
@@ -233,6 +240,47 @@ function renderRecentChatsList() {
         renderChatSession(sess);
         chatGooeyOverlay.hidden = true;
       }
+    };
+  });
+
+  recentChatsList.querySelectorAll('.recentChatTitle').forEach(titleEl => {
+    const id = titleEl.dataset.editTitle;
+    const sess = sessions.find(x => x.id === id);
+    
+    titleEl.onclick = e => {
+      e.stopPropagation();
+      titleEl.contentEditable = 'true';
+      titleEl.focus();
+      // Place text cursor at the end
+      const range = document.createRange();
+      range.selectNodeContents(titleEl);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    };
+
+    const saveTitle = () => {
+      titleEl.contentEditable = 'false';
+      const newTitle = titleEl.textContent.trim();
+      if (newTitle && sess) {
+        sess.title = newTitle;
+        saveSessions(sessions);
+      }
+    };
+
+    titleEl.onkeydown = e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveTitle();
+      } else if (e.key === 'Escape') {
+        titleEl.contentEditable = 'false';
+        renderRecentChatsList();
+      }
+    };
+
+    titleEl.onblur = () => {
+      saveTitle();
     };
   });
 

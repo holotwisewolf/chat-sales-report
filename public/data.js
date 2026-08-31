@@ -13,17 +13,19 @@ function initColumnResizers(COLUMNS) {
   if (!headEl) return;
   const resizers = headEl.querySelectorAll('.colResizer');
   resizers.forEach(resizer => {
-    const colKey = resizer.dataset.col;
     const isLeft = resizer.classList.contains('left');
+    const cell = resizer.parentElement;
+    const prevCell = cell ? cell.previousElementSibling : null;
+    const targetKey = (isLeft && prevCell) ? (prevCell.querySelector('.colResizer')?.dataset.col || resizer.dataset.col) : resizer.dataset.col;
+
     let startX = 0;
     let startWidth = 0;
     
     const onMouseMove = e => {
       const rawDx = e.clientX - startX;
-      const dx = isLeft ? -rawDx : rawDx;
-      const minW = colKey === 'index' ? 24 : 50;
-      const newWidth = Math.max(minW, startWidth + dx);
-      customColWidths[colKey] = `${newWidth}px`;
+      const minW = targetKey === 'index' ? 24 : 50;
+      const newWidth = Math.max(minW, startWidth + rawDx);
+      customColWidths[targetKey] = `${newWidth}px`;
       
       const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,1fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
       const idxW = customColWidths.index || '36px';
@@ -47,8 +49,8 @@ function initColumnResizers(COLUMNS) {
       e.stopPropagation();
       e.preventDefault();
       startX = e.clientX;
-      const cell = resizer.parentElement;
-      startWidth = cell.getBoundingClientRect().width;
+      const targetCell = (isLeft && prevCell) ? prevCell : cell;
+      startWidth = targetCell.getBoundingClientRect().width;
       resizer.classList.add('resizing');
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
@@ -876,8 +878,15 @@ async function generateAndPrint() {
   printArea.className = `printOutput ${result.classes}`;
   printArea.innerHTML = result.fullHtml;
 
+  const originalTitle = document.title;
+  const printTitle = $data('#psTitle')?.value.trim() || 'Sales Report';
+  document.title = printTitle;
+
   printDialog.close();
-  setTimeout(() => window.print(), 100);
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { document.title = originalTitle; }, 500);
+  }, 100);
 }
 
 if (executePrint) executePrint.onclick = generateAndPrint;
