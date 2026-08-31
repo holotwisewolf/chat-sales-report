@@ -32,13 +32,31 @@ async function load() {
   }
 }
 
+let applyFiltersToOverview = true;
+
 async function renderDashboard() {
-  const params = new URLSearchParams(Object.fromEntries(Object.entries(FILTER_IDS).map(([selector, key]) => [key, filterValue(selector)])));
-  const range = window.currentPeriod ? window.currentPeriod() : {};
-  params.set('from', range.from || '');
-  params.set('to', range.to || '');
-  params.set('months', range.months || '');
-  params.set('exMonths', range.exMonths || '');
+  const applyBtn = document.querySelector('#applyFilterToggleBtn');
+  if (applyBtn && !applyBtn.dataset.wired) {
+    applyBtn.dataset.wired = 'true';
+    applyBtn.onclick = e => {
+      e.stopPropagation();
+      applyFiltersToOverview = !applyFiltersToOverview;
+      applyBtn.classList.toggle('on', applyFiltersToOverview);
+      const labelSpan = applyBtn.querySelector('.toggleLabel');
+      if (labelSpan) labelSpan.textContent = applyFiltersToOverview ? 'Apply current filter' : 'Overview unfiltered';
+      load();
+    };
+  }
+
+  const params = new URLSearchParams();
+  if (applyFiltersToOverview) {
+    Object.entries(FILTER_IDS).forEach(([selector, key]) => params.set(key, filterValue(selector)));
+    const range = window.currentPeriod ? window.currentPeriod() : {};
+    params.set('from', range.from || '');
+    params.set('to', range.to || '');
+    params.set('months', range.months || '');
+    params.set('exMonths', range.exMonths || '');
+  }
   const data = await fetch(`/api/dashboard?${params}`).then(response => response.json());
   document.querySelector('#sales').textContent = money(data.summary.sales);
   document.querySelector('#units').textContent = Number(data.summary.quantity).toLocaleString();
@@ -48,10 +66,30 @@ async function renderDashboard() {
   const chips = Object.entries(FILTER_IDS).filter(([selector]) => filterValue(selector));
   const periodChip = window.periodLabel && window.periodLabel() !== 'All time'
     ? `<span class="filterChip">Period: ${escapeHtml(window.periodLabel())}<button type="button" id="clearPeriod" aria-label="Clear period">&times;</button></span>` : '';
-  // The bar only exists to hold active filter chips - with nothing filtered there is nothing to say.
-  document.querySelector('#activeFilters').innerHTML = (chips.length || periodChip)
-    ? '<span class="statusLabel">Showing</span>' + periodChip + chips.map(([selector, key]) => `<span class="filterChip">${labels[key]}: ${escapeHtml(filterValue(selector))}<button type="button" data-clear="${selector}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
-    : '';
+  const activeFiltersEl = document.querySelector('#activeFilters');
+  if (activeFiltersEl) {
+    const hasFilters = Boolean(chips.length || periodChip);
+    activeFiltersEl.style.display = hasFilters ? 'flex' : 'none';
+    activeFiltersEl.innerHTML = hasFilters
+      ? '<span class="statusLabel">Showing</span>' + periodChip + chips.map(([selector, key]) => `<span class="filterChip">${labels[key]}: ${escapeHtml(filterValue(selector))}<button type="button" data-clear="${selector}" aria-label="Clear filter">&times;</button></span>`).join('') + '<button type="button" class="linkish" id="clearAll">clear all</button>'
+      : '';
+  }
+
+  // Populate flyout submenu active filter parameters list
+  const flyoutList = document.querySelector('#flyoutFilterList');
+  if (flyoutList) {
+    const retVal = filterValue('#dRetailer');
+    const catVal = filterValue('#dCategory');
+    const periodVal = window.periodLabel ? window.periodLabel() : 'All time';
+    flyoutList.innerHTML = `
+      <div class="flyoutFilterItem"><span>Retailer:</span> <span>${escapeHtml(retVal || 'All retailers')}</span></div>
+      <div class="flyoutFilterItem"><span>Category:</span> <span>${escapeHtml(catVal || 'All categories')}</span></div>
+      <div class="flyoutFilterItem"><span>Period:</span> <span>${escapeHtml(periodVal)}</span></div>
+      <div class="flyoutFilterItem" style="margin-top:4px;padding-top:4px;border-top:1px dashed var(--hair2)">
+        <span>Overview Status:</span> <strong>${applyFiltersToOverview ? 'Filtered' : 'Unfiltered'}</strong>
+      </div>
+    `;
+  }
   const clearPeriod = document.querySelector('#clearPeriod');
   if (clearPeriod) clearPeriod.onclick = () => { if (window.resetPeriod) window.resetPeriod(); loadRows(); load(); };
   const clearAll = document.querySelector('#clearAll');
@@ -64,9 +102,11 @@ async function renderDashboard() {
     else catPane.innerHTML = '<p class="hint">No categories in this filter yet.</p>';
   }
   window.lastDashboardData = data;
-  const availableYears = (data.options?.years && data.options.years.length) ? data.options.years : [2024, 2025, 2026, 2027];
-  if (!selectedChartYear || !availableYears.includes(selectedChartYear)) {
-    selectedChartYear = availableYears[availableYears.length - 1] || 2026;
+  const defaultYears = [2024, 2025, 2026, 2027];
+  const dataYears = data.options?.years || [];
+  const availableYears = Array.from(new Set([...dataYears, ...defaultYears])).sort((a, b) => a - b);
+  if (!availableYears.includes(selectedChartYear)) {
+    selectedChartYear = 2026;
   }
   renderMonthlySalesTrend(data.trend, availableYears);
   setupYearWheel(availableYears);

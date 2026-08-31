@@ -134,7 +134,7 @@ async function loadRows() {
   dataState.lastRows = data.rows;
   const has = data.columns || {};
   const COLUMNS = visibleColumns(has);
-  const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,0.9fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
+  const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,1fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
   const template = ['36px'].concat(COLUMNS.map(c => c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)'))).join(' ');
   const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('');
   const firstIndex = ((data.page - 1) * (data.pageSize || 50)) + 1;

@@ -133,23 +133,21 @@ function renderChatSession(session) {
   renderChatSession(active);
 })();
 
-// React Bits GooeyNav Particle Generator (Flows from outside inward to build the card)
+// React Bits GooeyNav Particle Generator (Outward burst with matching white card color)
 function triggerGooeyParticles() {
   const container = $chat('#gooeyParticles');
   if (!container) return;
   container.innerHTML = '';
-  for (let i = 0; i < 22; i++) {
+  for (let i = 0; i < 20; i++) {
     const p = document.createElement('span');
     p.className = 'gooeyParticle';
-    const angle = Math.random() * Math.PI * 2;
-    const distance = 220 + Math.random() * 180;
-    const startDx = Math.cos(angle) * distance;
-    const startDy = Math.sin(angle) * distance;
-    p.style.left = '50%';
-    p.style.top = '50%';
-    p.style.setProperty('--dx', `${startDx}px`);
-    p.style.setProperty('--dy', `${startDy}px`);
-    p.style.animationDelay = `${i * 20}ms`;
+    const dx = (Math.random() - 0.5) * 360;
+    const dy = (Math.random() - 0.5) * 360;
+    p.style.left = `${50 + (Math.random() - 0.5) * 15}%`;
+    p.style.top = `${50 + (Math.random() - 0.5) * 15}%`;
+    p.style.setProperty('--dx', `${dx}px`);
+    p.style.setProperty('--dy', `${dy}px`);
+    p.style.animationDelay = `${i * 15}ms`;
     container.appendChild(p);
   }
 }
@@ -218,7 +216,10 @@ function renderRecentChatsList() {
           <strong>${escapeHtml(s.title || 'Untitled Chat')}</strong>
           <small style="display:block;color:var(--ink2);margin-top:2px">${dateStr} ${timeStr} &middot; ${s.entries.length} messages</small>
         </div>
-        <span class="recentChatBadge ${isArchived ? 'archived' : 'active'}">${isArchived ? 'Archived' : 'Active'}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="recentChatBadge ${isArchived ? 'archived' : 'active'}">${isArchived ? 'Archived' : 'Active'}</span>
+          <button type="button" class="recentChatDel" data-del-sess="${s.id}" title="Delete conversation">&times;</button>
+        </div>
       </div>
     `;
   }).join('');
@@ -232,6 +233,21 @@ function renderRecentChatsList() {
         renderChatSession(sess);
         chatGooeyOverlay.hidden = true;
       }
+    };
+  });
+
+  recentChatsList.querySelectorAll('.recentChatDel').forEach(delBtn => {
+    delBtn.onclick = e => {
+      e.stopPropagation();
+      const id = delBtn.dataset.delSess;
+      let sessions = getSessions().filter(x => x.id !== id);
+      saveSessions(sessions);
+      if (currentSessionId === id) {
+        const fallback = getActiveOrCreateSession();
+        currentSessionId = fallback.id;
+        renderChatSession(fallback);
+      }
+      renderRecentChatsList();
     };
   });
 }

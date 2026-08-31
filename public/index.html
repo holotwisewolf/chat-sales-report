@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=21">
+  <link rel="stylesheet" href="/styles.css?v=22">
 </head>
 
 <body>
@@ -73,7 +73,19 @@
     <div id="activeFilters" class="activeFilters statusBar"></div>
     <section class="collapsible" id="collOverview">
       <div class="collHead">
-        <h2>Performance Overview <span class="dataTag">Recorded data</span></h2>
+        <h2>Performance Overview 
+          <div class="filterToggleFlyoutWrap" onclick="event.stopPropagation()">
+            <button type="button" class="filterToggleBtn on" id="applyFilterToggleBtn" title="Click to toggle filter application for Overview">
+              <span class="toggleIndicator"></span>
+              <span class="toggleLabel">Apply current filter</span>
+              <svg class="flyoutChevron" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+            <div class="flyoutSubmenu" id="filterFlyoutSubmenu">
+              <div class="flyoutHeader">Active Filter Parameters &rsaquo;</div>
+              <div id="flyoutFilterList" class="flyoutFilterList"></div>
+            </div>
+          </div>
+        </h2>
         <button type="button" class="chev" aria-label="Show or hide">
           <svg class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
             stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
@@ -647,18 +659,17 @@
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 20h9" />
         <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-      </svg><span class="dockLabel">Manual entry</span></button><button type="button" class="dockItem"
-      data-action="undo" data-disabled="1" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      </svg><span class="dockLabel">Manual entry</span></button><button type="button" class="dockItem" data-action="undo" data-disabled="1" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 7v6h6" />
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
       </svg><span class="dockLabel">Undo</span></button></nav>
-  <script src="/chart.js?v=20"></script>
-  <script src="/app.js?v=20"></script>
-  <script src="/import.js?v=20"></script>
-  <script src="/chat.js?v=20"></script>
-  <script src="/data.js?v=20"></script>
-  <script src="/extras.js?v=20"></script>
+  <script src="/chart.js?v=21"></script>
+  <script src="/app.js?v=21"></script>
+  <script src="/import.js?v=21"></script>
+  <script src="/chat.js?v=21"></script>
+  <script src="/data.js?v=21"></script>
+  <script src="/extras.js?v=21"></script>
 </body>
 
 </html>
