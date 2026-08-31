@@ -158,10 +158,9 @@ async function loadRows() {
   const strips = [...$data('#dataTable').querySelectorAll('.dsHead,.dsFoot')];
   if (bodyEl && strips.length) {
     const sync = () => {
-      const width = bodyEl.clientWidth;
+      const scrollWidth = bodyEl.scrollWidth || bodyEl.clientWidth;
       strips.forEach(strip => {
-        strip.style.width = `${width}px`;
-        strip.style.paddingRight = '0';
+        strip.style.width = `${scrollWidth}px`;
         strip.style.transform = `translateX(${-bodyEl.scrollLeft}px)`;
       });
     };

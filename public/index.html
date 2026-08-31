@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=19">
+  <link rel="stylesheet" href="/styles.css?v=20">
 </head>
 
 <body>
@@ -108,8 +108,13 @@
                 <div class="carousel" id="chartCarousel">
                   <div class="carouselTrack" id="carouselTrack">
                     <div class="carouselPane">
-                      <p class="hint bentoGraphHint">Monthly sales trend with percentage shift. Drag or use dots for
-                        categories.</p>
+                      <div class="chartTitleWrap">
+                        <h2 class="bentoMainTitle">Monthly sales in <span id="chartYearVal" class="yearSelector" title="Click or drag to change year">2026</span></h2>
+                        <div id="yearWheelPopup" class="yearWheelPopup" hidden>
+                          <div id="optionWheelContainer" class="option-wheel"></div>
+                        </div>
+                      </div>
+                      <p class="hint bentoGraphHint">Monthly sales trend with percentage shift.</p>
                       <div class="trend" id="trend"></div>
                     </div>
                     <div class="carouselPane">
@@ -162,7 +167,7 @@
     </section>
     <section class="collapsible" id="collCounters">
       <div class="collHead">
-        <h2>Best counters &amp; what stands out</h2><button type="button" class="chev" aria-label="Show or hide"><svg
+        <h2>Top Counters &amp; Insights</h2><button type="button" class="chev" aria-label="Show or hide"><svg
             class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
             stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="4" x2="12" y2="15"></line>
@@ -177,6 +182,7 @@
               <div id="ranking"></div>
             </article>
             <article class="panel plain">
+              <h3>Insights</h3>
               <p class="hint">Compared only with other stores in the same retailer and period.</p>
               <div id="alerts"></div>
             </article>
@@ -229,7 +235,7 @@
     <div class="modalWrap">
       <div class="modalTop">
         <div>
-          <p class="eyebrow">READ REPORTS WITH AI</p>
+          <p class="eyebrow">IMPORT REPORTS</p>
           <h2>Drop your reports in</h2>
         </div><button type="button" class="modalClose" id="closeUpload" aria-label="Close"><svg viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -559,10 +565,41 @@
         <p class="hint">Ask anything about the imported reports &mdash; totals, comparisons, trends, or a specific
           counter.</p>
       </div>
-      <div id="chatChips" class="chatChips"></div>
-      <form id="chatForm" class="chatForm"><input id="chatInput"
-          placeholder="e.g. Which counter sold the most school shoes?" autocomplete="off"><button
-          id="chatSend">Ask</button></form>
+      <div id="chatChips" class="chatChips chatPrompts"></div>
+      <form id="chatForm" class="chatForm">
+        <div class="chatInputWrap">
+          <input id="chatInput" placeholder="e.g. Which counter sold the most school shoes?" autocomplete="off">
+          <button type="button" id="clearChatPrompt" class="clearPromptBtn" hidden aria-label="Clear text">&times;</button>
+        </div>
+        <button id="chatSend" type="submit">Ask</button>
+        <button type="button" id="chatSettingsBtn" class="chatSettingsBtn" title="Recent Conversations">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="gearSvg">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </form>
+      <!-- GooeyNav Recent Conversations Overlay -->
+      <div id="chatGooeyOverlay" class="gooeyOverlay" hidden>
+        <svg style="display:none">
+          <defs>
+            <filter id="gooeyFilter">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+              <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+              <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+            </filter>
+          </defs>
+        </svg>
+        <div class="gooeyParticlesContainer" id="gooeyParticles"></div>
+        <div class="gooeyContentCard">
+          <div class="gooeyHeader">
+            <h3>Recent Conversations</h3>
+            <button type="button" class="linkish" id="newChatSessionBtn">+ New Chat</button>
+            <button type="button" class="modalClose" id="closeGooeyMenu" aria-label="Close">&times;</button>
+          </div>
+          <div id="recentChatsList" class="recentChatsList"></div>
+        </div>
+      </div>
     </div>
   </dialog>
   <nav class="dock" aria-label="Quick actions"><button type="button" class="dockItem" data-action="upload"
@@ -595,12 +632,12 @@
         <path d="M3 7v6h6" />
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
       </svg><span class="dockLabel">Undo</span></button></nav>
-  <script src="/chart.js?v=18"></script>
-  <script src="/app.js?v=18"></script>
-  <script src="/import.js?v=18"></script>
-  <script src="/chat.js?v=18"></script>
-  <script src="/data.js?v=18"></script>
-  <script src="/extras.js?v=18"></script>
+  <script src="/chart.js?v=19"></script>
+  <script src="/app.js?v=19"></script>
+  <script src="/import.js?v=19"></script>
+  <script src="/chat.js?v=19"></script>
+  <script src="/data.js?v=19"></script>
+  <script src="/extras.js?v=19"></script>
 </body>
 
 </html>

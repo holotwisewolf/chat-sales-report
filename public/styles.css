@@ -73,21 +73,28 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .barRow{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub';align-items:center;gap:4px 10px;padding:10px 2px;border-top:1px solid var(--hair)}
 .barRow:first-child{border-top:0}
 .barRow.indexed{grid-template-columns:auto minmax(80px,140px) 1fr auto;grid-template-areas:'idx label track value' 'idx sub sub sub'}
-.barIndex{grid-area:idx;min-width:24px;height:24px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:11.5px;font-weight:700}
+.barIndex{grid-area:idx;display:inline-block;min-width:18px;color:var(--ink2);font-size:12px;font-weight:600;text-align:center}
 .barLabel{grid-area:label;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .barTrack{grid-area:track;height:9px;background:rgba(21,42,80,.07);border-radius:5px;overflow:hidden}
 .barTrack i{display:block;height:100%;background:var(--chart-series);border-radius:0 5px 5px 0;transition:width .5s cubic-bezier(.2,.8,.2,1)}
 .barValueCell{grid-area:value;font-size:13px;font-variant-numeric:tabular-nums;font-weight:600}
 .barSub{grid-area:sub;font-size:11.5px;color:var(--ink2)}
 .rank{display:flex;align-items:center;gap:12px;border-top:1px solid var(--hair);padding:12px 0}
-#reports{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.report{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.72);border:1px solid var(--hair2);border-radius:12px;padding:12px 14px;box-shadow:0 1px 3px rgba(21,42,80,.05)}
+#reports{display:flex;flex-direction:column;gap:8px;width:100%}
+.report{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:rgba(255,255,255,.72);border:1px solid var(--hair2);border-radius:12px;padding:12px 16px;box-shadow:0 1px 3px rgba(21,42,80,.05);box-sizing:border-box}
 .rank b{width:26px;height:26px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px}
 .rank div,.report div:first-child{flex:1}.rank strong,.report strong{display:block;font-size:14px}.rank small,.report small,.alert small{display:block;font-size:12px;margin-top:3px;color:var(--ink2)}
 .rank em{font-style:normal;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
 .report div:last-child{text-align:right}
-.alert,.alertCard{background:rgba(255,255,255,.72);border:1px solid var(--hair2);border-radius:12px;padding:12px 14px;margin:0 0 10px;box-shadow:0 1px 3px rgba(21,42,80,.05)}.alert strong,.alertCard strong{display:block;font-size:13px}
+.alert,.alertCard{background:rgba(255,255,255,.72);border:1px solid var(--hair2);border-radius:12px;padding:12px 14px;margin:0 0 10px;box-shadow:0 1px 3px rgba(21,42,80,.05);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;cursor:pointer}
+.alert:hover,.alertCard:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(21,42,80,.1);border-color:var(--accent)}
+.alert strong,.alertCard strong{display:block;font-size:13px}
 .alert.low strong,.alertCard.low strong{color:var(--bad-tx)}.alert.high strong,.alertCard.high strong{color:var(--ok-tx)}
+
+/* Discuss with AI cursor context popup */
+.discussContextMenu{position:fixed;z-index:1100;background:rgba(255,255,255,.98);border:1px solid var(--hair2);border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.18);padding:5px;animation:menuDrop .15s cubic-bezier(.16, 1, .3, 1) forwards;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.discussAiBtn{display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:650;cursor:pointer;white-space:nowrap;min-height:36px;transition:transform .12s ease,filter .12s ease}
+.discussAiBtn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 
 dialog{border:1px solid rgba(122,141,172,.35);border-radius:24px;box-shadow:0 24px 60px rgba(15,23,42,.22), 0 0 0 1px rgba(255,255,255,.4) inset;width:min(760px,94vw);background:#f4f6fa;-webkit-backdrop-filter:blur(30px) saturate(1.7);backdrop-filter:blur(30px) saturate(1.7);color:var(--ink);overflow:hidden;padding:0}
 dialog::backdrop{background:rgba(15,23,42,.45);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
@@ -157,6 +164,13 @@ form,.modalWrap{padding:24px}
 .fileTabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .fileTabs button{padding:7px 11px;font-size:12px;background:rgba(255,255,255,.8);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:36px}
 .fileTabs button.on{background:var(--accent);color:#fff;box-shadow:none}
+
+/* Skeuomorphic-lite Stepped Depth Folder Tabs */
+.uploadTabs{display:flex;align-items:flex-end;gap:4px;margin:14px 0 -1px;position:relative;z-index:5;border-bottom:1px solid var(--hair2)}
+.uploadTabs button{padding:9px 18px;font-size:13.5px;font-weight:650;border-radius:12px 12px 0 0;border:1px solid var(--hair2);border-bottom:none;background:#e2e8f0;color:var(--ink2);box-shadow:inset 0 -3px 5px -1px rgba(0,0,0,.07);position:relative;top:1px;z-index:1;transition:all .18s ease;min-height:38px;max-width:none}
+.uploadTabs button:hover:not(.on){background:#edf2f7;color:var(--ink)}
+.uploadTabs button.on{background:#f4f6fa;color:var(--accent);box-shadow:0 -3px 10px rgba(0,0,0,.04),2px -1px 6px rgba(0,0,0,.03);z-index:3;font-weight:750;border-color:var(--hair2);border-bottom:1px solid #f4f6fa}
+.uploadTabPanel{background:#f4f6fa;border:1px solid var(--hair2);border-radius:0 16px 16px 16px;padding:18px;position:relative;z-index:2;box-shadow:0 4px 14px rgba(15,23,42,.03)}
 .sourceFrame{height:300px;max-height:38vh;border:1px solid var(--hair2);border-radius:14px;background:#f8fafc;overflow:auto;display:flex;padding:6px}
 .sourceFrame img{width:100%;object-fit:contain;margin:auto}
 .sourceFrame iframe{flex:1;border:0;background:#fff}
@@ -184,16 +198,42 @@ form,.modalWrap{padding:24px}
 .fileErr{border-top:1px solid var(--hair);padding:10px 2px;font-size:12.5px}
 .fileErr strong{color:var(--bad-tx)}
 
-.chatWrap{display:flex;flex-direction:column;height:min(680px,88vh)}
+.chatWrap{display:flex;flex-direction:column;height:min(680px,88vh);position:relative}
 .chatLog{flex:1;overflow-y:auto;padding:6px 2px;display:flex;flex-direction:column;gap:12px}
-.chatQuestion{align-self:flex-end;background:var(--accent);color:#fff;border-radius:18px 18px 5px 18px;padding:10px 14px;font-size:14.5px;max-width:75%;font-weight:500}
-.chatCard{background:rgba(255,255,255,.75);border:1px solid var(--glass-border);border-radius:16px;padding:13px 15px;max-width:92%;box-shadow:var(--shadow)}
+.chatQuestion{align-self:flex-end;background:var(--accent);color:#fff;border-radius:18px 18px 4px 18px;padding:10px 15px;font-size:14.5px;max-width:82%;font-weight:500;word-break:break-word}
+.chatCard{align-self:flex-start;background:rgba(255,255,255,.95);border:1px solid var(--glass-border);border-radius:18px 18px 18px 4px;padding:13px 15px;max-width:88%;box-shadow:var(--shadow)}
 .chatAnswer{margin:0 0 8px;font-size:14.5px}
 .chatPending{display:flex;align-items:center;gap:10px;color:var(--ink2);font-size:14px}
 .chatError{color:var(--bad-tx);font-size:14px;font-weight:600}
-.chatChips{display:flex;flex-wrap:wrap;gap:7px;padding:10px 0}
-.chatChips button{padding:8px 12px;font-size:12.5px;min-height:36px}
-.chatForm{display:flex;gap:9px}.chatForm input{flex:1}.chatForm button{flex:none}
+.chatChips{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:10px 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chatChips::-webkit-scrollbar{display:none}
+.chatChips button{flex-shrink:0;white-space:nowrap;padding:8px 14px;font-size:12.5px;min-height:36px;border-radius:20px}
+.chatForm{display:flex;gap:8px;align-items:center}
+.chatInputWrap{position:relative;flex:1;display:flex;align-items:center}
+.chatInputWrap input{width:100%;padding-right:36px}
+.clearPromptBtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;border:0;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;line-height:1;transition:all .15s ease;padding:0;min-height:0}
+.clearPromptBtn:hover{background:rgba(239,68,68,.15);color:#ef4444;transform:translateY(-50%) scale(1.1)}
+.chatSettingsBtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;border-radius:12px;border:1px solid var(--hair2);background:rgba(240,244,249,.85);color:var(--ink2);cursor:pointer;transition:all .2s ease;padding:0;flex-shrink:0}
+.chatSettingsBtn:hover{border-color:var(--accent);color:var(--accent);background:#fff}
+.chatSettingsBtn:hover .gearSvg{transform:rotate(90deg);transition:transform .4s cubic-bezier(.16, 1, .3, 1)}
+
+/* GooeyNav Recent Conversations Overlay */
+.gooeyOverlay{position:absolute;inset:0;z-index:100;background:rgba(15,23,42,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;border-radius:24px;animation:fadeIn .2s ease forwards}
+.gooeyParticlesContainer{position:absolute;inset:0;pointer-events:none;overflow:hidden;filter:url('#gooeyFilter')}
+.gooeyParticle{position:absolute;width:24px;height:24px;border-radius:50%;background:var(--accent);opacity:0;animation:gooeyBubble .6s cubic-bezier(.16, 1, .3, 1) forwards}
+@keyframes gooeyBubble{0%{transform:scale(0) translate(0,0);opacity:1}50%{opacity:.8}100%{transform:scale(1.8) translate(var(--dx),var(--dy));opacity:0}}
+.gooeyContentCard{width:min(480px,94%);max-height:80vh;background:#fff;border:1px solid var(--hair2);border-radius:20px;box-shadow:0 20px 50px rgba(15,23,42,.22);padding:20px;display:flex;flex-direction:column;z-index:10;animation:popIn .25s cubic-bezier(.16, 1, .3, 1) forwards}
+.gooeyHeader{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--hair2);margin-bottom:12px}
+.gooeyHeader h3{margin:0;font-size:16px;font-weight:750}
+.recentChatsList{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:360px}
+.recentChatItem{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:12px;border:1px solid var(--hair2);background:rgba(240,244,249,.5);cursor:pointer;transition:all .15s ease}
+.recentChatItem:hover{background:var(--accent-soft);border-color:var(--accent)}
+.recentChatItem.active{border-color:var(--accent);background:var(--accent-soft)}
+.recentChatItem.archived{opacity:.7}
+.recentChatBadge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
+.recentChatBadge.active{background:rgba(16,185,129,.15);color:#059669}
+.recentChatBadge.archived{background:rgba(100,116,139,.15);color:#64748b}
+
 .chatCard details{margin-top:9px}.chatCard summary{font-size:11.5px;color:var(--ink2);cursor:pointer}
 .chatCard code{display:block;margin-top:6px;font-size:11.5px;background:rgba(21,42,80,.05);border-radius:8px;padding:8px;white-space:pre-wrap;color:var(--ink2)}
 
@@ -768,11 +808,11 @@ main{padding-bottom:110px}
   width: min(1000px, 94vw);
   height: min(85vh, 800px);
   padding: 0;
-  border: none;
-  background: #0f172a;
+  border: 1px solid var(--hair2);
+  background: #f4f6fa;
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
   z-index: 1000;
 }
 
@@ -803,11 +843,22 @@ main{padding-bottom:110px}
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: rgba(15, 23, 42, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f1f5f9;
+  background: #ffffff;
+  border-bottom: 1px solid var(--hair2);
+  color: var(--ink);
   font-weight: 700;
   font-size: 14px;
+}
+
+.lightboxBody {
+  flex: 1;
+  min-height: 0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 16px;
 }
 
 .lightboxTop .modalClose {
@@ -815,9 +866,18 @@ main{padding-bottom:110px}
   color: #f1f5f9;
 }
 
-.lightboxTop .modalClose:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
+/* OptionWheel Year Selector & Chart Header */
+.chartTitleWrap{position:relative;display:inline-flex;align-items:center;gap:8px;margin-bottom:2px}
+.bentoMainTitle{font-size:16px;font-weight:750;margin:0;color:var(--ink);letter-spacing:-.01em}
+.yearSelector{color:var(--accent);cursor:pointer;padding:2px 8px;border-radius:6px;background:var(--accent-soft);transition:all .15s ease;user-select:none;font-weight:800}
+.yearSelector:hover{background:rgba(42,120,214,.2);filter:brightness(1.15)}
+
+.yearWheelPopup{position:absolute;top:calc(100% + 6px);left:120px;z-index:100;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.15);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.35);padding:10px;width:160px;height:180px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:popIn .2s cubic-bezier(.16, 1, .3, 1) forwards}
+.option-wheel{position:relative;width:100%;height:100%;overflow:hidden;cursor:grab;user-select:none;touch-action:none}
+.option-wheel--dragging{cursor:grabbing}
+.option-wheel__item{position:absolute;top:50%;left:50%;white-space:nowrap;font-size:1.4rem;line-height:1;font-weight:500;transform-origin:center center;cursor:pointer;will-change:transform,opacity,filter;color:#fff;transition:color .15s ease}
+.option-wheel__item:hover{color:var(--accent)}
+.option-wheel__item--selected{font-weight:800;color:#38bdf8}
 
 .lightboxBody {
   flex: 1;

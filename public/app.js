@@ -63,22 +63,59 @@ async function renderDashboard() {
     if (cats.length) barList(catPane, cats.map(c => ({ label: c.category, value: c.sales, sub: `${Number(c.quantity).toLocaleString()} units` })), { format: money });
     else catPane.innerHTML = '<p class="hint">No categories in this filter yet.</p>';
   }
-  // The line chart handles any number of months (one month plots as a single point);
-  // with no months at all, show the category comparison instead of an empty panel.
-  if (data.trend.length >= 1) {
-    lineChart(document.querySelector('#trend'), data.trend.map(item => ({ label: item.month, value: item.sales })), { format: money });
-  } else if ((data.categoryTotals || []).length >= 2) {
-    document.querySelector('#trend').innerHTML = '<p class="hint" style="margin-bottom:6px">No monthly data in this filter yet &mdash; showing categories.</p>';
-    barList(document.querySelector('#trend'), data.categoryTotals.map(c => ({ label: c.category, value: c.sales, sub: `${Number(c.quantity).toLocaleString()} units` })), { format: money });
-  } else {
-    lineChart(document.querySelector('#trend'), [], { format: money });
+  window.lastDashboardData = data;
+  const availableYears = (data.options?.years && data.options.years.length) ? data.options.years : [2024, 2025, 2026, 2027];
+  if (!selectedChartYear || !availableYears.includes(selectedChartYear)) {
+    selectedChartYear = availableYears[availableYears.length - 1] || 2026;
   }
-  barList(document.querySelector('#retailers'), data.retailers.map(row => ({ label: row.retailer, value: row.sales, sub: `${row.quantity} units` })), { format: money });
+  renderMonthlySalesTrend(data.trend, availableYears);
+  setupYearWheel(availableYears);
+  barList(document.querySelector('#retailers'), data.retailers.map(row => ({ label: row.retailer, value: row.sales, sub: `${row.quantity} units` })), { format: money, indexes: true });
   renderChannelCounters(document.querySelector('#channelCounters'), data.allCounters);
   renderAnimatedRanking(document.querySelector('#ranking'), data.allCounters || []);
   const signals = buildSignals(data.allCounters);
   document.querySelector('#alerts').innerHTML = signals.length ? signals.map(signal => `<div class="alert alertCard ${signal.type}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
   document.querySelector('#reports').innerHTML = data.periods.map(row => `<div class="report"><div><strong>${escapeHtml(row.retailer)}</strong><small>${row.period_start} to ${row.period_end}${row.source_filename ? ` &middot; ${escapeHtml(row.source_filename)}` : ''}</small></div><div><strong>${money(row.sales)}</strong><small>${row.quantity} units &middot; ${row.jobId ? `<button type="button" class="linkish" data-deimport="${row.jobId}">Undo import</button>` : `<button type="button" class="linkish" data-remove-report="${row.id}">Remove</button>`}</small></div></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
+
+let activeDiscussMenu = null;
+function removeDiscussMenu() { if (activeDiscussMenu) { activeDiscussMenu.remove(); activeDiscussMenu = null; } }
+document.addEventListener('pointerdown', event => { if (activeDiscussMenu && !activeDiscussMenu.contains(event.target)) removeDiscussMenu(); });
+
+const alertsWrap = document.querySelector('#alerts');
+if (alertsWrap && !alertsWrap.dataset.wired) {
+  alertsWrap.dataset.wired = 'true';
+  alertsWrap.addEventListener('click', event => {
+    const card = event.target.closest('.alertCard, .alert');
+    if (!card) return;
+    removeDiscussMenu();
+    const titleText = card.querySelector('strong')?.textContent || '';
+    const descText = card.querySelector('small')?.textContent || '';
+    const fullInsight = titleText ? `${titleText}: ${descText}` : descText;
+
+    const menu = document.createElement('div');
+    menu.className = 'discussContextMenu';
+    menu.style.left = `${Math.min(event.clientX, window.innerWidth - 180)}px`;
+    menu.style.top = `${Math.min(event.clientY + 8, window.innerHeight - 60)}px`;
+    menu.innerHTML = `<button type="button" class="discussAiBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Discuss with AI</button>`;
+
+    menu.querySelector('.discussAiBtn').onclick = e => {
+      e.stopPropagation();
+      removeDiscussMenu();
+      if (window.openChat) window.openChat();
+      const chatInput = document.querySelector('#chatInput');
+      const chatForm = document.querySelector('#chatForm');
+      if (chatInput) {
+        chatInput.value = `Can you analyze this insight: ${fullInsight}`;
+        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+        setTimeout(() => {
+          chatForm?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }, 120);
+      }
+    };
+    document.body.appendChild(menu);
+    activeDiscussMenu = menu;
+  });
+}
 
 const reportsWrap = document.querySelector('#reports');
 if (reportsWrap) reportsWrap.onclick = async event => {
@@ -361,5 +398,123 @@ function setupCustomSelect(selectId, wrapId, btnId, menuId, defaultLabel) {
 
 setupCustomSelect('#dRetailer', '#wrapRetailer', '#btnRetailer', '#menuRetailer', 'All retailers');
 setupCustomSelect('#dCategory', '#wrapCategory', '#btnCategory', '#menuCategory', 'All categories');
+
+// Monthly sales trend calculation with full 12-month X-axis plotting & OptionWheel Year Selector
+let selectedChartYear = 2026;
+
+function renderMonthlySalesTrend(trendData, optionsYears) {
+  const trendEl = document.querySelector('#trend');
+  const yearSpan = document.querySelector('#chartYearVal');
+  if (yearSpan) yearSpan.textContent = selectedChartYear;
+
+  const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fullYearTrend = MONTH_NAMES_SHORT.map((name, idx) => {
+    const monthNum = String(idx + 1).padStart(2, '0');
+    const monthKey = `${selectedChartYear}-${monthNum}`;
+    const match = (trendData || []).find(item => item.month === monthKey);
+    return {
+      label: name,
+      value: match ? Number(match.sales || 0) : 0
+    };
+  });
+
+  lineChart(trendEl, fullYearTrend, { format: money });
+}
+
+function initOptionWheel(container, items, initialIndex, onChange) {
+  if (!container) return;
+  container.innerHTML = '';
+  let curIndex = initialIndex;
+
+  const wheelEl = document.createElement('div');
+  wheelEl.className = 'option-wheel';
+  
+  items.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = `option-wheel__item ${i === curIndex ? 'option-wheel__item--selected' : ''}`;
+    div.textContent = item;
+    div.onclick = () => {
+      curIndex = i;
+      updateWheelDisplay();
+      onChange(i, items[i]);
+    };
+    wheelEl.appendChild(div);
+  });
+
+  function updateWheelDisplay() {
+    const itemEls = wheelEl.querySelectorAll('.option-wheel__item');
+    itemEls.forEach((el, i) => {
+      const dist = i - curIndex;
+      const offset = dist * 36;
+      const scale = Math.max(0.6, 1 - Math.abs(dist) * 0.2);
+      const opacity = Math.max(0.15, 1 - Math.abs(dist) * 0.4);
+      el.style.transform = `translate(-50%, calc(-50% + ${offset}px)) scale(${scale})`;
+      el.style.opacity = opacity;
+      el.classList.toggle('option-wheel__item--selected', i === curIndex);
+    });
+  }
+
+  let isDragging = false;
+  let startY = 0;
+
+  wheelEl.onpointerdown = e => {
+    isDragging = true;
+    startY = e.clientY;
+    wheelEl.classList.add('option-wheel--dragging');
+  };
+
+  window.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    const dy = e.clientY - startY;
+    if (Math.abs(dy) > 28) {
+      if (dy < 0 && curIndex < items.length - 1) {
+        curIndex++;
+        startY = e.clientY;
+        updateWheelDisplay();
+        onChange(curIndex, items[curIndex]);
+      } else if (dy > 0 && curIndex > 0) {
+        curIndex--;
+        startY = e.clientY;
+        updateWheelDisplay();
+        onChange(curIndex, items[curIndex]);
+      }
+    }
+  });
+
+  window.addEventListener('pointerup', () => {
+    isDragging = false;
+    wheelEl.classList.remove('option-wheel--dragging');
+  });
+
+  container.appendChild(wheelEl);
+  updateWheelDisplay();
+}
+
+function setupYearWheel(years) {
+  const yearBtn = document.querySelector('#chartYearVal');
+  const popup = document.querySelector('#yearWheelPopup');
+  const container = document.querySelector('#optionWheelContainer');
+  if (!yearBtn || !popup || !container) return;
+
+  const currentIdx = Math.max(0, years.indexOf(Number(selectedChartYear)));
+  initOptionWheel(container, years.map(String), currentIdx, (idx, yearVal) => {
+    selectedChartYear = Number(yearVal);
+    if (yearBtn) yearBtn.textContent = selectedChartYear;
+    if (window.lastDashboardData) {
+      renderMonthlySalesTrend(window.lastDashboardData.trend, years);
+    }
+  });
+
+  yearBtn.onclick = e => {
+    e.stopPropagation();
+    popup.hidden = !popup.hidden;
+  };
+
+  document.addEventListener('pointerdown', e => {
+    if (popup && !popup.hidden && !popup.contains(e.target) && e.target !== yearBtn) {
+      popup.hidden = true;
+    }
+  });
+}
 
 load();
