@@ -61,18 +61,42 @@ function lineChart(container, points, { format = value => value.toLocaleString()
     if (points.length === 1) {
       const W = container.clientWidth || 600, H = height;
       const padL = 62, padR = 18, padT = 20, padB = 30;
-      const max = niceCeil(points[0].value);
+      const max = Math.max(niceCeil(points[0].value), 10);
       const px = padL + (W - padL - padR) / 2;
       const py = padT + (H - padT - padB) * (1 - points[0].value / max);
+      const baseY = H - padB;
       const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => t * max);
+
       container.classList.add('chartAnim');
-      container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Monthly sales">
+      container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Sales trend">
         ${ticks.map((t, ti) => `<g class="gridLine" style="animation-delay:${ti * 60}ms"><line x1="${padL}" x2="${W - padR}" y1="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" y2="${(H - padB - t / max * (H - padT - padB)).toFixed(1)}" stroke="${gridColor()}" stroke-width="1" stroke-dasharray="3 3"/><text x="${padL - 8}" y="${(H - padB - t / max * (H - padT - padB) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${inkColor()}">${t === 0 ? '0' : format(t)}</text></g>`).join('')}
-        <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="6" fill="#fff" stroke="${seriesColor()}" stroke-width="3"/>
-        <circle class="endPulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="${seriesColor()}"/>
-        <text x="${px.toFixed(1)}" y="${(py < 48 ? py + 24 : py - 14).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="${strongInk()}">${format(points[0].value)}</text>
+        <line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="${baseY.toFixed(1)}" y2="${py.toFixed(1)}" stroke="${seriesColor()}" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="crosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="${seriesColor()}" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
+        <circle class="crossdot" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="6" fill="#fff" stroke="${seriesColor()}" stroke-width="3"/>
         <text x="${px.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(points[0].label)}</text>
-      </svg><p class="hint chartNote">One month so far &#8212; line draws across two or more months</p>`;
+      </svg><div class="simpleGraphTip chartTip"></div>`;
+
+      const svg = container.querySelector('svg');
+      const tip = container.querySelector('.chartTip');
+      const hair = container.querySelector('.crosshair');
+
+      svg.addEventListener('pointermove', () => {
+        hair.setAttribute('x1', px);
+        hair.setAttribute('x2', px);
+        hair.setAttribute('opacity', '0.65');
+        tip.classList.add('show');
+        tip.innerHTML = `
+          <div class="sgTipHead"><b>${escapeChartText(points[0].label)}</b></div>
+          <span class="sgTipVal">${format(points[0].value)}</span>
+        `;
+        tip.style.left = `${Math.min(Math.max(px - 70, 8), W - 150)}px`;
+        tip.style.top = '6px';
+      });
+
+      svg.addEventListener('pointerleave', () => {
+        tip.classList.remove('show');
+        hair.setAttribute('opacity', '0');
+      });
       return;
     }
 

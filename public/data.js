@@ -14,16 +14,20 @@ function initColumnResizers(COLUMNS) {
   const resizers = headEl.querySelectorAll('.colResizer');
   resizers.forEach(resizer => {
     const colKey = resizer.dataset.col;
+    const isLeft = resizer.classList.contains('left');
     let startX = 0;
     let startWidth = 0;
     
     const onMouseMove = e => {
-      const dx = e.clientX - startX;
-      const newWidth = Math.max(50, startWidth + dx);
+      const rawDx = e.clientX - startX;
+      const dx = isLeft ? -rawDx : rawDx;
+      const minW = colKey === 'index' ? 24 : 50;
+      const newWidth = Math.max(minW, startWidth + dx);
       customColWidths[colKey] = `${newWidth}px`;
       
       const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,1fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
-      const newTemplate = ['36px'].concat(COLUMNS.map(c => customColWidths[c.key] || (c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')))).join(' ');
+      const idxW = customColWidths.index || '36px';
+      const newTemplate = [idxW].concat(COLUMNS.map(c => customColWidths[c.key] || (c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')))).join(' ');
       
       const tableEl = $data('#dataTable');
       if (tableEl) {
@@ -180,11 +184,14 @@ async function loadRows() {
   const has = data.columns || {};
   const COLUMNS = visibleColumns(has);
   const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,1fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
-  const template = ['36px'].concat(COLUMNS.map(c => customColWidths[c.key] || (c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')))).join(' ');
-  const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `
+  const idxW = customColWidths.index || '36px';
+  const template = [idxW].concat(COLUMNS.map(c => customColWidths[c.key] || (c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')))).join(' ');
+  const indexHeadCell = `<div class="dsCell num">#<div class="colResizer left" data-col="index"></div><div class="colResizer right" data-col="index"></div></div>`;
+  const headCells = indexHeadCell + COLUMNS.map(c => `
     <div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>
       ${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}
-      <div class="colResizer" data-col="${c.key}"></div>
+      <div class="colResizer left" data-col="${c.key}"></div>
+      <div class="colResizer right" data-col="${c.key}"></div>
     </div>
   `).join('');
   const firstIndex = ((data.page - 1) * (data.pageSize || 50)) + 1;

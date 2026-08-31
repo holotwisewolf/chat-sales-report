@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=23">
+  <link rel="stylesheet" href="/styles.css?v=24">
 </head>
 
 <body>
@@ -75,7 +75,7 @@
       <div class="collHead">
         <h2>Performance Overview 
           <div class="filterToggleFlyoutWrap" onclick="event.stopPropagation()">
-            <button type="button" class="filterToggleBtn on" id="applyFilterToggleBtn">
+            <button type="button" class="filterToggleBtn" id="applyFilterToggleBtn">
               <span class="toggleIndicator"></span>
               <span class="toggleLabel">Apply current filter</span>
               <svg class="flyoutChevron" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -121,13 +121,9 @@
                   <div class="carouselTrack" id="carouselTrack">
                     <div class="carouselPane">
                       <div class="chartTitleWrap">
-                        <h2 class="bentoMainTitle">Monthly sales &mdash;</h2>
-                        <div class="chartYearWrap" style="position:relative;display:inline-block;margin-left:4px">
-                          <button type="button" class="yearSelectBtn" id="chartYearBtn">
-                            <span id="chartYearVal">2026</span>
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                          </button>
-                          <div id="chartYearMenu" class="yearDropdownMenu" hidden></div>
+                        <h2 class="bentoMainTitle">Monthly sales in <span id="chartYearVal" class="yearSelector" title="Click or drag to change year">2026</span></h2>
+                        <div id="yearWheelPopup" class="yearWheelPopup" hidden>
+                          <div id="optionWheelContainer" class="option-wheel"></div>
                         </div>
                       </div>
                       <p class="hint bentoGraphHint">12-month sales trend with peer comparison.</p>
@@ -581,7 +577,7 @@
     <div class="modalWrap chatWrap">
       <div class="modalTop">
         <div>
-          <p class="eyebrow">ASK YOUR DATA</p>
+          <p class="eyebrow">CHAT WITH AN AI</p>
           <h2>Questions about the sales</h2>
         </div><button type="button" class="modalClose" id="closeChat" aria-label="Close"><svg viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -679,12 +675,12 @@
         <path d="M3 7v6h6" />
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
       </svg><span class="dockLabel">Undo</span></button></nav>
-  <script src="/chart.js?v=22"></script>
-  <script src="/app.js?v=22"></script>
-  <script src="/import.js?v=22"></script>
-  <script src="/chat.js?v=22"></script>
-  <script src="/data.js?v=22"></script>
-  <script src="/extras.js?v=22"></script>
+  <script src="/chart.js?v=23"></script>
+  <script src="/app.js?v=23"></script>
+  <script src="/import.js?v=23"></script>
+  <script src="/chat.js?v=23"></script>
+  <script src="/data.js?v=23"></script>
+  <script src="/extras.js?v=23"></script>
 </body>
 
 </html>
