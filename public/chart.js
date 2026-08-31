@@ -43,9 +43,7 @@ function buildBezierPath(points) {
   return d;
 }
 
-const defaultCurrencyFormat = v => typeof v === 'number' ? 'RM ' + v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(v);
-
-function lineChart(container, points, { format = defaultCurrencyFormat, height = 230 } = {}) {
+function lineChart(container, points, { format = value => value.toLocaleString(), height = 230 } = {}) {
   remember(container, () => {
     if (!points.length) {
       const W = container.clientWidth || 600, H = height;
@@ -83,15 +81,9 @@ function lineChart(container, points, { format = defaultCurrencyFormat, height =
       const hair = container.querySelector('.crosshair');
 
       svg.addEventListener('pointermove', () => {
-        if (points[0].value > 0) {
-          hair.setAttribute('x1', px);
-          hair.setAttribute('x2', px);
-          hair.setAttribute('y1', py);
-          hair.setAttribute('y2', baseY);
-          hair.setAttribute('opacity', '0.65');
-        } else {
-          hair.setAttribute('opacity', '0');
-        }
+        hair.setAttribute('x1', px);
+        hair.setAttribute('x2', px);
+        hair.setAttribute('opacity', '0.65');
         tip.classList.add('show');
         tip.innerHTML = `
           <div class="sgTipHead"><b>${escapeChartText(points[0].label)}</b></div>
@@ -129,7 +121,6 @@ function lineChart(container, points, { format = defaultCurrencyFormat, height =
     const skip = Math.ceil(points.length / Math.max(3, Math.floor((W - padL - padR) / 88)));
     const xLabels = points.map((p, i) => (i % skip === 0 || i === points.length - 1) ? `<text x="${getX(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${inkColor()}">${escapeChartText(p.label)}</text>` : '').join('');
 
-    const allZero = values.every(v => v === 0);
     const lastPt = coordPoints[coordPoints.length - 1];
     const gradId = `sgGradient_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -160,10 +151,8 @@ function lineChart(container, points, { format = defaultCurrencyFormat, height =
           <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#fff" stroke="${seriesColor()}" stroke-width="2"/>
         `).join('')}
 
-        ${allZero ? '' : `
-          <circle class="endPulse" cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${seriesColor()}"/>
-          <text x="${lastPt.x.toFixed(1)}" y="${(lastPt.y < 44 ? lastPt.y + 20 : lastPt.y - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(lastPt.value)}</text>
-        `}
+        <circle class="endPulse" cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${seriesColor()}"/>
+        <text x="${lastPt.x.toFixed(1)}" y="${(lastPt.y < 44 ? lastPt.y + 20 : lastPt.y - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(lastPt.value)}</text>
 
         ${xLabels}
 
@@ -195,20 +184,13 @@ function lineChart(container, points, { format = defaultCurrencyFormat, height =
         }
       }
 
-      if (curr && curr.value > 0) {
-        hair.setAttribute('x1', curr.x);
-        hair.setAttribute('x2', curr.x);
-        hair.setAttribute('y1', curr.y);
-        hair.setAttribute('y2', H - padB);
-        hair.setAttribute('opacity', '0.65');
+      hair.setAttribute('x1', curr.x);
+      hair.setAttribute('x2', curr.x);
+      hair.setAttribute('opacity', '0.65');
 
-        dot.setAttribute('cx', curr.x);
-        dot.setAttribute('cy', curr.y);
-        dot.setAttribute('opacity', '1');
-      } else {
-        hair.setAttribute('opacity', '0');
-        dot.setAttribute('opacity', '0');
-      }
+      dot.setAttribute('cx', curr.x);
+      dot.setAttribute('cy', curr.y);
+      dot.setAttribute('opacity', '1');
 
       tip.classList.add('show');
       tip.innerHTML = `
