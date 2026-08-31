@@ -95,7 +95,6 @@ if (reportsWrap) reportsWrap.onclick = async event => {
   if (window.loadRows) loadRows();
   load();
 };
-document.querySelector('#printBtn').onclick = () => window.print();
 }
 
 function clearFilters() {

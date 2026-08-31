@@ -54,6 +54,12 @@ db.prepare(`UPDATE sales_lines
             SET category_id = (SELECT id FROM categories WHERE categories.name = sales_lines.product_category)
             WHERE category_id IS NULL AND product_category IS NOT NULL`).run();
 
+function pruneOrphans() {
+  db.prepare('DELETE FROM counters WHERE id NOT IN (SELECT DISTINCT counter_id FROM sales_lines)').run();
+  db.prepare('DELETE FROM categories WHERE id NOT IN (SELECT DISTINCT category_id FROM sales_lines WHERE category_id IS NOT NULL)').run();
+}
+pruneOrphans();
+
 function counterId(name, retailer) {
   const existing = db.prepare('SELECT id FROM counters WHERE name = ?').get(name);
   if (existing) return existing.id;
@@ -112,7 +118,7 @@ app.get('/api/dashboard', (req, res) => {
     retailers: db.prepare('SELECT DISTINCT retailer FROM reports ORDER BY retailer').all().map(row => row.retailer),
     months: db.prepare('SELECT DISTINCT substr(period_end,1,7) month FROM reports ORDER BY month DESC').all().map(row => row.month),
     categories: db.prepare(`SELECT DISTINCT product_category category FROM sales_lines WHERE product_category IS NOT NULL AND product_category != '' ORDER BY category`).all().map(row => row.category),
-    counters: db.prepare('SELECT name FROM counters ORDER BY name LIMIT 1000').all().map(row => row.name)
+    counters: db.prepare(`SELECT DISTINCT c.name FROM counters c JOIN sales_lines s ON s.counter_id = c.id ORDER BY c.name`).all().map(row => row.name)
   };
   // Category split ignores the category filter on purpose - it IS the category overview for the current retailer/month.
   const categoryTotals = db.prepare(`SELECT s.product_category category, ROUND(SUM(s.sales),2) sales, ROUND(SUM(s.quantity),0) quantity
@@ -145,7 +151,7 @@ app.post('/api/import/manual', (req, res) => {
 
 require('./lib/importjobs')(app, db, { counterId, categoryId });
 require('./lib/chat')(app, db);
-require('./lib/data')(app, db, { counterId, categoryId });
+require('./lib/data')(app, db, { counterId, categoryId, pruneOrphans });
 
 // Local-only branding: the published repo ships a generic label; BUSINESS_NAME in .env personalizes it.
 app.get('/api/config', (req, res) => res.json({ businessName: process.env.BUSINESS_NAME || '' }));

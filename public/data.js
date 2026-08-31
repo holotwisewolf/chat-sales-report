@@ -125,7 +125,7 @@ async function loadRows() {
   const totals = data.totals || {};
   const footCells = '<div class="dsCell"></div>' + COLUMNS.map(c => c.key === 'counter'
     ? `<div class="dsCell counterName">Total (${data.total.toLocaleString()} rows)</div>`
-    : `<div class="dsCell ${c.num ? 'num' : ''}">${c.num ? Number(totals[c.key] || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}</div>`).join('');
+    : `<div class="dsCell ${c.num ? 'num' : ''}">${c.num ? formatNum(totals[c.key] || 0, MONEY_FIELDS.has(c.key)) : ''}</div>`).join('');
   $data('#dataTable').innerHTML = `
     <div class="dsHead" style="--cols:${template}">${headCells}</div>
     <div class="dsBody" style="--cols:${template}">${body || '<div class="hint" style="padding:22px 14px">No rows match these filters.</div>'}</div>
@@ -175,11 +175,20 @@ const periodText = row => {
   const yy = (row.periodEnd || '').slice(2, 4);
   return `${start || '?'}–${end || '?'}${yy ? `/${yy}` : ''}`;
 };
+const MONEY_FIELDS = new Set(['sales', 'cost', 'profit']);
+const formatNum = (value, isMoney) => {
+  if (value == null || value === '') return '';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '';
+  return isMoney
+    ? num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+};
 const cellText = (row, col) => {
   if (col.key === 'period') return escapeHtml(periodText(row));
   const value = row[col.key];
   if (value == null) return '';
-  return col.num ? Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 }) : escapeHtml(String(value));
+  return col.num ? formatNum(value, MONEY_FIELDS.has(col.key)) : escapeHtml(String(value));
 };
 const sortIndex = columns => columns.findIndex(c => c.sort === dataState.sort);
 const rowCellClass = (col, ci, columns) => `${col.num ? 'num' : ''}${col.cls ? ` ${col.cls}` : ''}${ci === sortIndex(columns) ? ' sortedCol' : ''}`;
@@ -320,15 +329,215 @@ document.addEventListener('keydown', event => {
 });
 
 $data('#editMode').onchange = event => { dataState.editMode = event.target.checked; dataState.selection.clear(); loadRows(); };
+
+// Export dropdown logic
+const exportMenuBtn = $data('#exportMenuBtn');
+const exportMenu = $data('#exportMenu');
+if (exportMenuBtn && exportMenu) {
+  exportMenuBtn.onclick = event => {
+    event.stopPropagation();
+    exportMenu.hidden = !exportMenu.hidden;
+  };
+  document.addEventListener('pointerdown', event => {
+    if (exportMenu.hidden) return;
+    const path = event.composedPath ? event.composedPath() : [event.target];
+    if (!path.some(el => el.classList && el.classList.contains('exportDropdown'))) exportMenu.hidden = true;
+  });
+}
+
 // Exports download exactly what the table shows, filters included.
 const exportUrl = format => {
   const range = currentPeriod();
   const params = new URLSearchParams({ retailer: dataState.retailer, category: dataState.category, from: range.from, to: range.to, months: range.months, exMonths: range.exMonths, q: dataState.q, sort: dataState.sort, dir: dataState.dir, format });
   window.open(`/api/export?${params}`, '_blank');
+  if (exportMenu) exportMenu.hidden = true;
 };
 const exportCsv = $data('#exportCsv'), exportXls = $data('#exportXls');
 if (exportCsv) exportCsv.onclick = () => exportUrl('csv');
 if (exportXls) exportXls.onclick = () => exportUrl('xls');
+
+// ---- Advanced Print Customization Modal & Table Generator ----
+const printDialog = $data('#printDialog');
+const closePrint = $data('#closePrint'), cancelPrint = $data('#cancelPrint');
+const executePrint = $data('#executePrint');
+const exportPrintBtn = $data('#exportPrintBtn');
+const topPrintBtn = $data('#printBtn');
+
+function openPrintModal() {
+  if (exportMenu) exportMenu.hidden = true;
+  if (!printDialog) return;
+  // Render column checkboxes based on available columns
+  const colsList = $data('#psColumnsList');
+  if (colsList) {
+    colsList.innerHTML = ALL_COLUMNS.map(col => `
+      <label class="psCheck">
+        <input type="checkbox" class="psColToggle" data-col="${col.key}" ${['productName', 'sku', 'cost', 'profit'].includes(col.key) ? '' : 'checked'}>
+        ${escapeHtml(col.label)}
+      </label>
+    `).join('');
+  }
+  printDialog.showModal();
+}
+
+if (topPrintBtn) topPrintBtn.onclick = openPrintModal;
+if (exportPrintBtn) exportPrintBtn.onclick = openPrintModal;
+if (closePrint) closePrint.onclick = () => printDialog?.close();
+if (cancelPrint) cancelPrint.onclick = () => printDialog?.close();
+
+async function generateAndPrint() {
+  const range = currentPeriod();
+  const params = new URLSearchParams({
+    retailer: dataState.retailer, category: dataState.category,
+    from: range.from, to: range.to, months: range.months, exMonths: range.exMonths,
+    q: dataState.q, sort: dataState.sort, dir: dataState.dir
+  });
+  // Fetch all rows matching filters (export endpoint gives full unpaginated list)
+  const fullData = await fetch(`/api/export?${params}&format=csv`).catch(() => null);
+  // Also get the rows via /api/rows with page size or direct query
+  // Let's query /api/dashboard for totals and /api/rows for all rows
+  const countRes = await fetch(`/api/rows?${params}&page=1`).then(r => r.json()).catch(() => ({ rows: [] }));
+  let rows = countRes.rows || [];
+  if (countRes.total > countRes.rows.length) {
+    // If more rows exist, fetch up to 2000 rows
+    const allRowsRes = await fetch(`/api/rows?${params}&page=1&limit=${Math.min(2000, countRes.total)}`).then(r => r.json()).catch(() => null);
+    if (allRowsRes?.rows) rows = allRowsRes.rows;
+  }
+
+  const title = $data('#psTitle')?.value.trim() || 'Sales Report';
+  const subtitle = $data('#psSubtitle')?.value.trim() || '';
+  const showPeriod = $data('#psShowPeriod')?.checked;
+  const showSummary = $data('#psShowSummary')?.checked;
+  const fontSize = $data('#psFontSize')?.value || 'medium';
+  const fontFamily = $data('#psFontFamily')?.value || 'sans';
+  const rowsPerPage = Number($data('#psPageSize')?.value) || 0;
+  const theme = $data('#psTheme')?.value || 'clean';
+  const boldHeaders = $data('#psBoldHeaders')?.checked;
+  const gridLines = $data('#psGridLines')?.checked;
+
+  const selectedColKeys = new Set(
+    [...document.querySelectorAll('.psColToggle:checked')].map(el => el.dataset.col)
+  );
+  const activeCols = ALL_COLUMNS.filter(c => selectedColKeys.has(c.key));
+  if (!activeCols.length) {
+    alert('Please select at least one column to print.');
+    return;
+  }
+
+  // Calculate totals
+  let totalQty = 0, totalSales = 0, totalCost = 0, totalProfit = 0;
+  rows.forEach(r => {
+    totalQty += Number(r.quantity) || 0;
+    totalSales += Number(r.sales) || 0;
+    totalCost += Number(r.cost) || 0;
+    totalProfit += Number(r.profit) || 0;
+  });
+
+  const totalsObj = { quantity: totalQty, sales: totalSales, cost: totalCost, profit: totalProfit };
+
+  const printArea = $data('#printOutput');
+  if (!printArea) return;
+
+  const classes = [
+    `size-${fontSize}`,
+    `font-${fontFamily}`,
+    `theme-${theme}`,
+    gridLines ? 'with-grid' : 'no-grid'
+  ].join(' ');
+
+  let summaryHtml = '';
+  if (showSummary) {
+    summaryHtml = `
+      <div class="printCards">
+        <div class="printCard"><span>Total Sales</span><strong>RM ${formatNum(totalSales, true)}</strong></div>
+        <div class="printCard"><span>Units Sold</span><strong>${formatNum(totalQty, false)}</strong></div>
+        <div class="printCard"><span>Rows Printed</span><strong>${rows.length.toLocaleString()}</strong></div>
+      </div>
+    `;
+  }
+
+  let filterMeta = '';
+  if (showPeriod) {
+    const parts = [];
+    if (dataState.retailer) parts.push(`Retailer: <b>${escapeHtml(dataState.retailer)}</b>`);
+    if (dataState.category) parts.push(`Category: <b>${escapeHtml(dataState.category)}</b>`);
+    const pLabel = window.periodLabel ? window.periodLabel() : '';
+    if (pLabel && pLabel !== 'All time') parts.push(`Period: <b>${escapeHtml(pLabel)}</b>`);
+    if (parts.length) filterMeta = `<p class="printMeta">${parts.join(' &middot; ')}</p>`;
+  }
+
+  const stamp = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+
+  const renderTableRows = slice => slice.map((row, idx) => `
+    <tr>
+      <td style="text-align:right;width:32px;color:#666">${idx + 1}</td>
+      ${activeCols.map(col => `<td class="${col.num ? 'num' : ''}">${cellText(row, col)}</td>`).join('')}
+    </tr>
+  `).join('');
+
+  const tableHead = `
+    <thead>
+      <tr>
+        <th style="width:32px;text-align:right">#</th>
+        ${activeCols.map(col => `<th class="${col.num ? 'num' : ''}">${escapeHtml(col.label)}</th>`).join('')}
+      </tr>
+    </thead>
+  `;
+
+  const tableFoot = `
+    <tfoot class="tfoot">
+      <tr>
+        <td></td>
+        ${activeCols.map(col => col.key === 'counter'
+          ? `<td>Total (${rows.length.toLocaleString()} rows)</td>`
+          : `<td class="${col.num ? 'num' : ''}">${col.num ? formatNum(totalsObj[col.key] || 0, MONEY_FIELDS.has(col.key)) : ''}</td>`
+        ).join('')}
+      </tr>
+    </tfoot>
+  `;
+
+  let tablesHtml = '';
+  if (rowsPerPage > 0 && rows.length > rowsPerPage) {
+    const pages = Math.ceil(rows.length / rowsPerPage);
+    for (let p = 0; p < pages; p++) {
+      const slice = rows.slice(p * rowsPerPage, (p + 1) * rowsPerPage);
+      const isLast = p === pages - 1;
+      tablesHtml += `
+        <div class="${isLast ? '' : 'printPageBreak'}">
+          <table class="printTable">
+            ${tableHead}
+            <tbody>${renderTableRows(slice)}</tbody>
+            ${isLast ? tableFoot : ''}
+          </table>
+        </div>
+      `;
+    }
+  } else {
+    tablesHtml = `
+      <table class="printTable">
+        ${tableHead}
+        <tbody>${renderTableRows(rows)}</tbody>
+        ${tableFoot}
+      </table>
+    `;
+  }
+
+  printArea.className = `printOutput ${classes}`;
+  printArea.innerHTML = `
+    <div class="printHeader">
+      <h1>${escapeHtml(title)}</h1>
+      ${subtitle ? `<p class="printSubtitle">${escapeHtml(subtitle)}</p>` : ''}
+      ${filterMeta}
+      <p class="printMeta">Generated on ${stamp}</p>
+    </div>
+    ${summaryHtml}
+    ${tablesHtml}
+  `;
+
+  printDialog.close();
+  setTimeout(() => window.print(), 100);
+}
+
+if (executePrint) executePrint.onclick = generateAndPrint;
 [['#dRetailer', 'retailer'], ['#dCategory', 'category']].forEach(([selector, key]) => {
   $data(selector).onchange = event => { dataState[key] = event.target.value; dataState.page = 1; loadRows(); load(); };
 });

@@ -323,24 +323,73 @@ main{padding-bottom:110px}
 .resizeHandle{height:16px;margin:2px -6px 0;cursor:ns-resize;position:relative}
 .resizeHandle::after{content:'';position:absolute;left:50%;top:6px;transform:translateX(-50%);width:44px;height:4px;border-radius:4px;background:var(--hair2)}
 .resizeHandle:hover::after{background:var(--accent)}
-/* Print: the table, the cards, and the status bar - nothing interactive. */
-@media print{
-  header,.toolbar,.tableHint,.dock,.dockZone,.pageBar,.resizeHandle,#collCharts,#collCounters,#collHistory{display:none!important}
-  body{background:#fff}
-  main{max-width:none;padding:0}
-  .tableSection{height:auto!important;overflow:visible;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;background:#fff}
-  .dsBody{overflow:visible;max-height:none}
-  .statStrip article,.statusBar{box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-}
+/* Export dropdown menu */
+.exportDropdown{position:relative;display:inline-block}
+.exportMenu{position:absolute;top:calc(100% + 6px);right:0;z-index:70;background:rgba(251,252,254,.96);border:1px solid var(--glass-border);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;min-width:180px;-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);display:flex;flex-direction:column;gap:2px}
+.exportMenu[hidden]{display:none}
+.exportMenu button{display:block;width:100%;text-align:left;background:none;color:var(--ink);padding:8px 12px;font-size:13px;font-weight:600;min-height:36px;border-radius:8px;border:0}
+.exportMenu button:hover{background:var(--accent-soft);color:var(--accent)}
+
+/* Print Settings Modal */
+#printDialog{width:min(720px,94vw);max-height:90vh}
+.printModalWrap{padding:6px}
+.printSettingsGrid{display:flex;flex-direction:column;gap:18px;margin:16px 0}
+.psSection{background:rgba(255,255,255,.6);border:1px solid var(--hair2);border-radius:14px;padding:14px 16px}
+.psSection h3{margin:0 0 10px;font-size:13px;font-weight:750;color:var(--ink);letter-spacing:.02em;text-transform:uppercase}
+.psField{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:10px}
+.psField input,.psField select{font-size:13.5px;padding:7px 10px;border-radius:8px;border:1px solid var(--hair2);background:#fff;color:var(--ink)}
+.psRow2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.psCheck{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:550;color:var(--ink);cursor:pointer;margin:6px 0}
+.psCheck input[type="checkbox"]{cursor:pointer;width:16px;height:16px;accent-color:var(--accent)}
+.psColChecks{display:grid;grid-template-columns:repeat(auto-fill, minmax(135px, 1fr));gap:8px;padding-top:4px}
+
+/* Offscreen print area - rendered for browser print dialog */
+.printOutput{display:none}
+
 /* Dock undo: greyed when nothing to undo. */
 .dockItem[data-disabled]{opacity:.35;pointer-events:none}
-/* Print: ONLY the table - no cards, bars, or chrome; JS-pinned strip widths reset. */
+
+/* Print Styles: ONLY the clean, bordered print table is outputted */
 @media print{
-  header,.toolbar,.tableHint,.dock,.dockZone,.pageBar,.resizeHandle,#collCharts,#collCounters,#collHistory,.statusBar,.statStrip{display:none!important}
-  body{background:#fff}
-  main{max-width:none;padding:0}
-  .tableSection{height:auto!important;overflow:visible;box-shadow:none;border:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;background:#fff}
-  .dsHead,.dsFoot{width:auto!important;transform:none!important;overflow:visible}
-  .dsBody{overflow:visible;max-height:none}
-  .dsCell{overflow:visible;white-space:normal}
+  @page{size:landscape;margin:12mm 10mm}
+  html,body{background:#fff!important;color:#000!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;margin:0;padding:0}
+  header,main,dialog,.dock,.dockZone,.toolbar,.tableHint,.pageBar,.resizeHandle,#activeFilters,.statStrip,#collCharts,#collCounters,#collHistory,.exportDropdown,.ctxMenu{display:none!important}
+  .printOutput{display:block!important;width:100%!important;background:#fff!important}
+  
+  .printHeader{margin-bottom:14px}
+  .printHeader h1{font-size:20pt;margin:0 0 4px;font-weight:800;color:#111}
+  .printHeader p{font-size:10pt;margin:0 0 2px;color:#444}
+  .printHeader .printSubtitle{font-size:11pt;font-weight:600;color:#222;margin-top:2px}
+  .printHeader .printMeta{font-size:9pt;color:#666;margin-top:4px}
+  
+  .printCards{display:flex;gap:16px;margin:12px 0 16px}
+  .printCard{border:1px solid #999;border-radius:4px;padding:8px 14px;min-width:140px}
+  .printCard span{display:block;font-size:8pt;text-transform:uppercase;color:#555;font-weight:700}
+  .printCard strong{font-size:14pt;font-weight:800;color:#000}
+
+  .printTable{width:100%;border-collapse:collapse;margin-top:6px;page-break-inside:auto}
+  .printTable th,.printTable td{border:1px solid #888!important;padding:6px 9px!important;page-break-inside:avoid;box-sizing:border-box}
+  .printTable th{background:#e8ecef!important;color:#000!important;font-weight:750!important;text-transform:uppercase;font-size:8.5pt!important}
+  .printTable td{font-size:9.5pt!important}
+  .printTable tr{page-break-inside:avoid;page-break-after:auto}
+  .printTable .num{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .printTable .tfoot td{font-weight:800!important;background:#f3f4f6!important}
+  .printPageBreak{page-break-after:always}
+
+  /* Themes */
+  .theme-slate .printTable th{background:#2c3e50!important;color:#fff!important;border-color:#2c3e50!important}
+  .theme-slate .printTable .tfoot td{background:#edf2f7!important}
+  .theme-grey .printTable th{background:#f1f3f5!important;color:#333!important}
+  
+  /* Font Families */
+  .font-serif{font-family:Georgia,Cambria,"Times New Roman",Times,serif!important}
+  .font-mono{font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace!important}
+  
+  /* Font Sizes */
+  .size-small .printTable th{font-size:7.5pt!important;padding:4px 6px!important}
+  .size-small .printTable td{font-size:8pt!important;padding:4px 6px!important}
+  .size-large .printTable th{font-size:9.5pt!important;padding:8px 11px!important}
+  .size-large .printTable td{font-size:11pt!important;padding:8px 11px!important}
+
+  .no-grid .printTable th,.no-grid .printTable td{border:none!important;border-bottom:1px solid #ccc!important}
 }
