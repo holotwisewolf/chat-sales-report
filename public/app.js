@@ -544,16 +544,26 @@ function initOptionWheel(container, items, initialIndex, onChange) {
 function setupYearWheel(years) {
   const yearBtn = document.querySelector('#chartYearVal');
   const popup = document.querySelector('#yearWheelPopup');
-  const container = document.querySelector('#optionWheelContainer');
-  if (!yearBtn || !popup || !container) return;
+  if (!yearBtn || !popup) return;
 
-  const currentIdx = Math.max(0, years.indexOf(Number(selectedChartYear)));
-  initOptionWheel(container, years.map(String), currentIdx, (idx, yearVal) => {
-    selectedChartYear = Number(yearVal);
-    if (yearBtn) yearBtn.textContent = selectedChartYear;
-    if (window.lastDashboardData) {
-      renderMonthlySalesTrend(window.lastDashboardData.trend, years);
-    }
+  popup.innerHTML = `
+    <div class="yearSelectGrid">
+      ${years.map(yr => `<button type="button" class="yearOptionBtn ${Number(yr) === Number(selectedChartYear) ? 'selected' : ''}" data-year="${yr}">${yr}</button>`).join('')}
+    </div>
+  `;
+
+  popup.querySelectorAll('.yearOptionBtn').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      const yearVal = Number(btn.dataset.year);
+      selectedChartYear = yearVal;
+      if (yearBtn) yearBtn.textContent = selectedChartYear;
+      popup.hidden = true;
+      if (window.lastDashboardData) {
+        renderMonthlySalesTrend(window.lastDashboardData.trend, years);
+      }
+      setupYearWheel(years);
+    };
   });
 
   yearBtn.style.cursor = 'pointer';
