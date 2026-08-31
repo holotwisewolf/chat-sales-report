@@ -103,7 +103,7 @@ async function populateDataFilters() {
   const fill = (id, values, all) => { $data(id).innerHTML = `<option value="">${all}</option>${values.map(v => `<option>${escapeHtml(v)}</option>`).join('')}`; };
   fill('#dRetailer', options.retailers, 'All retailers');
   fill('#dCategory', options.categories, 'All categories');
-  $data('#counterList').innerHTML = (options.counters || []).map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+  allAvailableCounters = options.counters || [];
   dataState.years = [...new Set((options.months || []).map(m => m.slice(0, 4)))].sort().reverse().map(Number);
   $data('#dRetailer').value = dataState.retailer; $data('#dCategory').value = dataState.category;
   renderPeriodPicker();
@@ -380,28 +380,53 @@ const executePrint = $data('#executePrint');
 const exportPrintBtn = $data('#exportPrintBtn');
 const topPrintBtn = $data('#printBtn');
 
-// Print tabs and preview logic
-const ptSettingsTab = $data('#ptSettingsTab'), ptPreviewTab = $data('#ptPreviewTab');
-const printSettingsView = $data('#printSettingsView'), printPreviewView = $data('#printPreviewView');
+// ---- ReactBits Stepper for Print Modal ----
+let printCurrentStep = 1;
+const pSteps = [$data('#pStep1'), $data('#pStep2'), $data('#pStep3')];
+const pIndicators = document.querySelectorAll('.stepIndicator[data-pstep]');
+const pConns = [$data('#pConn1'), $data('#pConn2')];
+const pBackBtn = $data('#pBackBtn');
+const pNextBtn = $data('#pNextBtn');
+const pExecuteBtn = $data('#executePrint');
 const previewContainer = $data('#previewContainer');
 
-function switchPrintTab(tab) {
-  if (tab === 'preview') {
-    ptPreviewTab?.classList.add('on');
-    ptSettingsTab?.classList.remove('on');
-    if (printSettingsView) printSettingsView.hidden = true;
-    if (printPreviewView) printPreviewView.hidden = false;
+function setPrintStep(step) {
+  printCurrentStep = step;
+  pSteps.forEach((panel, i) => {
+    if (panel) panel.classList.toggle('active', i + 1 === step);
+  });
+  pIndicators.forEach(ind => {
+    const s = Number(ind.dataset.pstep);
+    ind.classList.toggle('active', s === step);
+    ind.classList.toggle('completed', s < step);
+    if (s < step) {
+      ind.innerHTML = '&#10003;';
+    } else {
+      ind.textContent = String(s);
+    }
+  });
+  pConns.forEach((conn, i) => {
+    if (conn) {
+      conn.classList.toggle('completed', i + 1 < step);
+      conn.classList.toggle('active', i + 1 === step - 1);
+    }
+  });
+  if (pBackBtn) pBackBtn.disabled = step === 1;
+  if (step === 3) {
+    if (pNextBtn) pNextBtn.style.display = 'none';
+    if (pExecuteBtn) pExecuteBtn.style.display = 'inline-block';
     updatePrintPreview();
   } else {
-    ptSettingsTab?.classList.add('on');
-    ptPreviewTab?.classList.remove('on');
-    if (printSettingsView) printSettingsView.hidden = false;
-    if (printPreviewView) printPreviewView.hidden = true;
+    if (pNextBtn) pNextBtn.style.display = 'inline-block';
+    if (pExecuteBtn) pExecuteBtn.style.display = 'none';
   }
 }
 
-if (ptSettingsTab) ptSettingsTab.onclick = () => switchPrintTab('settings');
-if (ptPreviewTab) ptPreviewTab.onclick = () => switchPrintTab('preview');
+pIndicators.forEach(ind => {
+  ind.onclick = () => setPrintStep(Number(ind.dataset.pstep));
+});
+if (pBackBtn) pBackBtn.onclick = () => { if (printCurrentStep > 1) setPrintStep(printCurrentStep - 1); };
+if (pNextBtn) pNextBtn.onclick = () => { if (printCurrentStep < 3) setPrintStep(printCurrentStep + 1); };
 
 function openPrintModal() {
   if (exportMenu) exportMenu.hidden = true;
@@ -415,10 +440,9 @@ function openPrintModal() {
         ${escapeHtml(col.label)}
       </label>
     `).join('');
-    // Auto update preview when checkboxes change
-    colsList.querySelectorAll('input').forEach(inp => inp.onchange = () => { if (!printPreviewView?.hidden) updatePrintPreview(); });
+    colsList.querySelectorAll('input').forEach(inp => inp.onchange = () => { if (printCurrentStep === 3) updatePrintPreview(); });
   }
-  switchPrintTab('settings');
+  setPrintStep(1);
   printDialog.showModal();
 }
 
@@ -426,6 +450,141 @@ if (topPrintBtn) topPrintBtn.onclick = openPrintModal;
 if (exportPrintBtn) exportPrintBtn.onclick = openPrintModal;
 if (closePrint) closePrint.onclick = () => printDialog?.close();
 if (cancelPrint) cancelPrint.onclick = () => printDialog?.close();
+
+// ---- Custom Animated Search Dropdown Autocomplete ----
+// Limit to 10 suggestions. If blank: recent searches (from localStorage) + alphabetical counters.
+let allAvailableCounters = [];
+const searchMenu = $data('#searchMenu');
+const searchInput = $data('#dSearch');
+
+function getRecentSearches() {
+  try {
+    return JSON.parse(localStorage.getItem('recentCounterSearches') || '[]');
+  } catch {
+    return [];
+  }
+}
+function saveRecentSearch(term) {
+  if (!term || !term.trim()) return;
+  term = term.trim();
+  const recents = getRecentSearches().filter(s => s.toLowerCase() !== term.toLowerCase());
+  recents.unshift(term);
+  if (recents.length > 10) recents.length = 10;
+  try { localStorage.setItem('recentCounterSearches', JSON.stringify(recents)); } catch {}
+}
+
+function renderSearchSuggestions(query = '') {
+  if (!searchMenu) return;
+  const q = query.trim().toLowerCase();
+  let html = '';
+  if (!q) {
+    const recents = getRecentSearches();
+    if (recents.length) {
+      html += `<div class="searchSectionHead">Recent Searches</div>`;
+      html += recents.map(term => `
+        <button type="button" class="searchItem" data-val="${escapeHtml(term)}">
+          <span>${escapeHtml(term)}</span>
+          <small>Recent</small>
+        </button>
+      `).join('');
+    }
+    const remainingSlots = Math.max(0, 10 - recents.length);
+    if (remainingSlots > 0 && allAvailableCounters.length) {
+      const alphaCounters = allAvailableCounters.filter(c => !recents.some(r => r.toLowerCase() === c.toLowerCase())).slice(0, remainingSlots);
+      if (alphaCounters.length) {
+        html += `<div class="searchSectionHead">Counters</div>`;
+        html += alphaCounters.map(c => `
+          <button type="button" class="searchItem" data-val="${escapeHtml(c)}">
+            <span>${escapeHtml(c)}</span>
+            <small>Counter</small>
+          </button>
+        `).join('');
+      }
+    }
+  } else {
+    // Matching counters first, capped at 10 items
+    const matches = allAvailableCounters.filter(c => c.toLowerCase().includes(q)).slice(0, 10);
+    if (matches.length) {
+      html += `<div class="searchSectionHead">Matching Counters (${matches.length})</div>`;
+      html += matches.map(c => {
+        const idx = c.toLowerCase().indexOf(q);
+        const highlighted = idx >= 0
+          ? `${escapeHtml(c.slice(0, idx))}<mark>${escapeHtml(c.slice(idx, idx + q.length))}</mark>${escapeHtml(c.slice(idx + q.length))}`
+          : escapeHtml(c);
+        return `
+          <button type="button" class="searchItem" data-val="${escapeHtml(c)}">
+            <span>${highlighted}</span>
+            <small>Counter</small>
+          </button>
+        `;
+      }).join('');
+    } else {
+      html = `<div class="searchEmpty">No counters match &ldquo;${escapeHtml(query)}&rdquo;. Press Enter to search anyway.</div>`;
+    }
+  }
+  searchMenu.innerHTML = html;
+  searchMenu.hidden = !html;
+}
+
+if (searchInput) {
+  searchInput.addEventListener('focus', () => renderSearchSuggestions(searchInput.value));
+  searchInput.addEventListener('input', () => renderSearchSuggestions(searchInput.value));
+  searchInput.addEventListener('keydown', e => {
+    if (!searchMenu || searchMenu.hidden) return;
+    const items = [...searchMenu.querySelectorAll('.searchItem')];
+    const active = searchMenu.querySelector('.searchItem.active');
+    let idx = items.indexOf(active);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (idx < items.length - 1) idx++; else idx = 0;
+      items.forEach((it, i) => it.classList.toggle('active', i === idx));
+      if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (idx > 0) idx--; else idx = items.length - 1;
+      items.forEach((it, i) => it.classList.toggle('active', i === idx));
+      if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      if (active) {
+        e.preventDefault();
+        selectSearchValue(active.dataset.val);
+      } else {
+        saveRecentSearch(searchInput.value);
+        searchMenu.hidden = true;
+      }
+    } else if (e.key === 'Escape') {
+      searchMenu.hidden = true;
+    }
+  });
+}
+
+function selectSearchValue(val) {
+  if (!searchInput) return;
+  searchInput.value = val;
+  saveRecentSearch(val);
+  if (searchMenu) searchMenu.hidden = true;
+  dataState.q = val.trim();
+  dataState.page = 1;
+  loadRows();
+}
+
+if (searchMenu) {
+  searchMenu.addEventListener('pointerdown', e => {
+    const item = e.target.closest('.searchItem');
+    if (!item) return;
+    e.preventDefault();
+    selectSearchValue(item.dataset.val);
+  });
+}
+
+document.addEventListener('pointerdown', e => {
+  if (searchMenu && !searchMenu.hidden) {
+    const path = e.composedPath ? e.composedPath() : [e.target];
+    if (!path.some(el => el.classList && el.classList.contains('searchWrap'))) {
+      searchMenu.hidden = true;
+    }
+  }
+});
 
 async function buildPrintHtml() {
   const range = currentPeriod();

@@ -184,7 +184,10 @@ function poll(jobId, attempt = 0) {
 
 function showFailure(job) {
   const retry = `<button type="button" id="retryBtn">Try again</button>`;
-  setState(`<div><strong>${escapeHtml(job.errorMessage || 'Something went wrong.')}</strong>${['failed_read', 'failed_no_table'].includes(job.status) ? `<div class="actions">${retry}</div>` : ''}</div>`, false);
+  const details = job.errorCode || job.errorMessage
+    ? `<details class="errorDetails"><summary>View technical error details</summary><pre>Code: ${escapeHtml(job.errorCode || 'UNKNOWN')}\nMessage: ${escapeHtml(job.errorMessage || 'No further message')}</pre></details>`
+    : '';
+  setState(`<div><strong>${escapeHtml(job.errorMessage || 'Something went wrong.')}</strong>${details}${['failed_read', 'failed_no_table'].includes(job.status) ? `<div class="actions" style="margin-top:10px">${retry}</div>` : ''}</div>`, false);
   const btn = $import('#retryBtn');
   if (btn) btn.onclick = async () => {
     setState('Reading report&hellip;', true);
@@ -197,18 +200,92 @@ async function loadDrafts() {
   const jobs = await fetch('/api/import-jobs?open=1').then(r => r.json()).then(b => b.jobs).catch(() => []);
   const wrap = $import('#draftsWrap');
   wrap.hidden = !jobs.length;
-  $import('#draftList').innerHTML = jobs.map(j => `<div class="draftRow"><div><strong>${escapeHtml(j.retailer || j.files[0]?.filename || 'Draft')}</strong><small> ${escapeHtml(j.periodStart || '?')} to ${escapeHtml(j.periodEnd || '?')} &middot; ${j.rows.length} rows</small></div><span class="chip ${j.status === 'review' ? '' : 'warn'}">${j.status === 'review' ? 'ready to check' : j.status.replace('failed_', '')}</span><button type="button" class="secondary" data-resume="${j.id}">Resume</button></div>`).join('');
-  $import('#draftList').onclick = async e => {
-    const id = e.target.dataset?.resume;
-    if (!id) return;
-    const job = await fetch(`/api/import-jobs/${id}`).then(r => r.json()).then(b => b.job).catch(() => null);
+  $import('#draftList').innerHTML = jobs.map(j => `
+    <div class="draftRow">
+      <div>
+        <strong>${escapeHtml(j.retailer || j.files[0]?.filename || 'Draft')}</strong>
+        <small> ${escapeHtml(j.periodStart || '?')} to ${escapeHtml(j.periodEnd || '?')} &middot; ${j.rows.length} rows</small>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="chip ${j.status === 'review' ? '' : 'warn'}">${j.status === 'review' ? 'ready to check' : j.status.replace('failed_', '')}</span>
+        <button type="button" class="secondary" data-resume="${j.id}">Resume</button>
+        <button type="button" class="draftDel" data-del-draft="${j.id}" title="Delete this draft">&times;</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+$import('#draftList')?.addEventListener('click', async e => {
+  const resumeId = e.target.closest('[data-resume]')?.dataset?.resume;
+  const delId = e.target.closest('[data-del-draft]')?.dataset?.delDraft;
+  if (resumeId) {
+    const job = await fetch(`/api/import-jobs/${resumeId}`).then(r => r.json()).then(b => b.job).catch(() => null);
     if (!job) return;
     if (job.status === 'review') { uploadDialog.close(); openReview(job); } else { uploadDialog.showModal(); showFailure(job); }
-  };
-}
+  } else if (delId) {
+    if (!confirm('Discard this draft?')) return;
+    await fetch(`/api/import-jobs/${delId}`, { method: 'DELETE' });
+    loadDrafts();
+  }
+});
+
+$import('#clearAllDrafts')?.addEventListener('click', async () => {
+  if (!confirm('Are you sure you want to clear all drafts?')) return;
+  const jobs = await fetch('/api/import-jobs?open=1').then(r => r.json()).then(b => b.jobs).catch(() => []);
+  for (const j of jobs) {
+    await fetch(`/api/import-jobs/${j.id}`, { method: 'DELETE' });
+  }
+  loadDrafts();
+});
 
 const NUM_KEYS = ['quantity', 'sales', 'cost', 'profit', 'margin_percent'];
 const isSku = job => job.documentType === 'sku_by_outlet';
+
+// ---- ReactBits Stepper for Review Modal ----
+let reviewCurrentStep = 1;
+const revSteps = [$import('#revStep1'), $import('#revStep2'), $import('#revStep3')];
+const revIndicators = document.querySelectorAll('.stepIndicator[data-step]');
+const revConns = [$import('#revConn1'), $import('#revConn2')];
+const revBackBtn = $import('#revBackBtn');
+const revNextBtn = $import('#revNextBtn');
+const confirmImportBtn = $import('#confirmImport');
+
+function setReviewStep(step) {
+  reviewCurrentStep = step;
+  revSteps.forEach((panel, i) => {
+    if (panel) panel.classList.toggle('active', i + 1 === step);
+  });
+  revIndicators.forEach(ind => {
+    const s = Number(ind.dataset.step);
+    ind.classList.toggle('active', s === step);
+    ind.classList.toggle('completed', s < step);
+    if (s < step) {
+      ind.innerHTML = '&#10003;';
+    } else {
+      ind.textContent = String(s);
+    }
+  });
+  revConns.forEach((conn, i) => {
+    if (conn) {
+      conn.classList.toggle('completed', i + 1 < step);
+      conn.classList.toggle('active', i + 1 === step - 1);
+    }
+  });
+  if (revBackBtn) revBackBtn.disabled = step === 1;
+  if (step === 3) {
+    if (revNextBtn) revNextBtn.style.display = 'none';
+    if (confirmImportBtn) confirmImportBtn.style.display = 'inline-block';
+  } else {
+    if (revNextBtn) revNextBtn.style.display = 'inline-block';
+    if (confirmImportBtn) confirmImportBtn.style.display = 'none';
+  }
+}
+
+revIndicators.forEach(ind => {
+  ind.onclick = () => setReviewStep(Number(ind.dataset.step));
+});
+if (revBackBtn) revBackBtn.onclick = () => { if (reviewCurrentStep > 1) setReviewStep(reviewCurrentStep - 1); };
+if (revNextBtn) revNextBtn.onclick = () => { if (reviewCurrentStep < 3) setReviewStep(reviewCurrentStep + 1); };
 
 function openReview(job) {
   state.job = job;
@@ -223,6 +300,7 @@ function openReview(job) {
   renderTabs(job.files[0]?.id);
   renderGrid();
   syncFromServer(job);
+  setReviewStep(1);
   reviewDialog.showModal();
 }
 
