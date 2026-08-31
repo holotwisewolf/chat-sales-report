@@ -83,7 +83,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
 .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin:16px 0}
 .panel{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:20px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6)}
-.trend{color:var(--ink2)}
+.trend, .carouselPane, #yearlyTrend, #filteredTrend{color:var(--ink2);position:relative!important}
 .singlePoint{padding:22px 4px}.singlePoint small{color:var(--ink2);font-weight:600}.singlePoint strong{display:block;font-size:28px;margin:6px 0 4px;font-variant-numeric:tabular-nums}
 .chartTip b{font-size:11px;color:var(--ink2)}
 .barRow{display:grid;grid-template-columns:minmax(100px,160px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub';align-items:center;gap:4px 10px;padding:10px 2px;border-top:1px solid var(--hair)}
@@ -918,7 +918,7 @@ main{padding-bottom:110px}
 .yearSelector{color:var(--accent);cursor:pointer;padding:2px 8px;border-radius:6px;background:var(--accent-soft);transition:all .15s ease;user-select:none;font-weight:800}
 .yearSelector:hover{background:rgba(42,120,214,.2);filter:brightness(1.15)}
 
-.yearWheelPopup{position:absolute;top:calc(100% + 6px);left:120px;z-index:100;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.18);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.4);padding:10px;width:160px;height:180px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:popIn .2s cubic-bezier(.16, 1, .3, 1) forwards}
+.yearWheelPopup{position:absolute;top:calc(100% + 4px);left:0;right:auto;z-index:9999;background:rgba(15,23,42,.95);border:1px solid rgba(255,255,255,.2);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.5);padding:10px;width:170px;height:190px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:popIn .18s cubic-bezier(.16, 1, .3, 1) forwards}
 .option-wheel-3d,.option-wheel{position:relative;width:100%;height:100%;perspective:1000px;transform-style:preserve-3d;cursor:grab;user-select:none;touch-action:none}
 .option-wheel--dragging{cursor:grabbing}
 .option-wheel__item{position:absolute;top:50%;left:50%;white-space:nowrap;font-size:1.4rem;line-height:1;font-weight:600;cursor:pointer;will-change:transform,opacity;color:rgba(255,255,255,.7);transition:transform .22s cubic-bezier(.16, 1, .3, 1),opacity .22s ease,color .15s ease;backface-visibility:hidden}
