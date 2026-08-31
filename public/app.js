@@ -76,15 +76,22 @@ async function renderDashboard() {
   document.querySelector('#ranking').innerHTML = data.ranking.map((row, index) => `<div class="rank"><b>${index + 1}</b><div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.retailer)} &middot; ${row.quantity} units &middot; ${money(row.average_price)} avg/unit</small></div><em>${money(row.sales)}</em></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
   const signals = buildSignals(data.allCounters);
   document.querySelector('#alerts').innerHTML = signals.length ? signals.map(signal => `<div class="alert ${signal.type}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
-  document.querySelector('#reports').innerHTML = data.periods.map(row => `<div class="report"><div><strong>${escapeHtml(row.retailer)}</strong><small>${row.period_start} to ${row.period_end}${row.source_filename ? ` &middot; ${escapeHtml(row.source_filename)}` : ''}</small></div><div><strong>${money(row.sales)}</strong><small>${row.quantity} units${row.jobId ? ' &middot; <button type="button" class="linkish" data-deimport="' + row.jobId + '">Undo import</button>' : ''}</small></div></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
+  document.querySelector('#reports').innerHTML = data.periods.map(row => `<div class="report"><div><strong>${escapeHtml(row.retailer)}</strong><small>${row.period_start} to ${row.period_end}${row.source_filename ? ` &middot; ${escapeHtml(row.source_filename)}` : ''}</small></div><div><strong>${money(row.sales)}</strong><small>${row.quantity} units &middot; ${row.jobId ? `<button type="button" class="linkish" data-deimport="${row.jobId}">Undo import</button>` : `<button type="button" class="linkish" data-remove-report="${row.id}">Remove</button>`}</small></div></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
 const reportsWrap = document.querySelector('#reports');
 if (reportsWrap) reportsWrap.onclick = async event => {
   const jobId = event.target.dataset?.deimport;
-  if (!jobId) return;
-  if (!confirm('Undo this import? Its rows are removed. Reports it REPLACED stay removed - re-import those if needed.')) return;
-  const response = await fetch(`/api/import-jobs/${jobId}/deimport`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) return alert(result.error || 'Could not undo that import.');
+  const reportId = event.target.dataset?.removeReport;
+  if (jobId) {
+    if (!confirm('Undo this import? Its rows are removed. Reports it REPLACED stay removed - re-import those if needed.')) return;
+    const response = await fetch(`/api/import-jobs/${jobId}/deimport`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return alert(result.error || 'Could not undo that import.');
+  } else if (reportId) {
+    if (!confirm('Remove this report and all its rows? This cannot be undone.')) return;
+    const response = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return alert(result.error || 'Could not remove that report.');
+  } else return;
   if (window.loadRows) loadRows();
   load();
 };

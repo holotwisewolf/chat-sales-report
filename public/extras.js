@@ -66,11 +66,22 @@ const $extra = selector => document.querySelector(selector);
       localStorage.setItem('collapsible-collCharts', 'open');
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
-    manual: () => window.openManual?.()
+    manual: () => window.openManual?.(),
+    undo: () => window.undo?.()
   };
+  // The dock's Undo item is greyed out with nothing to undo - it teaches that undo exists.
+  window.updateUndoDock = () => {
+    const item = dockEl.querySelector('[data-action="undo"]');
+    if (item) {
+      const count = window.undoCount ? window.undoCount() : 0;
+      item.dataset.disabled = count ? '' : '1';
+      item.querySelector('.dockLabel').textContent = count ? `Undo (${count})` : 'Undo';
+    }
+  };
+  window.updateUndoDock();
   dockEl.addEventListener('click', event => {
     const item = event.target.closest('.dockItem');
-    if (item) actions[item.dataset.action]?.();
+    if (item && !item.dataset.disabled) actions[item.dataset.action]?.();
   });
   // Proximity magnification: nearest items grow as the pointer sweeps across the dock.
   dockEl.addEventListener('pointermove', event => {

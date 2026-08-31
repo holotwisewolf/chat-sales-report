@@ -332,3 +332,15 @@ main{padding-bottom:110px}
   .dsBody{overflow:visible;max-height:none}
   .statStrip article,.statusBar{box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 }
+/* Dock undo: greyed when nothing to undo. */
+.dockItem[data-disabled]{opacity:.35;pointer-events:none}
+/* Print: ONLY the table - no cards, bars, or chrome; JS-pinned strip widths reset. */
+@media print{
+  header,.toolbar,.tableHint,.dock,.dockZone,.pageBar,.resizeHandle,#collCharts,#collCounters,#collHistory,.statusBar,.statStrip{display:none!important}
+  body{background:#fff}
+  main{max-width:none;padding:0}
+  .tableSection{height:auto!important;overflow:visible;box-shadow:none;border:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;background:#fff}
+  .dsHead,.dsFoot{width:auto!important;transform:none!important;overflow:visible}
+  .dsBody{overflow:visible;max-height:none}
+  .dsCell{overflow:visible;white-space:normal}
+}

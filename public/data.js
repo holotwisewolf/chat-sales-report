@@ -4,7 +4,7 @@ const $data = selector => document.querySelector(selector);
 const dataState = { page: 1, sort: 'period', dir: 'desc', retailer: '', category: '', q: '', editRow: null, editMode: false, period: { year: null, months: {}, from: '', to: '' }, years: [], selection: new Set(), lastRows: [] };
 const undoStack = [];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const EDITABLE = new Set(['counter', 'category', 'productName', 'sku', 'quantity', 'sales', 'cost', 'profit']);
+const EDITABLE = new Set(['counter', 'retailer', 'category', 'productName', 'sku', 'quantity', 'sales', 'cost', 'profit']);
 const NUMERIC = new Set(['quantity', 'sales', 'cost', 'profit']);
 
 function currentPeriod() {
@@ -130,14 +130,13 @@ async function loadRows() {
     <div class="dsHead" style="--cols:${template}">${headCells}</div>
     <div class="dsBody" style="--cols:${template}">${body || '<div class="hint" style="padding:22px 14px">No rows match these filters.</div>'}</div>
     <div class="dsFoot" style="--cols:${template}">${footCells}</div>
-    <div class="pageBar"><button type="button" class="secondary" id="dPrev" ${data.page <= 1 ? 'disabled' : ''}>&larr; Previous</button><small>Page ${data.page} of ${data.pages} &middot; ${data.total.toLocaleString()} rows</small><button type="button" class="secondary" id="dNext" ${data.page >= data.pages ? 'disabled' : ''}>Next &rarr;</button><button type="button" class="secondary" id="undoBtn" ${undoStack.length ? '' : 'disabled'}>↶ Undo (${undoStack.length})</button></div>
+    <div class="pageBar"><button type="button" class="secondary" id="dPrev" ${data.page <= 1 ? 'disabled' : ''}>&larr; Previous</button><small>Page ${data.page} of ${data.pages} &middot; ${data.total.toLocaleString()} rows</small><button type="button" class="secondary" id="dNext" ${data.page >= data.pages ? 'disabled' : ''}>Next &rarr;</button></div>
     <div class="resizeHandle" title="Drag to resize the table"></div>`;
   const prev = $data('#dPrev'), next = $data('#dNext');
   if (prev) prev.onclick = () => { dataState.page--; loadRows(); };
   if (next) next.onclick = () => { dataState.page++; loadRows(); };
-  const undoBtn = $data('#undoBtn');
-  if (undoBtn) undoBtn.onclick = undo;
   wireResize();
+  window.updateUndoDock?.();
   const bodyEl = $data('.dsBody');
   const strips = [...$data('#dataTable').querySelectorAll('.dsHead,.dsFoot')];
   if (bodyEl && strips.length) {
@@ -195,7 +194,9 @@ function rowHtml(row, columns, index) {
 }
 
 // ---- Undo: edits are patched back; deletes are restored through /api/rows/restore. ----
-function pushUndo(entry) { undoStack.push(entry); if (undoStack.length > 50) undoStack.shift(); }
+function pushUndo(entry) { undoStack.push(entry); if (undoStack.length > 50) undoStack.shift(); window.updateUndoDock?.(); }
+window.undo = undo;
+window.undoCount = () => undoStack.length;
 async function undo() {
   const entry = undoStack.pop();
   if (!entry) return;
@@ -230,7 +231,8 @@ $data('#dataTable').addEventListener('focusout', async event => {
   pushUndo({ type: 'edit', id: row.id, field, oldValue });
   const response = await fetch(`/api/rows/${row.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) { alert(result.error || 'Could not save that cell.'); undoStack.pop(); }
+  if (!response.ok) { alert(result.error || 'Could not save that cell.'); undoStack.pop(); window.updateUndoDock?.(); }
+  else if (field === 'retailer' && result.affectedRows > 1) alert(`Retailer changed for all ${result.affectedRows} rows of that report - a report belongs to one retailer.`);
   loadRows();
   load();
 });
@@ -265,8 +267,7 @@ $data('#dataTable').addEventListener('click', event => {
 });
 function refreshSelection() {
   $data('#dataTable').querySelectorAll('.dsRow').forEach(rowEl => rowEl.classList.toggle('selected', dataState.selection.has(Number(rowEl.dataset.id))));
-  const undoBtn = $data('#undoBtn');
-  if (undoBtn) { undoBtn.disabled = !undoStack.length; undoBtn.textContent = `↶ Undo (${undoStack.length})`; }
+  window.updateUndoDock?.();
 }
 
 let ctxMenu = null;
