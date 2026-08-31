@@ -320,6 +320,15 @@ document.addEventListener('keydown', event => {
 });
 
 $data('#editMode').onchange = event => { dataState.editMode = event.target.checked; dataState.selection.clear(); loadRows(); };
+// Exports download exactly what the table shows, filters included.
+const exportUrl = format => {
+  const range = currentPeriod();
+  const params = new URLSearchParams({ retailer: dataState.retailer, category: dataState.category, from: range.from, to: range.to, months: range.months, exMonths: range.exMonths, q: dataState.q, sort: dataState.sort, dir: dataState.dir, format });
+  window.open(`/api/export?${params}`, '_blank');
+};
+const exportCsv = $data('#exportCsv'), exportXls = $data('#exportXls');
+if (exportCsv) exportCsv.onclick = () => exportUrl('csv');
+if (exportXls) exportXls.onclick = () => exportUrl('xls');
 [['#dRetailer', 'retailer'], ['#dCategory', 'category']].forEach(([selector, key]) => {
   $data(selector).onchange = event => { dataState[key] = event.target.value; dataState.page = 1; loadRows(); load(); };
 });

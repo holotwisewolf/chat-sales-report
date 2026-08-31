@@ -18,6 +18,106 @@ let staged = [];
 window.openUpload = () => { setState(''); renderStaged(); loadDrafts(); uploadDialog.showModal(); };
 ['#closeUpload', '#cancelUpload'].forEach(s => $import(s).onclick = () => uploadDialog.close());
 
+// ---- Spreadsheet intake: CSV/Excel rows go straight into a review job - no AI read needed. ----
+const isSheet = file => /\.(csv|xlsx|xls)$/i.test(file.name) || /csv|excel|spreadsheet/i.test(file.type);
+
+// Minimal CSV reader: quoted fields, embedded commas/newlines, CRLF.
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false; }
+      else field += ch;
+    } else if (ch === '"') inQuotes = true;
+    else if (ch === ',') { row.push(field); field = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      row = [];
+    } else field += ch;
+  }
+  row.push(field);
+  if (row.length > 1 || row[0] !== '') rows.push(row);
+  return rows;
+}
+
+const SYNONYMS = {
+  counter: ['counter', 'countername', 'store', 'name', 'outlet'],
+  quantity: ['qty', 'quantity', 'units', 'pairs', 'pieces'],
+  sales: ['sales', 'amount', 'rm', 'total', 'salesamount', 'totalsales'],
+  category: ['category', 'type', 'shoecategory'],
+  retailer: ['retailer', 'chain', 'brand'],
+  periodStart: ['start', 'startdate', 'periodstart', 'from', 'fromdate'],
+  periodEnd: ['end', 'enddate', 'periodend', 'to', 'todate'],
+  productName: ['product', 'productname', 'item', 'description', 'model'],
+  sku: ['sku', 'code', 'itemcode'],
+  cost: ['cost', 'costprice'],
+  profit: ['profit', 'margin']
+};
+function mapHeaders(headers) {
+  const found = {};
+  const normalize = h => String(h).toLowerCase().replace(/[^a-z]/g, '');
+  for (const [field, names] of Object.entries(SYNONYMS)) {
+    found[field] = headers.find(h => names.includes(normalize(h)));
+  }
+  return found;
+}
+
+async function importSheets(files, note) {
+  setState('Reading spreadsheet&hellip;', true);
+  const allRows = [];
+  for (const file of files) {
+    let headers, dataRows;
+    if (/\.csv$/i.test(file.name)) {
+      const matrix = parseCsv(await file.text());
+      headers = (matrix[0] || []).map(h => h.trim());
+      dataRows = matrix.slice(1).map(cells => Object.fromEntries(headers.map((h, i) => [h, cells[i] ?? null])));
+    } else {
+      const form = new FormData();
+      form.append('file', file);
+      const parsed = await fetch('/api/parse/sheet', { method: 'POST', body: form }).then(r => r.json()).catch(() => null);
+      if (!parsed || !parsed.headers) { setState(safeSheetError(parsed), false); return null; }
+      headers = parsed.headers;
+      dataRows = parsed.rows;
+    }
+    const map = mapHeaders(headers);
+    const missing = ['counter', 'quantity', 'sales'].filter(f => !map[f]);
+    if (missing.length) {
+      setState(`"${file.name}" is missing the ${missing.join(', ')} column(s). Its headers are: ${headers.join(', ')}.`, false);
+      return null;
+    }
+    for (const raw of dataRows) {
+      allRows.push({
+        counter: raw[map.counter], quantity: raw[map.quantity], sales: raw[map.sales],
+        category: map.category ? raw[map.category] : null,
+        retailer: map.retailer ? raw[map.retailer] : null,
+        periodStart: map.periodStart ? raw[map.periodStart] : null,
+        periodEnd: map.periodEnd ? raw[map.periodEnd] : null,
+        productName: map.productName ? raw[map.productName] : null,
+        sku: map.sku ? raw[map.sku] : null,
+        cost: map.cost ? raw[map.cost] : null,
+        profit: map.profit ? raw[map.profit] : null
+      });
+    }
+  }
+  const response = await fetch('/api/import-jobs/seed', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rows: allRows, sourceFilename: files.map(f => f.name).join(', '), note })
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) { setState(body.error || 'The spreadsheet could not be imported.', false); return null; }
+  setState('');
+  return body.job;
+}
+
+function safeSheetError(parsed) {
+  try { return parsed && parsed.error ? escapeHtml(parsed.error) : 'We couldn\'t read this spreadsheet. Try saving it as CSV.'; }
+  catch { return 'We couldn\'t read this spreadsheet. Try saving it as CSV.'; }
+}
+
 function renderStaged() {
   $import('#staged').innerHTML = staged.map((f, i) => `<div class="stagedFile"><span>${escapeHtml(f.name)}</span><small>${(f.size / 1048576).toFixed(1)} MB</small><button type="button" class="secondary" data-unstage="${i}">Remove</button></div>`).join('');
   $import('#readBtn').disabled = !staged.length;
@@ -37,8 +137,18 @@ function setState(html, spin) {
   el.innerHTML = (spin ? '<div class="spinner"></div>' : '') + (html || '');
 }
 
-$import('#readBtn').onclick = () => {
+$import('#readBtn').onclick = async () => {
   if (!staged.length || state.busy) return;
+  // Spreadsheets take the direct path: parse locally, seed a review job, skip the AI entirely.
+  const sheets = staged.filter(isSheet);
+  if (sheets.length) {
+    if (sheets.length !== staged.length) setState('Spreadsheets import directly; photos/PDFs in the same batch were skipped - upload those separately.', false);
+    state.busy = true;
+    const job = await importSheets(sheets, $import('#uploadNote').value);
+    state.busy = false;
+    if (job) { staged = []; renderStaged(); uploadDialog.close(); openReview(job); loadDrafts(); }
+    return;
+  }
   state.busy = true;
   const form = new FormData();
   staged.forEach(file => form.append('files', file));
