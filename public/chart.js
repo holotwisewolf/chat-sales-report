@@ -89,8 +89,10 @@ function lineChart(container, points, { format = value => value.toLocaleString()
           <div class="sgTipHead"><b>${escapeChartText(points[0].label)}</b></div>
           <span class="sgTipVal">${format(points[0].value)}</span>
         `;
-        tip.style.left = `${Math.min(Math.max(px - 70, 8), W - 150)}px`;
-        tip.style.top = '6px';
+        const tipX = Math.min(Math.max(px - 70, 8), W - 150);
+        const tipY = py < 70 ? (py + 16) : (py - 68);
+        tip.style.left = `${tipX}px`;
+        tip.style.top = `${Math.max(4, Math.min(tipY, H - 70))}px`;
       });
 
       svg.addEventListener('pointerleave', () => {
@@ -202,8 +204,9 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       `;
 
       const tipX = Math.min(Math.max(curr.x - 70, 8), W - 150);
+      const tipY = curr.y < 70 ? (curr.y + 16) : (curr.y - 68);
       tip.style.left = `${tipX}px`;
-      tip.style.top = '6px';
+      tip.style.top = `${Math.max(4, Math.min(tipY, H - 70))}px`;
     });
 
     svg.addEventListener('pointerleave', () => {
