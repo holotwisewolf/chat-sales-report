@@ -119,7 +119,9 @@ async function renderDashboard() {
   renderChannelCounters(document.querySelector('#channelCounters'), data.allCounters);
   renderAnimatedRanking(document.querySelector('#ranking'), data.allCounters || []);
   const signals = buildSignals(data.allCounters);
-  document.querySelector('#alerts').innerHTML = signals.length ? signals.map(signal => `<div class="alert alertCard ${signal.type}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
+  const aiData = await fetch('/api/ai-insights').then(r => r.json()).catch(() => ({ insights: [] }));
+  const allCards = [...(aiData.insights || []), ...signals];
+  document.querySelector('#alerts').innerHTML = allCards.length ? allCards.map(signal => `<div class="alert alertCard ${signal.type}${signal.isAi ? ' aiInsightCard' : ''}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
   document.querySelector('#reports').innerHTML = data.periods.map(row => `<div class="report"><div><strong>${escapeHtml(row.retailer)}</strong><small>${row.period_start} to ${row.period_end}${row.source_filename ? ` &middot; ${escapeHtml(row.source_filename)}` : ''}</small></div><div><strong>${money(row.sales)}</strong><small>${row.quantity} units &middot; ${row.jobId ? `<button type="button" class="linkish" data-deimport="${row.jobId}">Undo import</button>` : `<button type="button" class="linkish" data-remove-report="${row.id}">Remove</button>`}</small></div></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
 
 let activeDiscussMenu = null;

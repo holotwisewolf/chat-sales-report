@@ -783,7 +783,10 @@ async function buildPrintHtml() {
     if (parts.length) filterMeta = `<p class="printMeta">${parts.join(' &middot; ')}</p>`;
   }
 
-  const stamp = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const stamp = `Generated on ${dateStr}, ${timeStr}`;
 
   const getColAlign = col => col.num ? numAlign : textAlign;
 
@@ -846,7 +849,7 @@ async function buildPrintHtml() {
       <h1>${escapeHtml(title)}</h1>
       ${subtitle ? `<p class="printSubtitle">${escapeHtml(subtitle)}</p>` : ''}
       ${filterMeta}
-      <p class="printMeta">Generated on ${stamp}</p>
+      <p class="printMeta">${stamp}</p>
     </div>
     ${summaryHtml}
     ${tablesHtml}

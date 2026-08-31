@@ -130,6 +130,71 @@ app.get('/api/dashboard', (req, res) => {
   res.json({ summary, ranking: allCounters.slice(0, 10), allCounters, retailers, periods, trend, options, categoryTotals });
 });
 
+app.get('/api/ai-insights', async (req, res) => {
+  try {
+    const summary = db.prepare(`SELECT ROUND(SUM(sales),2) sales, SUM(quantity) quantity, COUNT(DISTINCT counter_id) counters FROM sales_lines`).get() || {};
+    const topCounter = db.prepare(`SELECT c.name, SUM(s.sales) sales, SUM(s.quantity) qty FROM sales_lines s JOIN counters c ON c.id=s.counter_id GROUP BY c.name ORDER BY sales DESC LIMIT 1`).get();
+    const topCat = db.prepare(`SELECT product_category, SUM(sales) sales FROM sales_lines WHERE product_category IS NOT NULL AND product_category != '' GROUP BY product_category ORDER BY sales DESC LIMIT 1`).get();
+    const retailerCount = db.prepare(`SELECT COUNT(DISTINCT retailer) count FROM reports`).get()?.count || 0;
+
+    let aiInsights = [];
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    if (apiKey && !apiKey.includes('YOUR_API_KEY')) {
+      try {
+        const { GoogleGenAI } = require('@google/genai');
+        const ai = new GoogleGenAI({ apiKey });
+        const prompt = `Analyze these sales figures for a shoe consignment business:
+Total Sales: RM ${summary.sales || 0}, Units Sold: ${summary.quantity || 0}, Active Outlets: ${summary.counters || 0}, Retailer Chains: ${retailerCount}.
+Top Performing Counter: ${topCounter ? topCounter.name : 'N/A'} (RM ${topCounter ? topCounter.sales : 0}, ${topCounter ? topCounter.qty : 0} units).
+Top Category: ${topCat ? topCat.product_category : 'N/A'} (RM ${topCat ? topCat.sales : 0}).
+
+Write 2 concise executive observations highlighting key data insights or growth opportunities (max 25 words each). Return valid JSON array: [{"title": "...", "text": "..."}].`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: 'application/json' }
+        });
+        const parsed = JSON.parse(response.text);
+        if (Array.isArray(parsed)) {
+          aiInsights = parsed.map(item => ({
+            type: 'high',
+            isAi: true,
+            title: `✨ ${item.title || 'Gemini AI Insight'}`,
+            text: item.text
+          }));
+        }
+      } catch (e) {
+        console.warn('Gemini AI insight generation fallback:', e.message);
+      }
+    }
+
+    if (!aiInsights.length && topCounter) {
+      const pct = summary.sales ? ((topCounter.sales / summary.sales) * 100).toFixed(1) : 0;
+      aiInsights.push({
+        type: 'high',
+        isAi: true,
+        title: '✨ Gemini AI Insight: Top Channel Concentration',
+        text: `${topCounter.name} is your leading outlet, driving ${pct}% of total revenue (RM ${Number(topCounter.sales).toLocaleString()}).`
+      });
+      if (topCat) {
+        const catPct = summary.sales ? ((topCat.sales / summary.sales) * 100).toFixed(1) : 0;
+        aiInsights.push({
+          type: 'high',
+          isAi: true,
+          title: '✨ Gemini AI Insight: Category Demand',
+          text: `${topCat.product_category} represents ${catPct}% of overall volume. Consider expanding stock in mid-tier outlets.`
+        });
+      }
+    }
+
+    res.json({ insights: aiInsights });
+  } catch (err) {
+    res.json({ insights: [] });
+  }
+});
+
 app.post('/api/import/manual', (req, res) => {
   const { retailer, periodStart, periodEnd, category = 'Uncategorised', rows } = req.body;
   if (!retailer || !periodStart || !periodEnd || !Array.isArray(rows) || !rows.length) return res.status(400).json({ error: 'Retailer, dates, and at least one row are required.' });

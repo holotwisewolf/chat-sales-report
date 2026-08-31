@@ -177,7 +177,27 @@ if (chatSettingsBtn && chatGooeyOverlay) {
     renderRecentChatsList();
     chatGooeyOverlay.hidden = false;
   };
+if (chatModal) {
+  chatModal.onclick = event => {
+    if (event.target === chatModal) {
+      if (chatGooeyOverlay && !chatGooeyOverlay.hidden) {
+        chatGooeyOverlay.hidden = true;
+      } else {
+        chatModal.close();
+      }
+    }
+  };
 }
+
+if (chatGooeyOverlay) {
+  chatGooeyOverlay.onclick = event => {
+    if (event.target === chatGooeyOverlay) {
+      event.stopPropagation();
+      chatGooeyOverlay.hidden = true;
+    }
+  };
+}
+
 if ($chat('#closeGooeyMenu')) {
   $chat('#closeGooeyMenu').onclick = () => { chatGooeyOverlay.hidden = true; };
 }
