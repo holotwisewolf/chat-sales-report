@@ -199,13 +199,13 @@ function showFailure(job) {
 async function loadDrafts() {
   const jobs = await fetch('/api/import-jobs?open=1').then(r => r.json()).then(b => b.jobs).catch(() => []);
   $import('#draftList').innerHTML = jobs.length ? jobs.map((j, i) => `
-    <div class="draftRow">
-      <b class="draftIdx">${i + 1}</b>
-      <div>
-        <strong>${escapeHtml(j.retailer || j.files[0]?.filename || 'Draft')}</strong>
-        <small> ${escapeHtml(j.periodStart || '?')} to ${escapeHtml(j.periodEnd || '?')} &middot; ${j.rows.length} rows</small>
+    <div class="draftRow" style="display:flex;align-items:center;justify-content:space-between;width:100%;box-sizing:border-box">
+      <b class="draftIdx" style="margin-right:12px">${i + 1}</b>
+      <div style="flex:1;min-width:0">
+        <strong style="display:block;font-size:14px">${escapeHtml(j.retailer || j.files[0]?.filename || 'Draft')}</strong>
+        <small style="display:block;color:var(--ink2);font-size:12px;margin-top:2px">${escapeHtml(j.periodStart || '?')} to ${escapeHtml(j.periodEnd || '?')} &middot; ${j.rows.length} rows</small>
       </div>
-      <div class="draftActions">
+      <div class="draftActions" style="margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-shrink:0">
         <span class="chip ${j.status === 'review' ? '' : 'warn'}">${j.status === 'review' ? 'ready to check' : j.status.replace('failed_', '')}</span>
         <button type="button" class="secondary" data-resume="${j.id}">Resume</button>
         <button type="button" class="draftDel" data-del-draft="${j.id}" title="Delete this draft">&times;</button>

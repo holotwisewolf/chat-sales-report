@@ -239,6 +239,7 @@ function renderRecentChatsList() {
   recentChatsList.querySelectorAll('.recentChatDel').forEach(delBtn => {
     delBtn.onclick = e => {
       e.stopPropagation();
+      if (!confirm('Are you sure you want to delete this conversation?')) return;
       const id = delBtn.dataset.delSess;
       let sessions = getSessions().filter(x => x.id !== id);
       saveSessions(sessions);

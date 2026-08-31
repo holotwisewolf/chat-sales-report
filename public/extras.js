@@ -15,6 +15,16 @@ function makeCarousel(track, dots) {
     track.style.transform = `translateX(${-index * 100}%)`;
     dots.innerHTML = panes().map((_, i) => `<button type="button" class="carouselDot ${i === index ? 'on' : ''}" data-pane="${i}" aria-label="Go to slide ${i + 1}"></button>`).join('');
   };
+  
+  window.slideCarouselTo = targetIndex => {
+    if (targetIndex >= 0 && targetIndex < panes().length) {
+      index = targetIndex;
+      track.style.transition = 'transform .35s cubic-bezier(.2,.8,.2,1)';
+      render();
+      setTimeout(() => { track.style.transition = ''; }, 380);
+    }
+  };
+
   dots.onclick = event => { const pane = event.target.dataset?.pane; if (pane !== undefined) { index = Number(pane); render(); } };
 
   track.addEventListener('pointerdown', event => {

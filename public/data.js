@@ -6,6 +6,51 @@ const undoStack = [];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const EDITABLE = new Set(['counter', 'retailer', 'category', 'productName', 'sku', 'quantity', 'sales', 'cost', 'profit']);
 const NUMERIC = new Set(['quantity', 'sales', 'cost', 'profit']);
+const customColWidths = {};
+
+function initColumnResizers(COLUMNS) {
+  const headEl = $data('.dsHead');
+  if (!headEl) return;
+  const resizers = headEl.querySelectorAll('.colResizer');
+  resizers.forEach(resizer => {
+    const colKey = resizer.dataset.col;
+    let startX = 0;
+    let startWidth = 0;
+    
+    const onMouseMove = e => {
+      const dx = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + dx);
+      customColWidths[colKey] = `${newWidth}px`;
+      
+      const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,1fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
+      const newTemplate = ['36px'].concat(COLUMNS.map(c => customColWidths[c.key] || (c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')))).join(' ');
+      
+      const tableEl = $data('#dataTable');
+      if (tableEl) {
+        tableEl.querySelectorAll('.dsHead, .dsBody, .dsFoot, .dsRow').forEach(el => {
+          el.style.setProperty('--cols', newTemplate);
+        });
+      }
+    };
+
+    const onMouseUp = () => {
+      resizer.classList.remove('resizing');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    resizer.onmousedown = e => {
+      e.stopPropagation();
+      e.preventDefault();
+      startX = e.clientX;
+      const cell = resizer.parentElement;
+      startWidth = cell.getBoundingClientRect().width;
+      resizer.classList.add('resizing');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+  });
+}
 
 function currentPeriod() {
   const p = dataState.period;
@@ -135,8 +180,13 @@ async function loadRows() {
   const has = data.columns || {};
   const COLUMNS = visibleColumns(has);
   const widths = { counter: 'minmax(0,1.8fr)', retailer: 'minmax(0,1fr)', category: 'minmax(0,1fr)', period: 'minmax(0,1fr)', productName: 'minmax(0,1.2fr)', sku: 'minmax(0,0.8fr)' };
-  const template = ['36px'].concat(COLUMNS.map(c => c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)'))).join(' ');
-  const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `<div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}</div>`).join('');
+  const template = ['36px'].concat(COLUMNS.map(c => customColWidths[c.key] || (c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')))).join(' ');
+  const headCells = '<div class="dsCell num">#</div>' + COLUMNS.map(c => `
+    <div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>
+      ${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}
+      <div class="colResizer" data-col="${c.key}"></div>
+    </div>
+  `).join('');
   const firstIndex = ((data.page - 1) * (data.pageSize || 50)) + 1;
   const body = data.rows.map((row, i) => rowHtml(row, COLUMNS, firstIndex + i)).join('');
   const totals = data.totals || {};
@@ -153,6 +203,7 @@ async function loadRows() {
   if (prev) prev.onclick = () => { dataState.page--; loadRows(); };
   if (next) next.onclick = () => { dataState.page++; loadRows(); };
   wireResize();
+  initColumnResizers(COLUMNS);
   window.updateUndoDock?.();
   const bodyEl = $data('.dsBody');
   const strips = [...$data('#dataTable').querySelectorAll('.dsHead,.dsFoot')];
