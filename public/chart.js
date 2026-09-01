@@ -103,7 +103,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
     }
 
     const W = container.clientWidth || 600, H = height;
-    const padL = 62, padR = 18, padT = 38, padB = 32;
+    const padL = 62, padR = 18, padT = 52, padB = 32;
     const values = points.map(p => p.value);
     const loRaw = Math.min(...values), hiRaw = Math.max(...values);
     const pad = Math.max((hiRaw - loRaw) * 0.05, hiRaw * 0.05, 1);
@@ -188,7 +188,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
 
       hair.setAttribute('x1', curr.x);
       hair.setAttribute('x2', curr.x);
-      hair.setAttribute('y1', padT);
+      hair.setAttribute('y1', curr.y);
       hair.setAttribute('y2', H - padB);
       hair.setAttribute('opacity', '0.65');
 
