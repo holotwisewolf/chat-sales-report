@@ -941,14 +941,14 @@ main{padding-bottom:110px}
 .portalWheel::after{
   content:'';
   position:absolute;
-  left:4px;
-  right:4px;
+  left:6px;
+  right:6px;
   height:1px;
-  background:rgba(15,23,42,.15);
+  background:rgba(15,23,42,.08);
   pointer-events:none;
 }
-.portalWheel::before{top:calc(50% - 14px)}
-.portalWheel::after{bottom:calc(50% - 14px)}
+.portalWheel::before{top:calc(50% - 13px)}
+.portalWheel::after{bottom:calc(50% - 13px)}
 .portalWheel .option-wheel__item{
   position:absolute;
   top:50%;
@@ -958,15 +958,18 @@ main{padding-bottom:110px}
   white-space:nowrap;
   font-size:16px;
   line-height:1;
-  font-weight:750;
+  font-weight:600;
   font-family:inherit;
+  letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
   transform-origin:center center;
   cursor:pointer;
   will-change:transform,opacity,filter;
   color:var(--ink);
-  transition:color .18s ease;
+  transition:all .18s cubic-bezier(.16, 1, .3, 1);
 }
-.portalWheel .option-wheel__item--selected{font-weight:800;color:var(--ink)}
+.portalWheel .option-wheel__item--selected{font-weight:750;color:var(--ink)}
 
 #filteredPane.disabled{filter:grayscale(1) opacity(.45)}
 #filteredPane.disabled .trend{pointer-events:none}

@@ -695,7 +695,6 @@ function setupYearWheel(years) {
       if (item) {
         const idx = Number(item.dataset.index);
         activeYearWheelInstance.applyTarget(idx, true);
-        closeWheel();
       }
     };
   }
