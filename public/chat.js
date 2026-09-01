@@ -179,13 +179,13 @@ if (chatSettingsBtn && chatGooeyOverlay) {
   };
 }
 
-if (chatModal) {
-  chatModal.onclick = event => {
-    if (event.target === chatModal) {
+if (chatDialog) {
+  chatDialog.onclick = event => {
+    if (event.target === chatDialog) {
       if (chatGooeyOverlay && !chatGooeyOverlay.hidden) {
         chatGooeyOverlay.hidden = true;
       } else {
-        chatModal.close();
+        chatDialog.close();
       }
     }
   };

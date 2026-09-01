@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=48">
+  <link rel="stylesheet" href="/styles.css?v=71">
 </head>
 
 <body>
@@ -121,13 +121,7 @@
                   <div class="carouselTrack" id="carouselTrack">
                     <div class="carouselPane">
                       <div class="chartTitleWrap">
-                        <h2 class="bentoMainTitle">Monthly sales in <select id="chartYearVal" class="yearNativeTextSelect" aria-label="Select year">
-                          <option value="2022">2022</option>
-                          <option value="2023">2023</option>
-                          <option value="2024">2024</option>
-                          <option value="2025">2025</option>
-                          <option value="2026" selected>2026</option>
-                        </select></h2>
+                        <h2 class="bentoMainTitle">Monthly sales in <span class="inlineYearText" id="chartYearVal" tabindex="0" role="button" aria-label="Select year" onclick="window.openYearWheel && window.openYearWheel(event)" onpointerdown="event.stopPropagation()">2026</span></h2>
                       </div>
                       <p class="hint bentoGraphHint">12-month sales trend with peer comparison.</p>
                       <div class="trend" id="trend"></div>
@@ -275,15 +269,13 @@
       <div class="uploadTabPanel" id="utabUpload">
         <p class="hint">Photos or PDFs &mdash; as many as you like, mixed together. The reader labels each page
           (retailer, period, category) from the document itself; you just check the labels and confirm. Nothing is
-          added to the dashboard until you confirm.</p><label class="noteLabel">Anything the pages don&rsquo;t say?
-          (optional)<textarea id="uploadNote" rows="2"
-            placeholder="e.g. These are all from 2027 &mdash; the year isn&rsquo;t printed"></textarea></label>
+          added to the dashboard until you confirm.</p>
         <div id="drop" class="drop">Drop photos, PDFs, or spreadsheets here, or click to choose<input id="fileInput"
             type="file" multiple accept=".pdf,image/jpeg,image/png,.csv,.xlsx,.xls"></div>
         <div id="staged"></div>
         <div id="uploadState" class="stateLine" hidden></div>
-        <div class="actions"><button type="button" class="secondary" id="cancelUpload">Close</button><button
-            type="button" id="readBtn" disabled>Read reports</button></div>
+        <label class="noteLabel">Anything the pages don&rsquo;t say? (optional)<textarea id="uploadNote" rows="2"
+            placeholder="e.g. These are all from 2027 &mdash; the year isn&rsquo;t printed"></textarea></label>
       </div>
       <div class="uploadTabPanel" id="utabDrafts" hidden>
         <div class="draftsHead">
@@ -291,6 +283,8 @@
         </div>
         <div id="draftList"></div>
       </div>
+      <div class="actions" id="uploadActions"><button type="button" class="secondary" id="cancelUpload">Close</button><button
+          type="button" id="readBtn" disabled>Read reports</button></div>
     </div>
   </dialog>
   <dialog id="reviewDialog">
@@ -678,12 +672,16 @@
         <path d="M3 7v6h6" />
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
       </svg><span class="dockLabel">Undo</span></button></nav>
-  <script src="/chart.js?v=58"></script>
-  <script src="/app.js?v=58"></script>
-  <script src="/import.js?v=58"></script>
-  <script src="/chat.js?v=58"></script>
-  <script src="/data.js?v=58"></script>
-  <script src="/extras.js?v=58"></script>
+
+  <!-- Year wheel dim backdrop for focus isolation -->
+  <div id="yearWheelBackdrop" class="yearWheelBackdrop" hidden><div id="portalWheel" class="portalWheel"></div></div>
+
+  <script src="/chart.js?v=81"></script>
+  <script src="/app.js?v=81"></script>
+  <script src="/import.js?v=81"></script>
+  <script src="/chat.js?v=81"></script>
+  <script src="/data.js?v=81"></script>
+  <script src="/extras.js?v=81"></script>
 </body>
 
 </html>

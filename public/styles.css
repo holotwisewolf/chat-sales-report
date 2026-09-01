@@ -86,15 +86,15 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .trend, .carouselPane, #yearlyTrend, #filteredTrend{color:var(--ink2);position:relative;overflow:visible!important}
 .singlePoint{padding:22px 4px}.singlePoint small{color:var(--ink2);font-weight:600}.singlePoint strong{display:block;font-size:28px;margin:6px 0 4px;font-variant-numeric:tabular-nums}
 .chartTip b{font-size:11px;color:var(--ink2)}
-.barRow{display:grid;grid-template-columns:minmax(100px,160px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub';align-items:center;gap:4px 10px;padding:10px 2px;border-top:1px solid var(--hair)}
+.barRow{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;grid-template-areas:'label track value' 'sub track value';align-items:center;gap:2px 14px;padding:10px 2px;border-top:1px solid var(--hair)}
 .barRow:first-child{border-top:0}
-.barRow.indexed{grid-template-columns:minmax(100px,160px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub'}
+.barRow.indexed{grid-template-columns:minmax(90px,150px) 1fr auto;grid-template-areas:'label track value' 'sub track value'}
 .barIndexInline{display:inline-block;min-width:18px;font-size:12px;font-weight:600;color:var(--ink2);margin-right:2px}
-.barLabel{grid-area:label;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.barTrack{grid-area:track;height:9px;background:rgba(21,42,80,.07);border-radius:5px;overflow:hidden}
-.barTrack i{display:block;height:100%;background:var(--chart-series);border-radius:0 5px 5px 0;transition:width .5s cubic-bezier(.2,.8,.2,1)}
-.barValueCell{grid-area:value;font-size:13px;font-variant-numeric:tabular-nums;font-weight:600}
-.barSub{grid-area:sub;font-size:11.5px;color:var(--ink2)}
+.barLabel{grid-area:label;font-size:13px;font-weight:650;line-height:1.2;display:flex;align-items:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barTrack{grid-area:track;height:8px;background:rgba(21,42,80,.07);border-radius:4px;overflow:hidden;align-self:center;margin:auto 0}
+.barTrack i{display:block;height:100%;background:var(--chart-series);border-radius:0 4px 4px 0;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.barValueCell{grid-area:value;font-size:13.5px;font-variant-numeric:tabular-nums;font-weight:650;line-height:1.2;display:flex;align-items:center;align-self:center}
+.barSub{grid-area:sub;font-size:11.5px;line-height:1.2;color:var(--ink2);margin-top:2px}
 .barSub.indentedSub{margin-left:20px}
 .rank{display:flex;align-items:center;gap:12px;border-top:1px solid var(--hair);padding:12px 0}
 #reports{display:flex;flex-direction:column;gap:8px;width:100%}
@@ -196,7 +196,9 @@ form,.modalWrap{padding:24px}
 .uploadTabs button{padding:9px 18px;font-size:13.5px;font-weight:650;border-radius:12px 12px 0 0;border:1px solid var(--hair2);border-bottom:none;background:#e2e8f0;color:var(--ink2);box-shadow:inset 0 -3px 5px -1px rgba(0,0,0,.07);position:relative;top:1px;z-index:1;transition:all .18s ease;min-height:38px;max-width:none}
 .uploadTabs button:hover:not(.on){background:#edf2f7;color:var(--ink)}
 .uploadTabs button.on{background:#f4f6fa;color:var(--accent);box-shadow:0 -3px 10px rgba(0,0,0,.04),2px -1px 6px rgba(0,0,0,.03);z-index:3;font-weight:750;border-color:var(--hair2);border-bottom:1px solid #f4f6fa}
-.uploadTabPanel{height:400px;min-height:400px;max-height:400px;overflow-y:auto;box-sizing:border-box;background:#f4f6fa;border:1px solid var(--hair2);border-radius:0 16px 16px 16px;padding:18px;position:relative;z-index:2;box-shadow:0 4px 14px rgba(15,23,42,.03)}
+#uploadDialog .modalWrap{min-height:590px;height:590px;display:flex;flex-direction:column;box-sizing:border-box}
+#uploadActions{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
+.uploadTabPanel{flex:1;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;background:#f4f6fa;border:1px solid var(--hair2);border-radius:0 16px 16px 16px;padding:20px;position:relative;z-index:2;box-shadow:0 4px 14px rgba(15,23,42,.03);overflow:visible}
 .sourceFrame{height:300px;max-height:38vh;border:1px solid var(--hair2);border-radius:14px;background:#f8fafc;overflow:auto;display:flex;padding:6px}
 .sourceFrame img{width:100%;object-fit:contain;margin:auto}
 .sourceFrame iframe{flex:1;border:0;background:#fff}
@@ -231,15 +233,17 @@ form,.modalWrap{padding:24px}
 .chatAnswer{margin:0 0 8px;font-size:14.5px}
 .chatPending{display:flex;align-items:center;gap:10px;color:var(--ink2);font-size:14px}
 .chatError{color:var(--bad-tx);font-size:14px;font-weight:600}
-.chatChips{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:8px 0 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chatChips{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:7px;padding:6px 0 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .chatChips::-webkit-scrollbar{display:none}
-.chatChips button{flex-shrink:0;white-space:nowrap;padding:6px 12px;font-size:11.5px;min-height:32px;border-radius:20px}
-.chatForm{display:flex;gap:8px;align-items:center;padding:8px 10px;margin:8px 0 0;width:100%;box-sizing:border-box;background:rgba(248,250,252,.9);border:1px solid var(--hair2);border-radius:16px}
+.chatChips button{flex-shrink:0;white-space:nowrap;padding:6px 12px;font-size:12px;font-weight:500;min-height:30px;border-radius:16px;background:rgba(21,42,80,.05);border:1px solid var(--hair2);color:var(--ink2)}
+.chatChips button:hover{background:var(--accent-soft);color:var(--accent);border-color:rgba(42,120,214,.3)}
+.chatForm{display:flex;gap:8px;align-items:center;padding:8px 0 0;width:100%;box-sizing:border-box;background:transparent;border:0}
 .chatInputWrap{position:relative;flex:1;display:flex;align-items:center}
-.chatInputWrap input{width:100%;padding-right:36px}
+.chatInputWrap input{width:100%;padding:10px 36px 10px 14px;border:1px solid var(--hair2);border-radius:12px;background:rgba(248,250,252,.9);font:inherit;font-size:13.5px}
+.chatInputWrap input:focus{border-color:var(--accent);background:#fff;outline:none}
 .clearPromptBtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;border:0;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;line-height:1;transition:all .15s ease;padding:0;margin:0;min-height:0}
 .clearPromptBtn:hover{background:rgba(239,68,68,.15);color:#ef4444;transform:translateY(-50%) scale(1.1)}
-.chatSettingsBtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;border-radius:12px;border:1px solid var(--hair2);background:rgba(240,244,249,.85);color:var(--ink2);cursor:pointer;transition:all .2s ease;padding:0;flex-shrink:0}
+.chatSettingsBtn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:40px;border-radius:12px;border:1px solid var(--hair2);background:rgba(240,244,249,.85);color:var(--ink2);cursor:pointer;transition:all .2s ease;padding:0;flex-shrink:0}
 .chatSettingsBtn .gearSvg{transition:transform .4s cubic-bezier(.16, 1, .3, 1);transform:rotate(0deg)}
 .chatSettingsBtn:hover{border-color:var(--accent);color:var(--accent);background:#fff}
 .chatSettingsBtn:hover .gearSvg{transform:rotate(90deg)}
@@ -290,7 +294,8 @@ form,.modalWrap{padding:24px}
 /* Header/footer widths are pinned to the body's content width in JS after each render -
    CSS alone cannot keep separate scroll/no-scroll boxes pixel-aligned. */
 .dsHead,.dsFoot{display:grid;grid-template-columns:var(--cols);background:#d8dfe9;overflow:hidden;box-sizing:border-box}
-.dsHead .dsCell{position:relative;font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;text-transform:uppercase;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);padding:10px 14px;white-space:nowrap;box-sizing:border-box}
+.dsHead .dsCell{position:relative;font-size:10.5px;font-weight:750;letter-spacing:.06em;color:#39445a;text-transform:uppercase;border-bottom:2px solid var(--grid);border-top:1px solid var(--hair);border-right:1px solid var(--grid);padding:10px 14px;white-space:nowrap;box-sizing:border-box}
+.dsHead .dsCell:last-child{border-right:0}
 .colResizer{position:absolute;top:0;bottom:0;width:7px;cursor:col-resize;z-index:10;user-select:none;touch-action:none}
 .colResizer.right{right:-3px}
 .colResizer.left{left:-3px}
@@ -304,7 +309,7 @@ form,.modalWrap{padding:24px}
 .dsCell{padding:10px 14px;border-right:1px solid var(--grid);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
 .dsCell:last-child{border-right:0}
 .dsCell.num{text-align:right}
-.dsCell.center{text-align:center;justify-content:center}
+.dsCell.center{text-align:center}
 .dsCell.counterName{font-weight:600}
 .dsHead .dsCell.num:first-child,.dsCell.dsIndex{text-align:center;justify-content:center;color:var(--ink2)}
 .dsCell.mutedcol{color:var(--ink);font-size:inherit}
@@ -914,11 +919,54 @@ main{padding-bottom:110px}
 }
 
 /* OptionWheel Year Selector & Chart Header */
+.inlineYearText{color:var(--ink);font-weight:750;font-size:16px;cursor:pointer;transition:color .18s ease;display:inline-block;padding:0 2px;border-radius:4px}
+.inlineYearText:hover{color:#475569}
 .chartTitleWrap{position:relative;display:inline-flex;align-items:center;gap:0;margin-bottom:2px}
 .bentoMainTitle{font-size:16px;font-weight:750;margin:0;color:var(--ink);letter-spacing:-.01em;display:inline-flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;gap:4px}
-select.yearNativeTextSelect{display:inline;appearance:none;-webkit-appearance:none;background:transparent;border:none;border-radius:0;padding:0;margin:0;font-size:16px;font-weight:750;font-family:inherit;color:var(--ink);cursor:pointer;outline:none;transition:color .18s ease;line-height:inherit;vertical-align:baseline}
-select.yearNativeTextSelect:hover{color:#475569}
-select.yearNativeTextSelect option{background:#ffffff;color:var(--ink);font-weight:600;padding:10px 14px}
+
+/* Spotlight Portal Backdrop & Wheel */
+.yearWheelBackdrop{position:fixed;inset:0;background:radial-gradient(circle 160px at var(--spot-x,50%) var(--spot-y,50%),rgba(15,23,42,0) 0%,rgba(15,23,42,0.08) 50%,rgba(15,23,42,0.36) 100%);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:9998;pointer-events:all;animation:fadeIn .18s ease forwards}
+.portalWheel{
+  position:fixed;
+  width:64px;
+  height:130px;
+  transform:translate(-50%,-50%);
+  user-select:none;
+  touch-action:none;
+  z-index:9999;
+  cursor:grab;
+}
+.portalWheel.option-wheel--dragging{cursor:grabbing}
+.portalWheel::before,
+.portalWheel::after{
+  content:'';
+  position:absolute;
+  left:4px;
+  right:4px;
+  height:1px;
+  background:rgba(15,23,42,.15);
+  pointer-events:none;
+}
+.portalWheel::before{top:calc(50% - 14px)}
+.portalWheel::after{bottom:calc(50% - 14px)}
+.portalWheel .option-wheel__item{
+  position:absolute;
+  top:50%;
+  left:0;
+  right:0;
+  text-align:center;
+  white-space:nowrap;
+  font-size:16px;
+  line-height:1;
+  font-weight:750;
+  font-family:inherit;
+  transform-origin:center center;
+  cursor:pointer;
+  will-change:transform,opacity,filter;
+  color:var(--ink);
+  transition:color .18s ease;
+}
+.portalWheel .option-wheel__item--selected{font-weight:800;color:var(--ink)}
 
 #filteredPane.disabled{filter:grayscale(1) opacity(.45)}
 #filteredPane.disabled .trend{pointer-events:none}

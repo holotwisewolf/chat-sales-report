@@ -28,6 +28,8 @@ function makeCarousel(track, dots) {
   dots.onclick = event => { const pane = event.target.dataset?.pane; if (pane !== undefined) { index = Number(pane); render(); } };
 
   track.addEventListener('pointerdown', event => {
+    // Don't hijack clicks on interactive elements inside the carousel
+    if (event.target.closest('button, a, select, input, [role="button"], [role="spinbutton"], #chartYearVal, .inlineYearText, .inlineYearWheel, .chartTitleWrap, .option-wheel, .portalWheel')) return;
     dragStart = event.clientX;
     dragDelta = 0;
     track.setPointerCapture(event.pointerId);
@@ -109,7 +111,8 @@ document.querySelectorAll('.carouselTrack').forEach(track => {
       } else {
         item.setAttribute('data-disabled', '1');
       }
-      item.querySelector('.dockLabel').textContent = count ? `Undo (${count})` : 'Undo';
+      const label = item.querySelector('.dockLabel');
+      if (label) label.textContent = count ? `Undo (${count})` : 'Undo';
     }
   };
   window.updateUndoDock();

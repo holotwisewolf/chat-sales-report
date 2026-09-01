@@ -202,10 +202,12 @@ async function loadRows() {
   const footCells = '<div class="dsCell"></div>' + COLUMNS.map(c => c.key === 'counter'
     ? `<div class="dsCell counterName">Total (${data.total.toLocaleString()} rows)</div>`
     : `<div class="dsCell ${c.num ? 'num' : ''}${c.center ? ' center' : ''}">${c.num ? formatNum(totals[c.key] || 0, MONEY_FIELDS.has(c.key)) : ''}</div>`).join('');
-  $data('#dataTable').innerHTML = `
-    <div class="dsHead" style="--cols:${template}">${headCells}</div>
-    <div class="dsBody" style="--cols:${template}">${body || '<div class="hint" style="padding:22px 14px">No rows match these filters.</div>'}</div>
-    <div class="dsFoot" style="--cols:${template}">${footCells}</div>
+  const tableEl = $data('#dataTable');
+  tableEl.style.setProperty('--cols', template);
+  tableEl.innerHTML = `
+    <div class="dsHead">${headCells}</div>
+    <div class="dsBody">${body || '<div class="hint" style="padding:22px 14px">No rows match these filters.</div>'}</div>
+    <div class="dsFoot">${footCells}</div>
     <div class="pageBar"><button type="button" class="secondary" id="dPrev" ${data.page <= 1 ? 'disabled' : ''}>&larr; Previous</button><small>Page ${data.page} of ${data.pages} &middot; ${data.total.toLocaleString()} rows</small><button type="button" class="secondary" id="dNext" ${data.page >= data.pages ? 'disabled' : ''}>Next &rarr;</button></div>
     <div class="resizeHandle" title="Drag to resize the table"></div>`;
   const prev = $data('#dPrev'), next = $data('#dNext');
@@ -215,16 +217,18 @@ async function loadRows() {
   initColumnResizers(COLUMNS);
   window.updateUndoDock?.();
   const bodyEl = $data('.dsBody');
-  const strips = [...$data('#dataTable').querySelectorAll('.dsHead,.dsFoot')];
+  const strips = [...tableEl.querySelectorAll('.dsHead,.dsFoot')];
   if (bodyEl && strips.length) {
     const sync = () => {
-      const scrollWidth = bodyEl.scrollWidth || bodyEl.clientWidth;
+      const scrollbarWidth = Math.max(0, bodyEl.offsetWidth - bodyEl.clientWidth);
       strips.forEach(strip => {
-        strip.style.width = `${scrollWidth}px`;
+        strip.style.paddingRight = `${scrollbarWidth}px`;
         strip.style.transform = `translateX(${-bodyEl.scrollLeft}px)`;
       });
     };
     sync();
+    requestAnimationFrame(sync);
+    setTimeout(sync, 60);
     bodyEl.addEventListener('scroll', sync, { passive: true });
     window.addEventListener('resize', sync);
   }

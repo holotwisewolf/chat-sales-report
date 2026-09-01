@@ -47,7 +47,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
   remember(container, () => {
     if (!points.length) {
       const W = container.clientWidth || 600, H = height;
-      const padL = 62, padR = 18, padT = 20, padB = 30;
+      const padL = 48, padR = 48, padT = 20, padB = 30;
       container.classList.add('chartAnim');
       container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="No data yet">
         <line x1="${padL}" x2="${W - padR}" y1="${H - padB}" y2="${H - padB}" stroke="${gridColor()}" stroke-width="1"/>
@@ -60,7 +60,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
 
     if (points.length === 1) {
       const W = container.clientWidth || 600, H = height;
-      const padL = 62, padR = 18, padT = 20, padB = 30;
+      const padL = 48, padR = 48, padT = 20, padB = 30;
       const max = Math.max(points[0].value * 1.55, 10);
       const px = padL + (W - padL - padR) / 2;
       const py = padT + (H - padT - padB) * (1 - points[0].value / max);
@@ -101,7 +101,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
     }
 
     const W = container.clientWidth || 600, H = height;
-    const padL = 62, padR = 18, padT = 20, padB = 32;
+    const padL = 48, padR = 48, padT = 20, padB = 32;
     const values = points.map(p => p.value);
     const loRaw = Math.min(...values), hiRaw = Math.max(...values);
     const pad = Math.max((hiRaw - loRaw) * 0.05, hiRaw * 0.05, 1);

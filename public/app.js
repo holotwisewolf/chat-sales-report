@@ -476,89 +476,239 @@ function renderMonthlySalesTrend(trendData, optionsYears) {
   lineChart(trendEl, fullYearTrend, { format: hasData ? money : () => '—' });
 }
 
-function initOptionWheel(container, items, initialIndex, onChange) {
-  if (!container) return;
-  container.innerHTML = '';
-  let curIndex = initialIndex;
+// React Bits OptionWheel Port (straight vertical variant, without curve)
+class ReactBitsOptionWheel {
+  constructor(container, options = {}) {
+    this.container = container;
+    this.items = options.items || ['2022', '2023', '2024', '2025', '2026'];
+    this.selectedIndex = options.defaultSelected !== undefined ? options.defaultSelected : this.items.length - 1;
+    this.onChange = options.onChange || (() => {});
+    this.rowH = options.rowH || 28;
+    this.smoothing = options.smoothing || 200;
+    this.fade = options.fade || 0.35;
+    this.minOpacity = options.minOpacity || 0.2;
+    this.blur = options.blur || 0.6;
+    this.loop = options.loop || false;
 
-  const wheelEl = document.createElement('div');
-  wheelEl.className = 'option-wheel-3d';
-  
-  items.forEach((item, i) => {
-    const div = document.createElement('div');
-    div.className = `option-wheel__item ${i === curIndex ? 'option-wheel__item--selected' : ''}`;
-    div.textContent = item;
-    div.onclick = () => {
-      curIndex = i;
-      updateWheelDisplay();
-      onChange(i, items[i]);
-    };
-    wheelEl.appendChild(div);
-  });
+    this.pos = this.selectedIndex;
+    this.target = this.selectedIndex;
+    this.rafId = null;
+    this.lastTime = 0;
+    this.isDragging = false;
+    this.dragStart = null;
+    this.dragMoved = false;
 
-  function updateWheelDisplay() {
-    const itemEls = wheelEl.querySelectorAll('.option-wheel__item');
-    itemEls.forEach((el, i) => {
-      const dist = i - curIndex;
-      const rotateX = dist * 24;
-      const opacity = Math.max(0.2, 1 - Math.abs(dist) * 0.35);
-      const isSelected = (i === curIndex);
-      el.style.transform = `translate(-50%, -50%) rotateX(${rotateX}deg) translateZ(${isSelected ? 65 : 45}px)`;
-      el.style.opacity = opacity;
-      el.classList.toggle('option-wheel__item--selected', isSelected);
-    });
+    this.init();
   }
 
-  let isDragging = false;
-  let startY = 0;
+  init() {
+    this.container.innerHTML = '';
+    this.container.classList.add('portalWheel');
+    this.itemEls = this.items.map((label, index) => {
+      const el = document.createElement('div');
+      el.className = `option-wheel__item${index === this.selectedIndex ? ' option-wheel__item--selected' : ''}`;
+      el.textContent = label;
+      el.dataset.index = index;
+      this.container.appendChild(el);
+      return el;
+    });
 
-  wheelEl.onpointerdown = e => {
-    isDragging = true;
-    startY = e.clientY;
-    wheelEl.classList.add('option-wheel--dragging');
-  };
+    this.bindEvents();
+    this.updateLayout(this.pos);
+  }
 
-  window.addEventListener('pointermove', e => {
-    if (!isDragging) return;
-    const dy = e.clientY - startY;
-    if (Math.abs(dy) > 28) {
-      if (dy < 0 && curIndex < items.length - 1) {
-        curIndex++;
-        startY = e.clientY;
-        updateWheelDisplay();
-        onChange(curIndex, items[curIndex]);
-      } else if (dy > 0 && curIndex > 0) {
-        curIndex--;
-        startY = e.clientY;
-        updateWheelDisplay();
-        onChange(curIndex, items[curIndex]);
-      }
+  runFrame(now) {
+    const dt = Math.min((now - this.lastTime) / 1000, 0.05);
+    this.lastTime = now;
+    const tau = Math.max(this.smoothing, 1) / 1000;
+    const k = 1 - Math.exp(-dt / tau);
+
+    let next = this.pos + (this.target - this.pos) * k;
+    const settled = Math.abs(this.target - next) < 0.001;
+    if (settled) next = this.target;
+    this.pos = next;
+
+    this.updateLayout(this.pos);
+
+    if (!settled) {
+      this.rafId = requestAnimationFrame(t => this.runFrame(t));
+    } else {
+      this.rafId = null;
     }
-  });
+  }
 
-  window.addEventListener('pointerup', () => {
-    isDragging = false;
-    wheelEl.classList.remove('option-wheel--dragging');
-  });
+  startLoop() {
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.lastTime = performance.now();
+    this.rafId = requestAnimationFrame(t => this.runFrame(t));
+  }
 
-  container.appendChild(wheelEl);
-  updateWheelDisplay();
+  updateLayout(pos) {
+    const n = this.items.length;
+    for (let i = 0; i < n; i++) {
+      const el = this.itemEls[i];
+      if (!el) continue;
+      let d = i - pos;
+      if (this.loop && n > 1) {
+        d = ((d % n) + n) % n;
+        if (d > n / 2) d -= n;
+      }
+      const dist = Math.abs(d);
+      const y = d * this.rowH;
+
+      el.style.transform = `translate(0, calc(${y.toFixed(2)}px - 50%)) scale(${Math.max(0.78, 1 - dist * 0.11).toFixed(3)})`;
+      el.style.opacity = String(Math.max(this.minOpacity, 1 - dist * this.fade).toFixed(3));
+      el.style.filter = this.blur > 0 && dist > 0.4 ? `blur(${(dist * this.blur).toFixed(1)}px)` : 'none';
+      el.classList.toggle('option-wheel__item--selected', Math.round(pos) === i);
+    }
+  }
+
+  applyTarget(value, snap = false) {
+    let v = value;
+    if (!this.loop) v = Math.max(0, Math.min(this.items.length - 1, v));
+    if (snap) v = Math.round(v);
+    this.target = v;
+    const idx = Math.max(0, Math.min(this.items.length - 1, Math.round(v)));
+    if (idx !== this.selectedIndex && snap) {
+      this.selectedIndex = idx;
+      this.onChange(idx, this.items[idx]);
+    }
+    this.startLoop();
+  }
+
+  bindEvents() {
+    this.container.onwheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.deltaY;
+      const step = Math.max(-1, Math.min(1, delta / this.rowH));
+      this.applyTarget(this.target + step, false);
+      clearTimeout(this.wheelTimer);
+      this.wheelTimer = setTimeout(() => this.applyTarget(this.target, true), 120);
+    };
+
+    this.container.onpointerdown = (e) => {
+      this.isDragging = true;
+      this.dragStart = { y: e.clientY, start: this.target, id: e.pointerId };
+      this.dragMoved = false;
+      this.container.classList.add('option-wheel--dragging');
+    };
+
+    this.container.onpointermove = (e) => {
+      if (!this.isDragging || !this.dragStart) return;
+      const dy = e.clientY - this.dragStart.y;
+      if (!this.dragMoved && Math.abs(dy) > 3) {
+        this.dragMoved = true;
+        this.container.setPointerCapture(this.dragStart.id);
+      }
+      if (this.dragMoved) {
+        this.applyTarget(this.dragStart.start - dy / this.rowH, false);
+      }
+    };
+
+    const handlePointerEnd = () => {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+      this.dragStart = null;
+      this.container.classList.remove('option-wheel--dragging');
+      if (this.dragMoved) {
+        this.applyTarget(this.target, true);
+      }
+      setTimeout(() => { this.dragMoved = false; }, 0);
+    };
+
+    this.container.onpointerup = handlePointerEnd;
+    this.container.onpointercancel = handlePointerEnd;
+  }
 }
 
+let activeYearWheelInstance = null;
+
 function setupYearWheel(years) {
-  const select = document.querySelector('#chartYearVal');
-  if (!select) return;
+  window.lastAvailableYears = years;
+  const wheelTextEl = document.querySelector('#chartYearVal');
+  const backdrop = document.querySelector('#yearWheelBackdrop');
+  const portalWheel = document.querySelector('#portalWheel');
+  if (!wheelTextEl) return;
 
-  const sortedYears = Array.from(years).sort((a, b) => a - b);
-  select.innerHTML = sortedYears.map(yr => `<option value="${yr}" ${Number(yr) === Number(selectedChartYear) ? 'selected' : ''}>${yr}</option>`).join('');
-  select.value = String(selectedChartYear);
+  const sortedYears = Array.from(years).sort((a, b) => a - b).map(String);
+  if (!sortedYears.length) sortedYears.push('2026');
 
-  select.onchange = e => {
-    selectedChartYear = Number(e.target.value);
-    if (window.lastDashboardData) {
-      renderMonthlySalesTrend(window.lastDashboardData.trend, years);
-    }
+  let defaultIdx = sortedYears.indexOf(String(selectedChartYear));
+  if (defaultIdx === -1) defaultIdx = sortedYears.length - 1;
+  selectedChartYear = Number(sortedYears[defaultIdx]);
+  wheelTextEl.textContent = String(selectedChartYear);
+
+  const closeWheel = () => {
+    if (backdrop) backdrop.hidden = true;
   };
+
+  const openWheel = (e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    if (!backdrop || !portalWheel) return;
+    const rect = wheelTextEl.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    portalWheel.style.left = centerX + 'px';
+    portalWheel.style.top = centerY + 'px';
+    backdrop.style.setProperty('--spot-x', `${centerX}px`);
+    backdrop.style.setProperty('--spot-y', `${centerY}px`);
+    backdrop.hidden = false;
+
+    let curIdx = sortedYears.indexOf(String(selectedChartYear));
+    if (curIdx === -1) curIdx = sortedYears.length - 1;
+
+    activeYearWheelInstance = new ReactBitsOptionWheel(portalWheel, {
+      items: sortedYears,
+      defaultSelected: curIdx,
+      rowH: 26,
+      smoothing: 180,
+      fade: 0.55,
+      minOpacity: 0.04,
+      blur: 0,
+      loop: false,
+      onChange: (index, yr) => {
+        selectedChartYear = Number(yr);
+        wheelTextEl.textContent = String(selectedChartYear);
+        if (window.lastDashboardData) {
+          renderMonthlySalesTrend(window.lastDashboardData.trend, years);
+        }
+      }
+    });
+  };
+
+  window.openYearWheel = openWheel;
+
+  wheelTextEl.onpointerdown = (e) => {
+    e.stopPropagation();
+  };
+
+  wheelTextEl.onclick = openWheel;
+
+  if (portalWheel) {
+    portalWheel.onclick = (e) => {
+      if (activeYearWheelInstance && activeYearWheelInstance.dragMoved) return;
+      const item = e.target.closest('.option-wheel__item');
+      if (item) {
+        const idx = Number(item.dataset.index);
+        activeYearWheelInstance.applyTarget(idx, true);
+        closeWheel();
+      }
+    };
+  }
+
+  if (backdrop) {
+    backdrop.onpointerdown = (e) => {
+      if (!portalWheel.contains(e.target)) {
+        e.stopPropagation();
+        e.preventDefault();
+        closeWheel();
+      }
+    };
+  }
 }
 
 function renderYearlySalesTrend(data) {
