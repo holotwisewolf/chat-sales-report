@@ -203,7 +203,11 @@ function lineChart(container, points, { format = value => value.toLocaleString()
 
       const tipX = Math.min(Math.max(curr.x - 70, 8), W - 150);
       tip.style.left = `${tipX}px`;
-      tip.style.top = '6px';
+      if (curr.value === 0 || curr.y >= H - padB - 20) {
+        tip.style.top = `${Math.max(6, curr.y - 48)}px`;
+      } else {
+        tip.style.top = '6px';
+      }
     });
 
     svg.addEventListener('pointerleave', () => {
