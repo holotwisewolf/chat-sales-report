@@ -1077,9 +1077,14 @@ select.yearSelector option{background:#0f172a;color:#fff;font-weight:700;padding
 .bentoGraphs .carouselDots, .bentoRetailers .carouselDots {
   position: absolute;
   bottom: 8px;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
   margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
   z-index: 10;
 }
 

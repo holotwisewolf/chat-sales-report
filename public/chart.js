@@ -61,7 +61,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
     if (points.length === 1) {
       const W = container.clientWidth || 600, H = height;
       const padL = 62, padR = 18, padT = 20, padB = 30;
-      const max = Math.max(niceCeil(points[0].value), 10);
+      const max = Math.max(points[0].value * 1.55, 10);
       const px = padL + (W - padL - padR) / 2;
       const py = padT + (H - padT - padB) * (1 - points[0].value / max);
       const baseY = H - padB;
