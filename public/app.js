@@ -105,11 +105,15 @@ async function renderDashboard() {
     else catPane.innerHTML = '<p class="hint">No categories in this filter yet.</p>';
   }
   window.lastDashboardData = data;
-  const defaultYears = [2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
-  const dataYears = data.options?.years || [];
-  const availableYears = Array.from(new Set([...dataYears, ...defaultYears])).sort((a, b) => a - b);
-  if (!availableYears.includes(selectedChartYear)) {
-    selectedChartYear = 2026;
+  const periodYears = (data.periods || []).map(p => Number((p.period_start || '').slice(0, 4))).filter(Boolean);
+  const currentYr = new Date().getFullYear();
+  const baseYears = [2022, 2023, 2024, 2025, currentYr];
+  const dataYears = (data.options?.years || []).map(Number);
+  const availableYears = Array.from(new Set([...periodYears, ...dataYears, ...baseYears]))
+    .filter(y => y <= currentYr)
+    .sort((a, b) => a - b);
+  if (!availableYears.includes(Number(selectedChartYear))) {
+    selectedChartYear = availableYears[availableYears.length - 1] || currentYr;
   }
   renderMonthlySalesTrend(data.trend, availableYears);
   renderYearlySalesTrend(data);
