@@ -304,6 +304,7 @@ form,.modalWrap{padding:24px}
 .dsCell{padding:10px 14px;border-right:1px solid var(--grid);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
 .dsCell:last-child{border-right:0}
 .dsCell.num{text-align:right}
+.dsCell.center{text-align:center;justify-content:center}
 .dsCell.counterName{font-weight:600}
 .dsHead .dsCell.num:first-child,.dsCell.dsIndex{text-align:center;justify-content:center;color:var(--ink2)}
 .dsCell.mutedcol{color:var(--ink);font-size:inherit}

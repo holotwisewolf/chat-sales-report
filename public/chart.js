@@ -151,8 +151,10 @@ function lineChart(container, points, { format = value => value.toLocaleString()
           <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#fff" stroke="${seriesColor()}" stroke-width="2"/>
         `).join('')}
 
-        <circle class="endPulse" cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${seriesColor()}"/>
-        <text x="${lastPt.x.toFixed(1)}" y="${(lastPt.y < 44 ? lastPt.y + 20 : lastPt.y - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(lastPt.value)}</text>
+        ${hiRaw > 0 ? `
+          <circle class="endPulse" cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${seriesColor()}"/>
+          <text x="${lastPt.x.toFixed(1)}" y="${(lastPt.y < 44 ? lastPt.y + 20 : lastPt.y - 12).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="${strongInk()}">${format(lastPt.value)}</text>
+        ` : ''}
 
         ${xLabels}
 

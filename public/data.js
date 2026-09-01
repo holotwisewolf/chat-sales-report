@@ -190,7 +190,7 @@ async function loadRows() {
   const template = [idxW].concat(COLUMNS.map(c => customColWidths[c.key] || (c.num ? 'minmax(0,0.55fr)' : (widths[c.key] || 'minmax(0,1fr)')))).join(' ');
   const indexHeadCell = `<div class="dsCell num">#<div class="colResizer left" data-col="index"></div><div class="colResizer right" data-col="index"></div></div>`;
   const headCells = indexHeadCell + COLUMNS.map(c => `
-    <div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>
+    <div class="dsCell ${c.sort ? 'sortable' : ''}${c.num ? ' num' : ''}${c.center ? ' center' : ''}${dataState.sort === c.sort ? ' on' : ''}" ${c.sort ? `data-sort="${c.sort}"` : ''}>
       ${c.label}${dataState.sort === c.sort ? (dataState.dir === 'asc' ? ' ▲' : ' ▼') : ''}
       <div class="colResizer left" data-col="${c.key}"></div>
       <div class="colResizer right" data-col="${c.key}"></div>
@@ -201,7 +201,7 @@ async function loadRows() {
   const totals = data.totals || {};
   const footCells = '<div class="dsCell"></div>' + COLUMNS.map(c => c.key === 'counter'
     ? `<div class="dsCell counterName">Total (${data.total.toLocaleString()} rows)</div>`
-    : `<div class="dsCell ${c.num ? 'num' : ''}">${c.num ? formatNum(totals[c.key] || 0, MONEY_FIELDS.has(c.key)) : ''}</div>`).join('');
+    : `<div class="dsCell ${c.num ? 'num' : ''}${c.center ? ' center' : ''}">${c.num ? formatNum(totals[c.key] || 0, MONEY_FIELDS.has(c.key)) : ''}</div>`).join('');
   $data('#dataTable').innerHTML = `
     <div class="dsHead" style="--cols:${template}">${headCells}</div>
     <div class="dsBody" style="--cols:${template}">${body || '<div class="hint" style="padding:22px 14px">No rows match these filters.</div>'}</div>
@@ -240,7 +240,7 @@ const ALL_COLUMNS = [
   { key: 'sales', label: 'Sales (RM)', sort: 'sales', num: true },
   { key: 'cost', label: 'Cost', num: true, optional: 'cost' },
   { key: 'profit', label: 'Profit', num: true, optional: 'profit' },
-  { key: 'period', label: 'Period', sort: 'period' }
+  { key: 'period', label: 'Period', sort: 'period', center: true }
 ];
 const visibleColumns = has => ALL_COLUMNS.filter(c => !c.optional || has[c.optional]);
 
@@ -267,7 +267,7 @@ const cellText = (row, col) => {
   return col.num ? formatNum(value, MONEY_FIELDS.has(col.key)) : escapeHtml(String(value));
 };
 const sortIndex = columns => columns.findIndex(c => c.sort === dataState.sort);
-const rowCellClass = (col, ci, columns) => `${col.num ? 'num' : ''}${col.cls ? ` ${col.cls}` : ''}${ci === sortIndex(columns) ? ' sortedCol' : ''}`;
+const rowCellClass = (col, ci, columns) => `${col.num ? 'num' : ''}${col.center ? ' center' : ''}${col.cls ? ` ${col.cls}` : ''}${ci === sortIndex(columns) ? ' sortedCol' : ''}`;
 
 function rowHtml(row, columns, index) {
   const selected = dataState.selection.has(row.id) ? ' selected' : '';
