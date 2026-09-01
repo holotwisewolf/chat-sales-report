@@ -914,8 +914,8 @@ main{padding-bottom:110px}
 
 /* OptionWheel Year Selector & Chart Header */
 .chartTitleWrap{position:relative;display:inline-flex;align-items:center;gap:8px;margin-bottom:2px}
-.bentoMainTitle{font-size:16px;font-weight:750;margin:0;color:var(--ink);letter-spacing:-.01em}
-select.yearSelector{appearance:none;-webkit-appearance:none;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(42,120,214,.3);border-radius:8px;padding:2px 24px 2px 10px;font-size:14px;font-weight:800;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230b57c7' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;transition:all .18s ease;outline:none}
+.bentoMainTitle{font-size:16px;font-weight:750;margin:0;color:var(--ink);letter-spacing:-.01em;display:inline-flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;gap:6px}
+select.yearSelector{display:inline-flex;align-items:center;vertical-align:middle;margin:0;appearance:none;-webkit-appearance:none;background:var(--accent-soft);color:var(--accent);border:1px solid rgba(42,120,214,.3);border-radius:8px;padding:2px 24px 2px 10px;font-size:14px;font-weight:850;font-family:inherit;line-height:1.2;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230b57c7' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;transition:all .18s ease;outline:none}
 select.yearSelector:hover{background-color:rgba(42,120,214,.22);border-color:var(--accent)}
 select.yearSelector option{background:#0f172a;color:#fff;font-weight:700;padding:8px}
 
