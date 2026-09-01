@@ -184,8 +184,14 @@ function lineChart(container, points, { format = value => value.toLocaleString()
         }
       }
 
+      const isBaseline = curr.value === 0 || curr.y >= H - padB - 20;
+      const tipTop = isBaseline ? Math.max(6, curr.y - 48) : 6;
+      const hairY1 = Math.max(padT, tipTop + 36);
+
       hair.setAttribute('x1', curr.x);
       hair.setAttribute('x2', curr.x);
+      hair.setAttribute('y1', hairY1);
+      hair.setAttribute('y2', H - padB);
       hair.setAttribute('opacity', '0.65');
 
       dot.setAttribute('cx', curr.x);
@@ -203,11 +209,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
 
       const tipX = Math.min(Math.max(curr.x - 70, 8), W - 150);
       tip.style.left = `${tipX}px`;
-      if (curr.value === 0 || curr.y >= H - padB - 20) {
-        tip.style.top = `${Math.max(6, curr.y - 48)}px`;
-      } else {
-        tip.style.top = '6px';
-      }
+      tip.style.top = `${tipTop}px`;
     });
 
     svg.addEventListener('pointerleave', () => {
