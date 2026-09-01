@@ -709,6 +709,18 @@ function setupYearWheel(years) {
       }
     };
   }
+
+  const onAnyScrollOrPointer = (e) => {
+    if (backdrop && !backdrop.hidden) {
+      if (e.type === 'scroll' || (!portalWheel.contains(e.target) && !wheelTextEl.contains(e.target))) {
+        closeWheel();
+      }
+    }
+  };
+
+  window.addEventListener('scroll', onAnyScrollOrPointer, { passive: true, capture: true });
+  document.addEventListener('scroll', onAnyScrollOrPointer, { passive: true, capture: true });
+  document.addEventListener('pointerdown', onAnyScrollOrPointer, { capture: true });
 }
 
 function renderYearlySalesTrend(data) {
