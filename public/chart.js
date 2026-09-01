@@ -184,9 +184,8 @@ function lineChart(container, points, { format = value => value.toLocaleString()
         }
       }
 
-      const isBaseline = curr.value === 0 || curr.y >= H - padB - 20;
-      const tipTop = isBaseline ? Math.max(6, curr.y - 38) : 6;
-      const hairY1 = Math.max(padT, tipTop + 28);
+      const tipTop = Math.max(4, curr.y - 42);
+      const hairY1 = tipTop + 34;
 
       hair.setAttribute('x1', curr.x);
       hair.setAttribute('x2', curr.x);
