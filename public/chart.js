@@ -184,8 +184,8 @@ function lineChart(container, points, { format = value => value.toLocaleString()
         }
       }
 
-      const tipTop = Math.max(4, curr.y - 42);
-      const hairY1 = tipTop + 34;
+      const tipTop = curr.y - 75;
+      const hairY1 = Math.max(padT, Math.min(curr.y, tipTop + 38));
 
       hair.setAttribute('x1', curr.x);
       hair.setAttribute('x2', curr.x);

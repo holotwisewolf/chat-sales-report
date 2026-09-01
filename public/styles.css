@@ -83,7 +83,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
 .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin:16px 0}
 .panel{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:20px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6)}
-.trend{color:var(--ink2)}
+.trend, .carouselPane, #yearlyTrend, #filteredTrend{color:var(--ink2);position:relative;overflow:visible!important}
 .singlePoint{padding:22px 4px}.singlePoint small{color:var(--ink2);font-weight:600}.singlePoint strong{display:block;font-size:28px;margin:6px 0 4px;font-variant-numeric:tabular-nums}
 .chartTip b{font-size:11px;color:var(--ink2)}
 .barRow{display:grid;grid-template-columns:minmax(100px,160px) 1fr auto;grid-template-areas:'label track value' 'sub sub sub';align-items:center;gap:4px 10px;padding:10px 2px;border-top:1px solid var(--hair)}
