@@ -2,7 +2,7 @@
 // are the single source of truth - they drive both the table and everything rendered here.
 const money = n => new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(n || 0);
 const escapeHtml = value => String(value).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
-const median = values => { const sorted = values.slice().sort((a,b) => a-b); const half = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2; };
+const median = values => { const sorted = values.slice().sort((a, b) => a - b); const half = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[half] : (sorted[half - 1] + sorted[half]) / 2; };
 const FILTER_IDS = { '#dRetailer': 'retailer', '#dCategory': 'category' };
 const filterValue = selector => document.querySelector(selector)?.value || '';
 
@@ -128,64 +128,64 @@ async function renderDashboard() {
   document.querySelector('#alerts').innerHTML = allCards.length ? allCards.map(signal => `<div class="alert alertCard ${signal.type}${signal.isAi ? ' aiInsightCard' : ''}"><strong>${escapeHtml(signal.title)}</strong><small>${escapeHtml(signal.text)}</small></div>`).join('') : '<p class="hint">Not enough counters in a retailer for a meaningful peer comparison.</p>';
   document.querySelector('#reports').innerHTML = data.periods.map(row => `<div class="report"><div><strong>${escapeHtml(row.retailer)}</strong><small>${row.period_start} to ${row.period_end}${row.source_filename ? ` &middot; ${escapeHtml(row.source_filename)}` : ''}</small></div><div><strong>${money(row.sales)}</strong><small>${row.quantity} units &middot; ${row.jobId ? `<button type="button" class="linkish" data-deimport="${row.jobId}">Undo import</button>` : `<button type="button" class="linkish" data-remove-report="${row.id}">Remove</button>`}</small></div></div>`).join('') || '<p class="hint">No data matches these filters.</p>';
 
-let activeDiscussMenu = null;
-function removeDiscussMenu() { if (activeDiscussMenu) { activeDiscussMenu.remove(); activeDiscussMenu = null; } }
-document.addEventListener('pointerdown', event => { if (activeDiscussMenu && !activeDiscussMenu.contains(event.target)) removeDiscussMenu(); });
+  let activeDiscussMenu = null;
+  function removeDiscussMenu() { if (activeDiscussMenu) { activeDiscussMenu.remove(); activeDiscussMenu = null; } }
+  document.addEventListener('pointerdown', event => { if (activeDiscussMenu && !activeDiscussMenu.contains(event.target)) removeDiscussMenu(); });
 
-const alertsWrap = document.querySelector('#alerts');
-if (alertsWrap && !alertsWrap.dataset.wired) {
-  alertsWrap.dataset.wired = 'true';
-  alertsWrap.addEventListener('click', event => {
-    const card = event.target.closest('.alertCard, .alert');
-    if (!card) return;
-    removeDiscussMenu();
-    const titleText = card.querySelector('strong')?.textContent || '';
-    const descText = card.querySelector('small')?.textContent || '';
-    const fullInsight = titleText ? `${titleText}: ${descText}` : descText;
-
-    const menu = document.createElement('div');
-    menu.className = 'discussContextMenu';
-    menu.style.left = `${Math.min(event.clientX, window.innerWidth - 180)}px`;
-    menu.style.top = `${Math.min(event.clientY + 8, window.innerHeight - 60)}px`;
-    menu.innerHTML = `<button type="button" class="discussAiBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Discuss with AI</button>`;
-
-    menu.querySelector('.discussAiBtn').onclick = e => {
-      e.stopPropagation();
+  const alertsWrap = document.querySelector('#alerts');
+  if (alertsWrap && !alertsWrap.dataset.wired) {
+    alertsWrap.dataset.wired = 'true';
+    alertsWrap.addEventListener('click', event => {
+      const card = event.target.closest('.alertCard, .alert');
+      if (!card) return;
       removeDiscussMenu();
-      if (window.openChat) window.openChat();
-      const chatInput = document.querySelector('#chatInput');
-      const chatForm = document.querySelector('#chatForm');
-      if (chatInput) {
-        chatInput.value = `Can you explain what this means: "${fullInsight}"? Also give me some questions that help me critically think about what changed for that particular month or sales period.`;
-        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-        setTimeout(() => {
-          chatForm?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-        }, 120);
-      }
-    };
-    document.body.appendChild(menu);
-    activeDiscussMenu = menu;
-  });
-}
+      const titleText = card.querySelector('strong')?.textContent || '';
+      const descText = card.querySelector('small')?.textContent || '';
+      const fullInsight = titleText ? `${titleText}: ${descText}` : descText;
 
-const reportsWrap = document.querySelector('#reports');
-if (reportsWrap) reportsWrap.onclick = async event => {
-  const jobId = event.target.dataset?.deimport;
-  const reportId = event.target.dataset?.removeReport;
-  if (jobId) {
-    if (!confirm('Undo this import? Its rows are removed. Reports it REPLACED stay removed - re-import those if needed.')) return;
-    const response = await fetch(`/api/import-jobs/${jobId}/deimport`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) return alert(result.error || 'Could not undo that import.');
-  } else if (reportId) {
-    if (!confirm('Remove this report and all its rows? This cannot be undone.')) return;
-    const response = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) return alert(result.error || 'Could not remove that report.');
-  } else return;
-  if (window.loadRows) loadRows();
-  load();
-};
+      const menu = document.createElement('div');
+      menu.className = 'discussContextMenu';
+      menu.style.left = `${Math.min(event.clientX, window.innerWidth - 180)}px`;
+      menu.style.top = `${Math.min(event.clientY + 8, window.innerHeight - 60)}px`;
+      menu.innerHTML = `<button type="button" class="discussAiBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Discuss with AI</button>`;
+
+      menu.querySelector('.discussAiBtn').onclick = e => {
+        e.stopPropagation();
+        removeDiscussMenu();
+        if (window.openChat) window.openChat();
+        const chatInput = document.querySelector('#chatInput');
+        const chatForm = document.querySelector('#chatForm');
+        if (chatInput) {
+          chatInput.value = `Can you explain what this means: "${fullInsight}"? Also give me some questions that help me critically think about what changed for that particular month or sales period.`;
+          chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+          setTimeout(() => {
+            chatForm?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }, 120);
+        }
+      };
+      document.body.appendChild(menu);
+      activeDiscussMenu = menu;
+    });
+  }
+
+  const reportsWrap = document.querySelector('#reports');
+  if (reportsWrap) reportsWrap.onclick = async event => {
+    const jobId = event.target.dataset?.deimport;
+    const reportId = event.target.dataset?.removeReport;
+    if (jobId) {
+      if (!confirm('Undo this import? Its rows are removed. Reports it REPLACED stay removed - re-import those if needed.')) return;
+      const response = await fetch(`/api/import-jobs/${jobId}/deimport`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) return alert(result.error || 'Could not undo that import.');
+    } else if (reportId) {
+      if (!confirm('Remove this report and all its rows? This cannot be undone.')) return;
+      const response = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) return alert(result.error || 'Could not remove that report.');
+    } else return;
+    if (window.loadRows) loadRows();
+    load();
+  };
 }
 
 function clearFilters() {
@@ -482,7 +482,7 @@ class ReactBitsOptionWheel {
     this.container = container;
     this.items = options.items || ['2022', '2023', '2024', '2025', '2026'];
     this.selectedIndex = options.defaultSelected !== undefined ? options.defaultSelected : this.items.length - 1;
-    this.onChange = options.onChange || (() => {});
+    this.onChange = options.onChange || (() => { });
     this.rowH = options.rowH || 28;
     this.smoothing = options.smoothing || 200;
     this.fade = options.fade || 0.35;
@@ -641,6 +641,7 @@ function setupYearWheel(years) {
 
   const closeWheel = () => {
     if (backdrop) backdrop.hidden = true;
+    if (wheelTextEl) wheelTextEl.style.visibility = 'visible'; // Show the static text again
   };
 
   const openWheel = (e) => {
@@ -657,6 +658,8 @@ function setupYearWheel(years) {
     backdrop.style.setProperty('--spot-x', `${centerX}px`);
     backdrop.style.setProperty('--spot-y', `${centerY}px`);
     backdrop.hidden = false;
+
+    wheelTextEl.style.visibility = 'hidden'; // Hide the static text behind the portal
 
     let curIdx = sortedYears.indexOf(String(selectedChartYear));
     if (curIdx === -1) curIdx = sortedYears.length - 1;
