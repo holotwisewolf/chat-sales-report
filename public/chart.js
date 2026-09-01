@@ -104,8 +104,7 @@ function lineChart(container, points, { format = value => value.toLocaleString()
     const padL = 62, padR = 18, padT = 20, padB = 32;
     const values = points.map(p => p.value);
     const loRaw = Math.min(...values), hiRaw = Math.max(...values);
-    const activePoints = points.filter(p => p.value > 0);
-    const pad = activePoints.length === 1 ? hiRaw * 0.55 : Math.max((hiRaw - loRaw) * 0.05, hiRaw * 0.05, 1);
+    const pad = Math.max((hiRaw - loRaw) * 0.05, hiRaw * 0.05, 1);
     const lo = Math.max(0, loRaw - pad), hi = hiRaw + pad;
 
     const getX = i => padL + (W - padL - padR) * (i / (points.length - 1));
@@ -186,8 +185,8 @@ function lineChart(container, points, { format = value => value.toLocaleString()
       }
 
       const isBaseline = curr.value === 0 || curr.y >= H - padB - 20;
-      const tipTop = isBaseline ? Math.max(6, curr.y - 31) : 6;
-      const hairY1 = Math.max(padT, tipTop + 23);
+      const tipTop = isBaseline ? Math.max(6, curr.y - 38) : 6;
+      const hairY1 = Math.max(padT, tipTop + 28);
 
       hair.setAttribute('x1', curr.x);
       hair.setAttribute('x2', curr.x);
