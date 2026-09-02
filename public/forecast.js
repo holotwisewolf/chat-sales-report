@@ -580,9 +580,9 @@
     modal.hidden = false;
     modal.style.display = 'flex';
 
-    // Populate Top Header
+    // Populate Top Header for that specific month
     const eyebrow = $('#fModalEyebrow');
-    if (eyebrow) eyebrow.textContent = `Sales Projection`;
+    if (eyebrow) eyebrow.textContent = `Sales Projection • ${pt.period}`;
 
     const mSales = $('#fModalSales');
     if (mSales) mSales.textContent = money(pt.sales);
@@ -591,9 +591,9 @@
     if (mUnits) mUnits.textContent = `${formatNum(pt.units)} pairs`;
 
     const mPeriod = $('#fModalPeriod');
-    if (mPeriod) mPeriod.textContent = `${pt.period} ${pt.growth_pct != null ? `(${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}% MoM)` : ''}`;
+    if (mPeriod) mPeriod.textContent = `${pt.isForecast ? 'TimesFM Projected' : 'Recorded Actual'} ${pt.growth_pct != null ? `(${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}% MoM)` : ''}`;
 
-    // Populate Bottom 3 Bento Cards
+    // Populate Bottom 3 Bento Cards for that specific month
     const bLb = $('#fBentoLb');
     if (bLb) bLb.textContent = pt.p10 ? money(pt.p10) : money(pt.sales * 0.88);
 
@@ -603,26 +603,7 @@
     const bUb = $('#fBentoUb');
     if (bUb) bUb.textContent = pt.p90 ? money(pt.p90) : money(pt.sales * 1.12);
 
-    // Channel List
-    const chList = $('#fModalChannelList');
-    if (chList) {
-      const channels = lastData?.channel_contributions && lastData.channel_contributions.length ? lastData.channel_contributions : [
-        { name: 'Mydin', share_pct: 79.7 },
-        { name: 'Hero Market', share_pct: 20.3 }
-      ];
-      chList.innerHTML = channels.map(ch => {
-        const share = Number(ch.share_pct) || 50;
-        const chSales = (pt.sales * share) / 100;
-        return `
-          <div class="fModalChannelRow">
-            <span class="chName">${escapeHtml(ch.name || 'Retail Partner')} (${share.toFixed(1)}% share)</span>
-            <span class="chVal">${money2(chSales)}</span>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Render Mini Wave Sparkline in Modal
+    // Render Confidence Envelope & Wave Curve in Modal
     renderModalSparkline(pt, allPoints);
 
     // Setup Close Listeners
@@ -636,79 +617,150 @@
     if (modalBackdrop) modalBackdrop.onclick = closeModal;
   }
 
-  // Render Mini Smooth Wave Curve in Modal (Exact visual from screenshot)
+  // Render Mini Wave Trajectory Chart with Upper/Lower Bound Confidence Channel
   function renderModalSparkline(selectedPt, allPoints) {
     const container = $('#fModalSvgContainer');
     if (!container || !allPoints || !allPoints.length) return;
 
-    const W = container.clientWidth || 620;
+    const W = container.clientWidth || 600;
     const H = 150;
-    const padL = 35, padR = 35, padT = 30, padB = 25;
+    const padL = 40, padR = 40, padT = 25, padB = 25;
 
-    const maxVal = Math.max(...allPoints.map(p => p.sales || 0), 1000) * 1.15;
-    const minVal = Math.min(...allPoints.map(p => p.sales || 0), 0) * 0.9;
+    const maxVal = Math.max(...allPoints.map(p => p.p90 || p.sales * 1.12), 1000) * 1.1;
+    const minVal = Math.min(...allPoints.map(p => p.p10 || p.sales * 0.88), 0) * 0.9;
     const valRange = Math.max(1, maxVal - minVal);
 
     const stepX = (W - padL - padR) / Math.max(1, allPoints.length - 1);
     const getX = i => padL + i * stepX;
     const getY = val => padT + (H - padT - padB) * (1 - (val - minVal) / valRange);
 
-    const wavePoints = allPoints.map((p, i) => ({
-      x: getX(i),
-      y: getY(p.sales),
-      period: p.period,
-      sales: p.sales,
-      isSel: p.period === selectedPt.period
-    }));
+    const pts50 = allPoints.map((p, i) => ({ x: getX(i), y: getY(p.sales), period: p.period, sales: p.sales }));
+    const pts90 = allPoints.map((p, i) => ({ x: getX(i), y: getY(p.p90 || p.sales * 1.12) }));
+    const pts10 = allPoints.map((p, i) => ({ x: getX(i), y: getY(p.p10 || p.sales * 0.88) }));
 
-    const pathD = buildSmoothBezier(wavePoints);
-    const selPoint = wavePoints.find(p => p.isSel) || wavePoints[wavePoints.length - 1];
+    const pathP50 = buildSmoothBezier(pts50);
+    const pathP90 = buildSmoothBezier(pts90);
+    const pathP10 = buildSmoothBezier(pts10);
+
+    // Build confidence band polygon
+    let bandD = `M ${pts90[0].x.toFixed(1)},${pts90[0].y.toFixed(1)}`;
+    for (let i = 1; i < pts90.length; i++) bandD += ` L ${pts90[i].x.toFixed(1)},${pts90[i].y.toFixed(1)}`;
+    for (let i = pts10.length - 1; i >= 0; i--) bandD += ` L ${pts10[i].x.toFixed(1)},${pts10[i].y.toFixed(1)}`;
+    bandD += ' Z';
+
+    const selIdx = allPoints.findIndex(p => p.period === selectedPt.period);
+    const selX = getX(selIdx !== -1 ? selIdx : allPoints.length - 1);
+    const selY = getY(selectedPt.sales);
 
     container.innerHTML = `
       <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" style="overflow: visible;">
-        <!-- Background Grid Lines -->
-        <line x1="${padL}" x2="${W - padR}" y1="${getY(maxVal * 0.75).toFixed(1)}" y2="${getY(maxVal * 0.75).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
-        <line x1="${padL}" x2="${W - padR}" y1="${getY(maxVal * 0.35).toFixed(1)}" y2="${getY(maxVal * 0.35).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+        <defs>
+          <linearGradient id="modalBandGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.06"/>
+          </linearGradient>
+        </defs>
 
-        <!-- Smooth White Wave Line from screenshot -->
-        <path d="${pathD}" fill="none" stroke="#f1f5f9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Shaded Confidence Band (UB to LB channel) -->
+        <path d="${bandD}" fill="url(#modalBandGrad)" />
 
-        <!-- Vertical Crosshair Line -->
-        <line x1="${selPoint.x.toFixed(1)}" x2="${selPoint.x.toFixed(1)}" y1="${padT - 10}" y2="${H - padB + 5}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" />
+        <!-- Upper Bound Line (P90) -->
+        <path d="${pathP90}" fill="none" stroke="#8b5cf6" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.85"/>
 
-        <!-- Selected Dot Highlight -->
-        <circle cx="${selPoint.x.toFixed(1)}" cy="${selPoint.y.toFixed(1)}" r="4.5" fill="#fff" stroke="#111317" stroke-width="2" />
+        <!-- Lower Bound Line (P10) -->
+        <path d="${pathP10}" fill="none" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.85"/>
 
-        <!-- Floating Badge above Selected Point -->
-        <g transform="translate(${Math.min(Math.max(selPoint.x - 45, 10), W - 95)}, ${Math.max(selPoint.y - 42, 2)})">
-          <rect width="90" height="30" rx="7" fill="#1e222b" stroke="rgba(255,255,255,0.18)"/>
-          <text x="45" y="13" fill="#94a3b8" font-size="9.5" font-weight="600" text-anchor="middle">${escapeHtml(selPoint.period)}</text>
-          <text x="45" y="25" fill="#fff" font-size="11.5" font-weight="750" text-anchor="middle">${money(selPoint.sales)}</text>
+        <!-- Projected / Baseline Line (P50) -->
+        <path d="${pathP50}" fill="none" stroke="#7c3aed" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- Vertical Crosshair to Selected Month -->
+        <line x1="${selX.toFixed(1)}" x2="${selX.toFixed(1)}" y1="${padT - 8}" y2="${H - padB + 6}" stroke="var(--ink2)" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.4"/>
+
+        <!-- Selected Month Dot -->
+        <circle cx="${selX.toFixed(1)}" cy="${selY.toFixed(1)}" r="5.5" fill="#7c3aed" stroke="#ffffff" stroke-width="2.5" />
+
+        <!-- Floating Badge for Selected Month -->
+        <g transform="translate(${Math.min(Math.max(selX - 45, 8), W - 98)}, ${Math.max(selY - 38, 2)})">
+          <rect width="90" height="28" rx="7" fill="#ffffff" stroke="#7c3aed" stroke-width="1.2" filter="drop-shadow(0 2px 5px rgba(124,58,237,0.2))"/>
+          <text x="45" y="12" fill="var(--ink2)" font-size="9" font-weight="700" text-anchor="middle">${escapeHtml(selectedPt.period)}</text>
+          <text x="45" y="23" fill="#7c3aed" font-size="11" font-weight="800" text-anchor="middle">${money(selectedPt.sales)}</text>
         </g>
 
-        <!-- Start, Mid, End Axis Labels -->
-        <text x="${padL}" y="${H - 4}" fill="#64748b" font-size="10">${escapeHtml(allPoints[0]?.period || '')}</text>
-        <text x="${W / 2}" y="${H - 4}" fill="#64748b" font-size="10" text-anchor="middle">${escapeHtml(allPoints[Math.floor(allPoints.length / 2)]?.period || '')}</text>
-        <text x="${W - padR}" y="${H - 4}" fill="#64748b" font-size="10" text-anchor="end">${escapeHtml(allPoints[allPoints.length - 1]?.period || '')}</text>
+        <!-- X Axis Labels -->
+        <text x="${padL}" y="${H - 4}" fill="var(--muted)" font-size="10">${escapeHtml(allPoints[0]?.period || '')}</text>
+        <text x="${W / 2}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="middle">${escapeHtml(allPoints[Math.floor(allPoints.length / 2)]?.period || '')}</text>
+        <text x="${W - padR}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="end">${escapeHtml(allPoints[allPoints.length - 1]?.period || '')}</text>
       </svg>
     `;
   }
 
-  // Render Channel Contribution Bars
+  // Selected channel forecast filter
+  let selectedChannelPeriod = 'all';
+
+  // Render Channel Contribution Bars with Scrollable Month Tabs
   function renderChannelContributions(data) {
     const list = $('#channelForecastList');
+    const tabs = $('#channelMonthTabs');
     if (!list) return;
 
     const forecastSeries = data.forecast || [];
-    const startPeriod = forecastSeries[0]?.period || '';
-    const endPeriod = forecastSeries[forecastSeries.length - 1]?.period || '';
     const horizonCount = forecastSeries.length || currentHorizon;
-    const timeframeLabel = startPeriod && endPeriod ? `${startPeriod} – ${endPeriod}` : `${horizonCount} Months`;
-
     const channels = data.channel_contributions || [];
+
     if (!channels.length) {
       list.innerHTML = '<p class="hint">No retailer distribution available</p>';
       return;
+    }
+
+    // Render Scrollable Month Tabs
+    if (tabs) {
+      const monthOptions = [
+        { id: 'all', label: `All (${horizonCount}M)` },
+        ...forecastSeries.map(f => ({ id: f.period, label: f.period }))
+      ];
+
+      tabs.innerHTML = monthOptions.map(m => `
+        <button type="button" class="channelMonthTab ${selectedChannelPeriod === m.id ? 'active' : ''}" data-period="${escapeHtml(m.id)}">
+          ${escapeHtml(m.label)}
+        </button>
+      `).join('');
+
+      // Wire Tab Click Listeners
+      tabs.querySelectorAll('.channelMonthTab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedChannelPeriod = btn.dataset.period;
+          tabs.querySelectorAll('.channelMonthTab').forEach(b => b.classList.toggle('active', b.dataset.period === selectedChannelPeriod));
+          updateChannelForecastRows(data);
+        });
+      });
+    }
+
+    updateChannelForecastRows(data);
+  }
+
+  function updateChannelForecastRows(data) {
+    const list = $('#channelForecastList');
+    const hint = $('#channelContribHint');
+    if (!list) return;
+
+    const forecastSeries = data.forecast || [];
+    const horizonCount = forecastSeries.length || currentHorizon;
+    const channels = data.channel_contributions || [];
+
+    let totalPeriodSales = 0;
+    let timeframeLabel = '';
+
+    if (selectedChannelPeriod === 'all') {
+      const startPeriod = forecastSeries[0]?.period || '';
+      const endPeriod = forecastSeries[forecastSeries.length - 1]?.period || '';
+      timeframeLabel = startPeriod && endPeriod ? `${startPeriod} – ${endPeriod}` : `${horizonCount} Months`;
+      totalPeriodSales = forecastSeries.reduce((acc, f) => acc + (f.sales || 0), 0);
+      if (hint) hint.textContent = `Expected revenue distribution across retail partners over the entire ${timeframeLabel} horizon.`;
+    } else {
+      const matched = forecastSeries.find(f => f.period === selectedChannelPeriod);
+      totalPeriodSales = matched ? matched.sales : 0;
+      timeframeLabel = selectedChannelPeriod;
+      if (hint) hint.textContent = `Expected revenue distribution across retail partners in ${selectedChannelPeriod}.`;
     }
 
     list.innerHTML = channels.map((ch, idx) => {
@@ -717,17 +769,20 @@
         name = ch.retailer && ch.retailer !== 'Retail Partner' ? ch.retailer : (idx === 0 ? 'Mydin' : (idx === 1 ? 'Hero Market' : `Retailer #${idx + 1}`));
       }
 
+      const sharePct = Number(ch.share_pct) || 50;
+      const periodSales = (totalPeriodSales * sharePct) / 100;
+
       return `
         <div class="channelContribRow">
           <div class="contribInfo">
             <span class="contribName">${escapeHtml(name)}</span>
-            <span class="contribShare">${ch.share_pct}% share (${timeframeLabel})</span>
+            <span class="contribShare">${sharePct.toFixed(1)}% share (${timeframeLabel})</span>
           </div>
           <div class="contribBarTrack">
-            <div class="contribBarFill" style="width: ${Math.min(100, Math.max(5, ch.share_pct))}%;"></div>
+            <div class="contribBarFill" style="width: ${Math.min(100, Math.max(5, sharePct))}%;"></div>
           </div>
           <div class="contribVal">
-            <strong>${money(ch.projected_sales)}</strong>
+            <strong>${money(periodSales)}</strong>
           </div>
         </div>
       `;

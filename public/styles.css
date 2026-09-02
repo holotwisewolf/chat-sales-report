@@ -1820,13 +1820,13 @@ main{padding-bottom:110px}
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 680px;
-  background: #111317;
-  color: #f1f5f9;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 660px;
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid var(--hair2);
   border-radius: 20px;
   padding: 24px 28px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04);
   animation: fModalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -1836,7 +1836,7 @@ main{padding-bottom:110px}
 }
 
 @keyframes fModalScaleIn {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
@@ -1860,19 +1860,19 @@ main{padding-bottom:110px}
 
 .fModalEyebrow {
   font-size: 13px;
-  font-weight: 600;
-  color: #94a3b8;
+  font-weight: 700;
+  color: var(--ink2);
 }
 
 .fModalLiveDot {
   font-size: 12px;
   font-weight: 700;
-  color: #10b981;
+  color: #0891b2;
 }
 
 .fModalCloseBtn {
-  background: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink2);
   border: 0;
   border-radius: 50%;
   width: 32px;
@@ -1889,8 +1889,8 @@ main{padding-bottom:110px}
 }
 
 .fModalCloseBtn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--ink);
 }
 
 .fModalTitleRow {
@@ -1910,9 +1910,9 @@ main{padding-bottom:110px}
 }
 
 .fModalVal {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 800;
-  color: #fff;
+  color: #7c3aed;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -1921,56 +1921,32 @@ main{padding-bottom:110px}
 .fModalUnits {
   font-size: 14px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--ink2);
 }
 
 .fModalPeriod {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
 }
 
-.fModalPills {
+.fModalScenarioPills {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.fModalPillBtn {
-  background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  min-height: 28px;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-
-.fModalTimePills {
-  display: flex;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 2px;
-  gap: 2px;
+  gap: 6px;
 }
 
 .fModalPill {
   font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
-  padding: 4px 10px;
-  border-radius: 6px;
-  cursor: pointer;
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  padding: 4px 12px;
+  border-radius: 8px;
 }
 
-.fModalPill.active {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-}
-
-/* Modal Sparkline Curve */
+/* Modal Mini Wave Trajectory Chart */
 .fModalChartWrap {
   width: 100%;
   height: 160px;
@@ -1988,12 +1964,11 @@ main{padding-bottom:110px}
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
-  margin-bottom: 14px;
 }
 
 .fModalBentoCard {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(248, 250, 252, 0.95);
+  border: 1px solid var(--hair2);
   border-radius: 12px;
   padding: 12px 14px;
   display: flex;
@@ -2002,66 +1977,80 @@ main{padding-bottom:110px}
 }
 
 .fModalBentoCard.fModalBentoHighlight {
-  background: rgba(124, 58, 237, 0.12);
-  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.06);
+  border-color: rgba(124, 58, 237, 0.3);
 }
 
 .fBentoLabel {
   font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: capitalize;
+  font-weight: 700;
+  color: var(--ink2);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .fBentoVal {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
-  color: #fff;
+  color: var(--ink);
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
 .fModalBentoHighlight .fBentoVal {
-  color: #a78bfa;
+  color: #7c3aed;
 }
 
 .fBentoSub {
   font-size: 11px;
-  color: #64748b;
+  color: var(--muted);
   font-weight: 500;
 }
 
-/* Channel List Inside Modal */
-.fModalChannelSection {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 12px 14px;
+/* Channel Contribution Scrollable Months Track */
+.channelMonthScrollWrap {
+  overflow-x: auto;
+  max-width: 480px;
+  padding: 2px 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-.fModalChannelList {
+.channelMonthScrollWrap::-webkit-scrollbar {
+  display: none;
+}
+
+.channelMonthTabs {
   display: flex;
-  flex-direction: column;
   gap: 6px;
-  margin-top: 8px;
-}
-
-.fModalChannelRow {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 12.5px;
 }
 
-.fModalChannelRow .chName {
-  color: #cbd5e1;
-  font-weight: 500;
+.channelMonthTab {
+  border: 1px solid var(--hair2);
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--ink2);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.14s ease;
+  font-family: inherit;
 }
 
-.fModalChannelRow .chVal {
+.channelMonthTab:hover {
+  background: rgba(8, 145, 178, 0.08);
+  color: #0891b2;
+  border-color: rgba(8, 145, 178, 0.3);
+}
+
+.channelMonthTab.active {
+  background: #0891b2;
   color: #fff;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  border-color: #0891b2;
+  box-shadow: 0 2px 8px rgba(8, 145, 178, 0.25);
 }
 
 /* Target Planner Grid */
