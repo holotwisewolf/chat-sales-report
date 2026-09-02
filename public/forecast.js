@@ -153,48 +153,44 @@
     updateDisplay();
   }
 
-  // Populate forecast filters from main dashboard data options
-  function populateForecastFilters() {
+  // Populate forecast filters directly from API
+  async function populateForecastFilters() {
     const retailerSel = $('#fRetailer');
     const categorySel = $('#fCategory');
     const counterSel = $('#fCounter');
 
-    const dRetailer = $('#dRetailer');
-    const dCategory = $('#dCategory');
+    try {
+      const res = await fetch('/api/dashboard');
+      if (!res.ok) return;
+      const data = await res.json();
+      const options = data.options || {};
 
-    if (retailerSel && dRetailer && retailerSel.options.length <= 1) {
-      Array.from(dRetailer.options).forEach(opt => {
-        if (opt.value) {
-          const o = document.createElement('option');
-          o.value = opt.value;
-          o.textContent = opt.textContent;
-          retailerSel.appendChild(o);
-        }
-      });
-    }
-
-    if (categorySel && dCategory && categorySel.options.length <= 1) {
-      Array.from(dCategory.options).forEach(opt => {
-        if (opt.value) {
-          const o = document.createElement('option');
-          o.value = opt.value;
-          o.textContent = opt.textContent;
-          categorySel.appendChild(o);
-        }
-      });
-    }
-
-    // Counters dropdown
-    fetch('/api/dashboard').then(r => r.json()).then(data => {
-      if (data.options?.counters && counterSel && counterSel.options.length <= 1) {
-        data.options.counters.forEach(c => {
-          const o = document.createElement('option');
-          o.value = c;
-          o.textContent = c;
-          counterSel.appendChild(o);
-        });
+      if (retailerSel && options.retailers) {
+        const cur = retailerSel.value;
+        retailerSel.innerHTML = '<option value="">All retailers</option>' + 
+          options.retailers.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+        if (cur) retailerSel.value = cur;
+        retailerSel.dispatchEvent(new Event('change', { bubbles: true }));
       }
-    }).catch(() => {});
+
+      if (categorySel && options.categories) {
+        const cur = categorySel.value;
+        categorySel.innerHTML = '<option value="">All categories</option>' + 
+          options.categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        if (cur) categorySel.value = cur;
+        categorySel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      if (counterSel && options.counters) {
+        const cur = counterSel.value;
+        counterSel.innerHTML = '<option value="">All counters</option>' + 
+          options.counters.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        if (cur) counterSel.value = cur;
+        counterSel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    } catch (e) {
+      console.warn('Failed to populate forecast filters:', e);
+    }
   }
 
   // Load forecast data from API
@@ -816,6 +812,9 @@
 
     // Export CSV
     $('#exportForecastCsvBtn')?.addEventListener('click', exportForecastCsv);
+
+    // Pre-populate filter options on load
+    populateForecastFilters();
 
     // Deep link check on load
     if (location.hash === '#forecast') {

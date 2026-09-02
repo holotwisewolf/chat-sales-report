@@ -165,15 +165,23 @@ function wirePeriodPicker() {
 }
 
 async function populateDataFilters() {
-  const options = await fetch('/api/dashboard').then(r => r.json()).then(b => b.options).catch(() => null);
+  const data = await fetch('/api/dashboard').then(r => r.json()).catch(() => null);
+  const options = data?.options;
   if (!options) return;
-  const fill = (id, values, all) => { $data(id).innerHTML = `<option value="">${all}</option>${values.map(v => `<option>${escapeHtml(v)}</option>`).join('')}`; };
+  const fill = (id, values, all) => { 
+    const el = $data(id);
+    if (el) {
+      el.innerHTML = `<option value="">${all}</option>${(values || []).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}`;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  };
   fill('#dRetailer', options.retailers, 'All retailers');
   fill('#dCategory', options.categories, 'All categories');
   allAvailableCounters = options.counters || [];
   allAvailableRetailers = options.retailers || [];
   dataState.years = [...new Set((options.months || []).map(m => m.slice(0, 4)))].sort().reverse().map(Number);
-  $data('#dRetailer').value = dataState.retailer; $data('#dCategory').value = dataState.category;
+  if ($data('#dRetailer')) $data('#dRetailer').value = dataState.retailer; 
+  if ($data('#dCategory')) $data('#dCategory').value = dataState.category;
   renderPeriodPicker();
 }
 
