@@ -59,6 +59,23 @@
     }
   };
 
+  // Name shortener helper for clean dropdown layout
+  function formatCompactName(name, maxLength = 26) {
+    if (!name) return '';
+    let clean = String(name)
+      .replace(/\s+/g, ' ')
+      .replace(/HYPERMARKET/gi, 'HYPER')
+      .replace(/DEPARTMENT STORE/gi, 'DEPT')
+      .replace(/GROUND FLOOR/gi, 'GF')
+      .replace(/SHOPPING CENTRE|SHOPPING CENTER/gi, 'SC')
+      .replace(/SHOPPING MALL/gi, 'MALL')
+      .trim();
+    if (clean.length > maxLength) {
+      return clean.slice(0, maxLength - 1) + '…';
+    }
+    return clean;
+  }
+
   // Custom Animated Select Helper for Forecast Dropdowns
   function setupForecastSelect(selectId, wrapId, btnId, menuId, defaultLabel, onChangeCallback) {
     const select = document.querySelector(selectId);
@@ -69,15 +86,15 @@
 
     const updateDisplay = () => {
       const selectedOption = select.options[select.selectedIndex];
-      const label = selectedOption && selectedOption.value ? selectedOption.text : defaultLabel;
+      const label = selectedOption && selectedOption.value ? formatCompactName(selectedOption.text, 22) : defaultLabel;
       const labelSpan = btn.querySelector('.customSelectLabel');
       if (labelSpan) labelSpan.textContent = label;
     };
 
     const syncMenuOptions = () => {
       menu.innerHTML = [...select.options].map(opt => `
-        <button type="button" class="customSelectItem ${opt.selected ? 'active' : ''}" data-value="${escapeHtml(opt.value)}">
-          <span>${escapeHtml(opt.text)}</span>
+        <button type="button" class="customSelectItem ${opt.selected ? 'active' : ''}" data-value="${escapeHtml(opt.value)}" title="${escapeHtml(opt.text)}">
+          <span>${escapeHtml(formatCompactName(opt.text, 30))}</span>
           ${opt.selected ? '<span class="customSelectCheck">&#10003;</span>' : ''}
         </button>
       `).join('');
@@ -89,6 +106,7 @@
         menu.hidden = true;
         btn.setAttribute('aria-expanded', 'false');
         btn.classList.remove('open');
+        wrap.classList.remove('open');
       }
     });
 
@@ -98,12 +116,14 @@
       // Close other dropdowns
       document.querySelectorAll('.customSelectMenu').forEach(m => { m.hidden = true; });
       document.querySelectorAll('.customSelectBtn').forEach(b => { b.setAttribute('aria-expanded', 'false'); b.classList.remove('open'); });
+      document.querySelectorAll('.customSelectWrap').forEach(w => { w.classList.remove('open'); });
 
       if (willOpen) {
         syncMenuOptions();
         menu.hidden = false;
         btn.setAttribute('aria-expanded', 'true');
         btn.classList.add('open');
+        wrap.classList.add('open');
       }
     });
 
@@ -117,6 +137,7 @@
       menu.hidden = true;
       btn.setAttribute('aria-expanded', 'false');
       btn.classList.remove('open');
+      wrap.classList.remove('open');
       if (typeof onChangeCallback === 'function') {
         onChangeCallback(val);
       }
@@ -717,11 +738,25 @@
 
   // Event Listeners Setup
   function initForecastEventListeners() {
-    // Navigation toggle in header
-    $('#navForecastBtn')?.addEventListener('click', () => {
-      const isForecastVisible = !$('#forecastView')?.hidden;
-      window.switchView(isForecastVisible ? 'dashboard' : 'forecast');
-    });
+    // Navigation toggle in header with liquid glass pointer tracking
+    const navBtn = $('#navForecastBtn');
+    if (navBtn) {
+      navBtn.addEventListener('click', () => {
+        const isForecastVisible = !$('#forecastView')?.hidden;
+        window.switchView(isForecastVisible ? 'dashboard' : 'forecast');
+      });
+      navBtn.addEventListener('pointermove', e => {
+        const rect = navBtn.getBoundingClientRect();
+        const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+        const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+        navBtn.style.setProperty('--liquid-x', `${x}%`);
+        navBtn.style.setProperty('--liquid-y', `${y}%`);
+      }, { passive: true });
+      navBtn.addEventListener('pointerleave', () => {
+        navBtn.style.removeProperty('--liquid-x');
+        navBtn.style.removeProperty('--liquid-y');
+      });
+    }
 
     // Dock item click
     $$('.dockItem').forEach(btn => {

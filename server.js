@@ -130,17 +130,37 @@ app.get('/api/dashboard', (req, res) => {
   res.json({ summary, ranking: allCounters.slice(0, 10), allCounters, retailers, periods, trend, options, categoryTotals });
 });
 
+// AI Insights In-Memory Cache & Rate Limiting Guardrails
+let cachedInsights = null;
+let lastInsightFetchTime = 0;
+let lastInsightDataSignature = '';
+const INSIGHT_CACHE_TTL = 60 * 60 * 1000; // 1 Hour Cache TTL
+const MIN_INSIGHT_API_INTERVAL = 15 * 60 * 1000; // 15 Min minimum interval between live Gemini calls
+
 app.get('/api/ai-insights', async (req, res) => {
   try {
-    const summary = db.prepare(`SELECT ROUND(SUM(sales),2) sales, SUM(quantity) quantity, COUNT(DISTINCT counter_id) counters FROM sales_lines`).get() || {};
+    const summary = db.prepare(`SELECT ROUND(SUM(sales),2) sales, SUM(quantity) quantity, COUNT(DISTINCT counter_id) counters, COUNT(*) total_rows FROM sales_lines`).get() || {};
     const topCounter = db.prepare(`SELECT c.name, SUM(s.sales) sales, SUM(s.quantity) qty FROM sales_lines s JOIN counters c ON c.id=s.counter_id GROUP BY c.name ORDER BY sales DESC LIMIT 1`).get();
     const topCat = db.prepare(`SELECT product_category, SUM(sales) sales FROM sales_lines WHERE product_category IS NOT NULL AND product_category != '' GROUP BY product_category ORDER BY sales DESC LIMIT 1`).get();
     const retailerCount = db.prepare(`SELECT COUNT(DISTINCT retailer) count FROM reports`).get()?.count || 0;
+    const lastReport = db.prepare(`SELECT MAX(imported_at) latest FROM reports`).get()?.latest || '';
+
+    // Data fingerprint
+    const currentSignature = `${summary.sales}_${summary.quantity}_${summary.total_rows}_${lastReport}`;
+    const now = Date.now();
+
+    // Guardrail 1: Check cache validity (Signature match + TTL)
+    if (cachedInsights && lastInsightDataSignature === currentSignature && (now - lastInsightFetchTime < INSIGHT_CACHE_TTL)) {
+      return res.json({ insights: cachedInsights, cached: true });
+    }
 
     let aiInsights = [];
     const apiKey = process.env.GEMINI_API_KEY;
     
-    if (apiKey && !apiKey.includes('YOUR_API_KEY')) {
+    // Guardrail 2: Rate limit live API calls (at most once every 15 minutes)
+    const canCallLiveAi = apiKey && !apiKey.includes('YOUR_API_KEY') && (now - lastInsightFetchTime >= MIN_INSIGHT_API_INTERVAL);
+
+    if (canCallLiveAi) {
       try {
         const { GoogleGenAI } = require('@google/genai');
         const ai = new GoogleGenAI({ apiKey });
@@ -149,7 +169,7 @@ Total Sales: RM ${summary.sales || 0}, Units Sold: ${summary.quantity || 0}, Act
 Top Performing Counter: ${topCounter ? topCounter.name : 'N/A'} (RM ${topCounter ? topCounter.sales : 0}, ${topCounter ? topCounter.qty : 0} units).
 Top Category: ${topCat ? topCat.product_category : 'N/A'} (RM ${topCat ? topCat.sales : 0}).
 
-Write 2 concise executive observations highlighting key data insights or growth opportunities (max 25 words each). Return valid JSON array: [{"title": "...", "text": "..."}].`;
+Write 2 concise executive observations highlighting key data insights or growth opportunities (max 25 words each, no emojis). Return valid JSON array: [{"title": "...", "text": "..."}].`;
 
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
@@ -157,25 +177,27 @@ Write 2 concise executive observations highlighting key data insights or growth 
           config: { responseMimeType: 'application/json' }
         });
         const parsed = JSON.parse(response.text);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length) {
           aiInsights = parsed.map(item => ({
             type: 'high',
             isAi: true,
-            title: `✨ ${item.title || 'Gemini AI Insight'}`,
+            title: String(item.title || 'AI Insight').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|✨|🔮/g, '').trim(),
             text: item.text
           }));
+          lastInsightFetchTime = now;
         }
       } catch (e) {
-        console.warn('Gemini AI insight generation fallback:', e.message);
+        console.warn('Gemini AI insight generation fallback (rate limit / quota safe):', e.message);
       }
     }
 
+    // Guardrail 3: High-accuracy zero-token local statistical rule engine if API is unavailable or rate-limited
     if (!aiInsights.length && topCounter) {
       const pct = summary.sales ? ((topCounter.sales / summary.sales) * 100).toFixed(1) : 0;
       aiInsights.push({
         type: 'high',
         isAi: true,
-        title: '✨ Gemini AI Insight: Top Channel Concentration',
+        title: 'Top Channel Concentration',
         text: `${topCounter.name} is your leading outlet, driving ${pct}% of total revenue (RM ${Number(topCounter.sales).toLocaleString()}).`
       });
       if (topCat) {
@@ -183,11 +205,16 @@ Write 2 concise executive observations highlighting key data insights or growth 
         aiInsights.push({
           type: 'high',
           isAi: true,
-          title: '✨ Gemini AI Insight: Category Demand',
+          title: 'Category Demand',
           text: `${topCat.product_category} represents ${catPct}% of overall volume. Consider expanding stock in mid-tier outlets.`
         });
       }
     }
+
+    // Save to in-memory cache
+    cachedInsights = aiInsights;
+    lastInsightDataSignature = currentSignature;
+    if (!lastInsightFetchTime) lastInsightFetchTime = now;
 
     res.json({ insights: aiInsights });
   } catch (err) {
