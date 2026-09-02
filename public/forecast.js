@@ -714,7 +714,7 @@
     if (mUnits) mUnits.textContent = `${formatNum(pt.units)} pairs`;
 
     const mPeriod = $('#fModalPeriod');
-    if (mPeriod) mPeriod.textContent = `${pt.isForecast ? 'TimesFM Projected' : 'Recorded Actual'} ${pt.growth_pct != null ? `(${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}% MoM)` : ''}`;
+    if (mPeriod) mPeriod.textContent = `${pt.isForecast ? 'TimesFM Projected' : 'Recorded Actual'} ${pt.growth_pct != null ? `(${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}% vs Prev Month)` : ''}`;
 
     // Populate Bottom 3 Bento Cards for that specific month
     const bLb = $('#fBentoLb');
@@ -1377,7 +1377,7 @@
   // Export Forecast Table as CSV
   function exportForecastCsv() {
     if (!lastData || !lastData.forecast) return;
-    const headers = ['Month', 'Conservative (P10 RM)', 'Expected (P50 RM)', 'Optimistic (P90 RM)', 'Forecasted Units', 'MoM Growth %'];
+    const headers = ['Month', 'Conservative (P10 RM)', 'Expected (P50 RM)', 'Optimistic (P90 RM)', 'Forecasted Units', 'Monthly Growth %'];
     const rows = lastData.forecast.map(f => [
       `"${f.period}"`,
       f.p10,
