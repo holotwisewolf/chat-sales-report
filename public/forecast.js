@@ -523,22 +523,22 @@
 
       if (pt.isForecast) {
         tip.innerHTML = `
-          <div class="fTipHead"><span class="fTipTag forecastTag">TimesFM Projection</span> <b>${escapeHtml(pt.period)}</b></div>
-          <div class="fTipMain"><strong>${money2(pt.sales)}</strong> <span class="fTipUnits">(${formatNum(pt.units)} pairs)</span></div>
-          <div class="fTipBounds">
-            <span>P10 (Min): ${money(pt.p10)}</span>
-            <span>P90 (Max): ${money(pt.p90)}</span>
+          <div class="fTipVal">${money2(pt.sales)}</div>
+          <div class="fTipMeta">
+            <span class="fTipUnits">${formatNum(pt.units)} pairs</span>
+            ${pt.p10 && pt.p90 ? `<span class="fTipBand">${money(pt.p10)} – ${money(pt.p90)}</span>` : ''}
           </div>
-          ${pt.growth_pct != null ? `<div class="fTipGrowth">MoM Trend: <b>${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}%</b></div>` : ''}
         `;
       } else {
         tip.innerHTML = `
-          <div class="fTipHead"><span class="fTipTag histTag">Recorded Actual</span> <b>${escapeHtml(pt.period)}</b></div>
-          <div class="fTipMain"><strong>${money2(pt.sales)}</strong> <span class="fTipUnits">(${formatNum(pt.units)} pairs)</span></div>
+          <div class="fTipVal">${money2(pt.sales)}</div>
+          <div class="fTipMeta">
+            <span class="fTipUnits">${formatNum(pt.units)} pairs</span>
+          </div>
         `;
       }
 
-      const tipWidth = 220;
+      const tipWidth = 160;
       const leftPos = Math.min(Math.max(px - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
       tip.style.top = '12px';
