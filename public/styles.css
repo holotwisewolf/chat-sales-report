@@ -197,8 +197,13 @@ form,.modalWrap{padding:24px}
 .uploadTabs button:hover:not(.on){background:#edf2f7;color:var(--ink)}
 .uploadTabs button.on{background:#f4f6fa;color:var(--accent);box-shadow:0 -3px 10px rgba(0,0,0,.04),2px -1px 6px rgba(0,0,0,.03);z-index:3;font-weight:750;border-color:var(--hair2);border-bottom:1px solid #f4f6fa}
 #uploadDialog .modalWrap{min-height:590px;height:590px;display:flex;flex-direction:column;box-sizing:border-box}
-#uploadActions{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
-.uploadTabPanel{flex:1;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;background:#f4f6fa;border:1px solid var(--hair2);border-radius:0 16px 16px 16px;padding:20px;position:relative;z-index:2;box-shadow:0 4px 14px rgba(15,23,42,.03);overflow:visible}
+.uploadTabPanel{flex:1;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;background:#f4f6fa;border:1px solid var(--hair2);border-radius:0 16px 16px 16px;padding:20px;position:relative;z-index:2;box-shadow:0 4px 14px rgba(15,23,42,.03);overflow-y:auto;overflow-x:hidden}
+.uploadTabPanel::-webkit-scrollbar{width:5px}
+.uploadTabPanel::-webkit-scrollbar-track{background:transparent}
+.uploadTabPanel::-webkit-scrollbar-thumb{background:rgba(100,116,139,.25);border-radius:4px}
+.noteLabel{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:650;color:var(--ink2);margin-top:14px}
+.noteLabel textarea{width:100%;min-height:52px;max-height:260px;resize:vertical;border:1px solid var(--hair2);border-radius:12px;padding:10px 14px;font-family:inherit;font-size:13px;background:rgba(255,255,255,.9);color:var(--ink);box-sizing:border-box}
+.noteLabel textarea:focus{border-color:var(--accent);background:#fff;outline:none}
 .sourceFrame{height:300px;max-height:38vh;border:1px solid var(--hair2);border-radius:14px;background:#f8fafc;overflow:auto;display:flex;padding:6px}
 .sourceFrame img{width:100%;object-fit:contain;margin:auto}
 .sourceFrame iframe{flex:1;border:0;background:#fff}
@@ -2287,6 +2292,16 @@ main{padding-bottom:110px}
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: help;
+}
+
+#channelContribCarousel .carouselPane {
+  padding: 4px 6px 0;
+  box-sizing: border-box;
+}
+
+#channelContribCarousel .bentoGraphHint {
+  margin-left: 2px;
+  margin-bottom: 8px;
 }
 
 /* Year badge pill next to CHANNEL CONTRIBUTION eyebrow */
