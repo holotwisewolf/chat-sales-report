@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=93">
+  <link rel="stylesheet" href="/styles.css?v=94">
 </head>
 
 <body>
@@ -409,6 +409,31 @@
         <div class="forecastChartWrap" id="forecastChartWrap">
           <div id="forecastSvgContainer" class="forecastSvgContainer"></div>
           <div id="forecastChartTip" class="forecastChartTip" hidden></div>
+        </div>
+
+        <!-- Interactive Selected Point Drilldown Card (Click any forecast dot to inspect) -->
+        <div id="forecastDotCard" class="forecastDotCard" hidden>
+          <div class="fDotCardGrid">
+            <div class="fDotCardCol">
+              <span class="fDotCardLabel" id="fDotSelectedMonth">Selected Period</span>
+              <strong class="fDotCardVal" id="fDotSales">&mdash;</strong>
+              <span class="fDotCardSub" id="fDotUnits">&mdash;</span>
+            </div>
+            <div class="fDotCardCol fDotColUb">
+              <span class="fDotCardLabel">Upper Bound (UB / P90)</span>
+              <strong class="fDotCardVal" id="fDotUb">&mdash;</strong>
+              <span class="fDotCardSub" id="fDotUbMeta">Optimistic Demand</span>
+            </div>
+            <div class="fDotCardCol fDotColLb">
+              <span class="fDotCardLabel">Lower Bound (LB / P10)</span>
+              <strong class="fDotCardVal" id="fDotLb">&mdash;</strong>
+              <span class="fDotCardSub" id="fDotLbMeta">Conservative Floor</span>
+            </div>
+            <div class="fDotCardCol fDotColChannels">
+              <span class="fDotCardLabel">Projected Channel Split</span>
+              <div class="fDotChannelRows" id="fDotChannelRows"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -958,13 +983,13 @@
   <!-- Year wheel dim backdrop for focus isolation -->
   <div id="yearWheelBackdrop" class="yearWheelBackdrop" hidden><div id="portalWheel" class="portalWheel"></div></div>
 
-  <script src="/chart.js?v=93"></script>
-  <script src="/app.js?v=93"></script>
-  <script src="/import.js?v=93"></script>
-  <script src="/chat.js?v=93"></script>
-  <script src="/data.js?v=93"></script>
-  <script src="/forecast.js?v=93"></script>
-  <script src="/extras.js?v=93"></script>
+  <script src="/chart.js?v=94"></script>
+  <script src="/app.js?v=94"></script>
+  <script src="/import.js?v=94"></script>
+  <script src="/chat.js?v=94"></script>
+  <script src="/data.js?v=94"></script>
+  <script src="/forecast.js?v=94"></script>
+  <script src="/extras.js?v=94"></script>
 </body>
 
 </html>

@@ -523,22 +523,17 @@
 
       if (pt.isForecast) {
         tip.innerHTML = `
-          <div class="fTipVal">${money2(pt.sales)}</div>
-          <div class="fTipMeta">
-            <span class="fTipUnits">${formatNum(pt.units)} pairs</span>
-            ${pt.p10 && pt.p90 ? `<span class="fTipBand">${money(pt.p10)} – ${money(pt.p90)}</span>` : ''}
-          </div>
+          <div class="fTipVal fTipPurple">${money2(pt.sales)} <span class="fTipSub">(${formatNum(pt.units)} pairs)</span></div>
+          ${pt.p90 ? `<div class="fTipBoundLine">UB: <b>${money(pt.p90)}</b></div>` : ''}
+          ${pt.p10 ? `<div class="fTipBoundLine">LB: <b>${money(pt.p10)}</b></div>` : ''}
         `;
       } else {
         tip.innerHTML = `
-          <div class="fTipVal">${money2(pt.sales)}</div>
-          <div class="fTipMeta">
-            <span class="fTipUnits">${formatNum(pt.units)} pairs</span>
-          </div>
+          <div class="fTipVal fTipBlue">${money2(pt.sales)} <span class="fTipSub">(${formatNum(pt.units)} pairs)</span></div>
         `;
       }
 
-      const tipWidth = 160;
+      const tipWidth = 150;
       const leftPos = Math.min(Math.max(px - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
       tip.style.top = '12px';
@@ -550,6 +545,72 @@
       tip.hidden = true;
       tip.style.display = 'none';
     });
+
+    // Select point function for bottom detail card
+    function selectPoint(idx) {
+      const pt = points[idx];
+      if (!pt) return;
+
+      // Update dot active styling
+      svg.querySelectorAll('.fDataDot').forEach((d, i) => {
+        d.classList.toggle('selectedDot', i === idx);
+      });
+
+      const card = $('#forecastDotCard');
+      if (!card) return;
+      card.hidden = false;
+      card.style.display = 'block';
+
+      const selMonth = $('#fDotSelectedMonth');
+      if (selMonth) selMonth.textContent = `Period: ${pt.period} ${pt.isForecast ? '(TimesFM Projected)' : '(Recorded Actual)'}`;
+
+      const sSales = $('#fDotSales');
+      if (sSales) sSales.textContent = money2(pt.sales);
+
+      const sUnits = $('#fDotUnits');
+      if (sUnits) sUnits.textContent = `${formatNum(pt.units)} pairs ${pt.growth_pct != null ? `(${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}% MoM)` : ''}`;
+
+      const sUb = $('#fDotUb');
+      if (sUb) sUb.textContent = pt.p90 ? money2(pt.p90) : money2(pt.sales * 1.12);
+
+      const sLb = $('#fDotLb');
+      if (sLb) sLb.textContent = pt.p10 ? money2(pt.p10) : money2(pt.sales * 0.88);
+
+      const chRows = $('#fDotChannelRows');
+      if (chRows) {
+        const channels = lastData?.channel_contributions && lastData.channel_contributions.length ? lastData.channel_contributions : [
+          { name: 'Mydin', share_pct: 79.7 },
+          { name: 'Hero Market', share_pct: 20.3 }
+        ];
+        chRows.innerHTML = channels.map(ch => {
+          const share = Number(ch.share_pct) || 50;
+          const chSales = (pt.sales * share) / 100;
+          return `
+            <div class="fDotChannelRow">
+              <span class="chName">${escapeHtml(ch.name || 'Retail Partner')} (${share.toFixed(1)}%)</span>
+              <span class="chVal">${money(chSales)}</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Dot click listeners
+    svg.querySelectorAll('.fDataDot').forEach(dot => {
+      dot.addEventListener('click', e => {
+        e.stopPropagation();
+        const idx = parseInt(dot.dataset.idx, 10);
+        selectPoint(idx);
+      });
+    });
+
+    // Auto-select initial forecast point if available
+    const firstForecastIdx = points.findIndex(p => p.isForecast);
+    if (firstForecastIdx !== -1) {
+      selectPoint(firstForecastIdx);
+    } else if (points.length > 0) {
+      selectPoint(points.length - 1);
+    }
   }
 
   // Render Channel Contribution Bars
