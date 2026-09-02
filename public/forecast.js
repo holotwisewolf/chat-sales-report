@@ -537,18 +537,21 @@
       const leftPos = Math.min(Math.max(px - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
       tip.style.top = '12px';
-      tip.style.cursor = 'pointer';
+      tip.style.cursor = pt.isForecast ? 'pointer' : 'default';
+      svg.style.cursor = pt.isForecast ? 'pointer' : 'default';
       tip.dataset.currentIdx = String(closestIdx);
     });
 
     svg.addEventListener('pointerleave', () => {
       crosshair.setAttribute('opacity', '0');
       if (crossTarget) crossTarget.setAttribute('opacity', '0');
+      svg.style.cursor = 'default';
       tip.hidden = true;
       tip.style.display = 'none';
     });
 
-    // Clicking anywhere on the chart, dot, or hover tooltip opens the sleek modal overlay!
+    // Clicking a projected dot or its tooltip opens the drilldown modal.
+    // Historical (actual) dots are read-only — no modal.
     svg.addEventListener('click', e => {
       const rect = svg.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * W;
@@ -563,12 +566,18 @@
           closestIdx = idx;
         }
       });
-      openForecastDrilldownModal(points[closestIdx], points);
+      const clicked = points[closestIdx];
+      if (clicked && clicked.isForecast) {
+        openForecastDrilldownModal(clicked, points);
+      }
     });
 
     tip.addEventListener('click', () => {
       const idx = parseInt(tip.dataset.currentIdx || '0', 10);
-      openForecastDrilldownModal(points[idx] || points[0], points);
+      const clicked = points[idx] || points[0];
+      if (clicked && clicked.isForecast) {
+        openForecastDrilldownModal(clicked, points);
+      }
     });
   }
 

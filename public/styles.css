@@ -1792,6 +1792,19 @@ main{padding-bottom:110px}
   font-weight: 700;
 }
 
+.fDataDot.forecastDot {
+  cursor: pointer;
+  transition: transform 0.15s ease, r 0.15s ease;
+}
+
+.fDataDot.forecastDot:hover {
+  r: 7;
+}
+
+.fDataDot.histDot {
+  cursor: default;
+}
+
 /* Forecast Period Drilldown Overlay Modal (Screenshot Dark/Sleek Theme) */
 .forecastModalOverlay {
   position: fixed;
