@@ -559,7 +559,7 @@
     list.innerHTML = channels.map(ch => `
       <div class="channelContribRow">
         <div class="contribInfo">
-          <span class="contribName">${escapeHtml(ch.name)}</span>
+          <span class="contribName">${escapeHtml(ch.name || ch.retailer || 'Retail Partner')}</span>
           <span class="contribShare">${ch.share_pct}% share</span>
         </div>
         <div class="contribBarTrack">
