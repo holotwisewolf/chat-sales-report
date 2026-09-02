@@ -56,21 +56,36 @@ function chatCard(html) {
   return card;
 }
 
-// Session-based chat history persistence (Archived after 1 hour)
+// Session-based chat history persistence (Archived after 1 hour, auto-deleted after 2 days)
 const SESSIONS_KEY = 'chat_sessions_v1';
+const ONE_HOUR = 3600000; // 1 hour = 3,600,000 ms
+const TWO_DAYS = 2 * 24 * 60 * 60 * 1000; // 2 days = 172,800,000 ms
 let currentSessionId = null;
 
 function getSessions() {
-  try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]'); } catch { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]');
+    const now = Date.now();
+    // Auto-delete conversations older than 2 days
+    const valid = raw.filter(s => {
+      const age = now - Number(s.timestamp || 0);
+      return age <= TWO_DAYS;
+    });
+    if (valid.length !== raw.length) {
+      saveSessions(valid);
+    }
+    return valid;
+  } catch {
+    return [];
+  }
 }
 
 function saveSessions(sessions) {
-  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions.slice(0, 30))); } catch {}
+  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions.slice(0, 50))); } catch {}
 }
 
 function getActiveOrCreateSession() {
   const sessions = getSessions();
-  const ONE_HOUR = 3600000;
   let latest = sessions[0];
   if (!latest || (Date.now() - latest.timestamp > ONE_HOUR)) {
     latest = {
@@ -102,7 +117,6 @@ function saveSessionEntry(q, aHtml) {
 
 function renderChatSession(session) {
   chatLog.innerHTML = '';
-  const ONE_HOUR = 3600000;
   const isArchived = (Date.now() - session.timestamp > ONE_HOUR);
 
   if (session.entries && session.entries.length) {
@@ -244,7 +258,7 @@ function renderRecentChatsList() {
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <span class="recentChatBadge ${isArchived ? 'archived' : 'active'}">${isArchived ? 'Archived' : 'Active'}</span>
-          <button type="button" class="recentChatDel" data-del-sess="${s.id}" title="Delete conversation">&times;</button>
+          <button type="button" class="recentChatDel" data-del-sess="${s.id}" title="Delete conversation" aria-label="Delete conversation"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
       </div>
     `;
