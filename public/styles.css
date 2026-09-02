@@ -540,7 +540,7 @@ main{padding-bottom:110px}
 .searchItem mark{background:rgba(42,120,214,.2);color:var(--accent);font-weight:750;border-radius:2px;padding:0 1px}
 .searchEmpty{padding:12px;font-size:13px;color:var(--muted);text-align:center}
 
-/* Smoked Liquid Glass Button (darker greyish liquid refraction) */
+/* Liquid Glass Cyan Button (dashersw/liquid-glass-js inspired) */
 #navForecastBtn {
   position: relative;
   overflow: hidden;
@@ -553,19 +553,19 @@ main{padding-bottom:110px}
   min-height: 42px;
   padding: 8px 18px;
   cursor: pointer;
-  background: rgba(40, 52, 71, 0.18);
-  color: #0f172a;
-  border: 1px solid rgba(80, 96, 120, 0.35);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.22) 0%, rgba(14, 165, 233, 0.16) 100%);
+  color: #0e7490;
+  border: 1px solid rgba(6, 182, 212, 0.45);
   box-shadow: 
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.65),
-    inset 0 -1.5px 2px 0 rgba(15, 23, 42, 0.18),
-    0 8px 26px -4px rgba(15, 23, 42, 0.18);
-  -webkit-backdrop-filter: blur(24px) saturate(2.1);
-  backdrop-filter: blur(24px) saturate(2.1);
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1.5px 2px 0 rgba(6, 182, 212, 0.18),
+    0 8px 26px -4px rgba(6, 182, 212, 0.25);
+  -webkit-backdrop-filter: blur(24px) saturate(2.2);
+  backdrop-filter: blur(24px) saturate(2.2);
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
-/* Smoked Optical Refraction & Physical Curvature Rim */
+/* Cyan Optical Refraction & Physical Curvature Rim */
 #navForecastBtn::after {
   content: '';
   position: absolute;
@@ -573,16 +573,16 @@ main{padding-bottom:110px}
   border-radius: inherit;
   pointer-events: none;
   background: 
-    radial-gradient(circle at var(--liquid-x, 50%) var(--liquid-y, 50%), rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 60%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(100, 116, 139, 0.15) 100%);
+    radial-gradient(circle at var(--liquid-x, 50%) var(--liquid-y, 50%), rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(6, 182, 212, 0.2) 100%);
   border: 1px solid transparent;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   box-shadow: 
-    inset 0 0 6px 1px rgba(255, 255, 255, 0.5),
-    0 0 1px 1px rgba(15, 23, 42, 0.25);
-  opacity: 0.85;
+    inset 0 0 7px 1px rgba(255, 255, 255, 0.7),
+    0 0 1px 1px rgba(6, 182, 212, 0.4);
+  opacity: 0.9;
   transition: opacity 0.2s ease;
 }
 
@@ -593,7 +593,7 @@ main{padding-bottom:110px}
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(circle 90px at var(--liquid-x, 50%) var(--liquid-y, 50%), rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 75%);
+  background: radial-gradient(circle 90px at var(--liquid-x, 50%) var(--liquid-y, 50%), rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 75%);
   opacity: 0;
   transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   mix-blend-mode: overlay;
@@ -601,13 +601,13 @@ main{padding-bottom:110px}
 
 #navForecastBtn:hover {
   transform: translateY(-1.5px) scale(1.02);
-  color: #0b57c7;
-  background: rgba(30, 41, 59, 0.26);
-  border-color: rgba(56, 189, 248, 0.45);
+  color: #083344;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.34) 0%, rgba(14, 165, 233, 0.26) 100%);
+  border-color: rgba(6, 182, 212, 0.7);
   box-shadow: 
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -1.5px 2px 0 rgba(15, 23, 42, 0.22),
-    0 12px 30px -4px rgba(15, 23, 42, 0.25);
+    inset 0 1.5px 1.5px 0 #fff,
+    inset 0 -1.5px 2px 0 rgba(6, 182, 212, 0.25),
+    0 12px 32px -4px rgba(6, 182, 212, 0.38);
 }
 
 #navForecastBtn:hover::before,
@@ -618,37 +618,31 @@ main{padding-bottom:110px}
 #navForecastBtn:active {
   transform: translateY(0.5px) scale(0.97);
   box-shadow: 
-    inset 0 1.5px 2px 0 rgba(0, 0, 0, 0.25),
-    0 4px 14px rgba(15, 23, 42, 0.2);
+    inset 0 1.5px 2px 0 rgba(6, 182, 212, 0.3),
+    0 4px 14px rgba(6, 182, 212, 0.2);
 }
 
-/* Smoked Darker Liquid Glass State for "Back to Dashboard" */
+/* Unified Cyan Liquid Glass State for "Back to Dashboard" */
 #navForecastBtn.on {
-  background: rgba(76, 29, 149, 0.32);
-  color: #1e0038;
-  border: 1px solid rgba(124, 58, 237, 0.55);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.28) 0%, rgba(14, 165, 233, 0.22) 100%);
+  color: #083344;
+  border: 1px solid rgba(6, 182, 212, 0.6);
   box-shadow: 
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1.5px 2px 0 rgba(15, 23, 42, 0.28),
-    0 10px 30px -3px rgba(30, 10, 60, 0.3);
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1.5px 2px 0 rgba(6, 182, 212, 0.22),
+    0 10px 30px -3px rgba(6, 182, 212, 0.3);
   -webkit-backdrop-filter: blur(24px) saturate(2.3);
   backdrop-filter: blur(24px) saturate(2.3);
 }
 
-#navForecastBtn.on::after {
-  box-shadow: 
-    inset 0 0 7px 1px rgba(255, 255, 255, 0.65),
-    0 0 1px 1px rgba(124, 58, 237, 0.4);
-}
-
 #navForecastBtn.on:hover {
-  background: rgba(76, 29, 149, 0.45);
-  color: #0f001f;
-  border-color: rgba(139, 92, 246, 0.75);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.4) 0%, rgba(14, 165, 233, 0.32) 100%);
+  color: #042f2e;
+  border-color: rgba(6, 182, 212, 0.85);
   box-shadow: 
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1.5px 2px 0 rgba(15, 23, 42, 0.32),
-    0 14px 36px -3px rgba(30, 10, 60, 0.4);
+    inset 0 1.5px 1.5px 0 #fff,
+    inset 0 -1.5px 2px 0 rgba(6, 182, 212, 0.3),
+    0 14px 36px -3px rgba(6, 182, 212, 0.45);
 }
 
 /* Toolbar Custom Select with Dropdown Animations */
