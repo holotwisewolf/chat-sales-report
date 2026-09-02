@@ -234,19 +234,26 @@
     }
   }
 
-  // Render KPI Bento Cards
+  // Render KPI Bento Cards with explicit date timeframe
   function renderForecastKPIs(data) {
     const summary = data.summary || {};
+    const forecastSeries = data.forecast || [];
+    const startPeriod = forecastSeries[0]?.period || '';
+    const endPeriod = forecastSeries[forecastSeries.length - 1]?.period || '';
+    const horizonCount = forecastSeries.length || currentHorizon;
+    const timeframeLabel = startPeriod && endPeriod ? `${startPeriod} – ${endPeriod}` : `Next ${horizonCount} Months`;
+
     $('#fStatSales').textContent = money(summary.total_projected_sales);
     
     const growthEl = $('#fStatGrowth');
     const growth = summary.growth_rate_pct || 0;
-    growthEl.innerHTML = growth >= 0 
-      ? `<span class="badgeOk">+${growth}% vs previous</span>`
-      : `<span class="badgeWarn">${growth}% vs previous</span>`;
+    growthEl.innerHTML = `
+      <span class="${growth >= 0 ? 'badgeOk' : 'badgeWarn'}">${growth >= 0 ? '+' : ''}${growth}% vs previous</span>
+      <span class="timeframeBadge">${timeframeLabel}</span>
+    `;
 
     $('#fStatUnits').textContent = formatNum(summary.total_projected_units);
-    $('#fStatAvgMonthly').textContent = `Avg ${money(summary.average_monthly_sales)} / month`;
+    $('#fStatAvgMonthly').textContent = `Avg ${money(summary.average_monthly_sales)} / mo (${timeframeLabel})`;
 
     const peakMonth = summary.peak_month || '—';
     $('#fStatPeak').textContent = peakMonth;
@@ -550,26 +557,39 @@
     const list = $('#channelForecastList');
     if (!list) return;
 
+    const forecastSeries = data.forecast || [];
+    const startPeriod = forecastSeries[0]?.period || '';
+    const endPeriod = forecastSeries[forecastSeries.length - 1]?.period || '';
+    const horizonCount = forecastSeries.length || currentHorizon;
+    const timeframeLabel = startPeriod && endPeriod ? `${startPeriod} – ${endPeriod}` : `${horizonCount} Months`;
+
     const channels = data.channel_contributions || [];
     if (!channels.length) {
       list.innerHTML = '<p class="hint">No retailer distribution available</p>';
       return;
     }
 
-    list.innerHTML = channels.map(ch => `
-      <div class="channelContribRow">
-        <div class="contribInfo">
-          <span class="contribName">${escapeHtml(ch.name || ch.retailer || 'Retail Partner')}</span>
-          <span class="contribShare">${ch.share_pct}% share</span>
+    list.innerHTML = channels.map((ch, idx) => {
+      let name = ch.name;
+      if (!name || name === 'Retail Partner' || name === 'Direct Outlet' || name === 'undefined') {
+        name = ch.retailer && ch.retailer !== 'Retail Partner' ? ch.retailer : (idx === 0 ? 'Mydin' : (idx === 1 ? 'Hero Market' : `Retailer #${idx + 1}`));
+      }
+
+      return `
+        <div class="channelContribRow">
+          <div class="contribInfo">
+            <span class="contribName">${escapeHtml(name)}</span>
+            <span class="contribShare">${ch.share_pct}% share (${timeframeLabel})</span>
+          </div>
+          <div class="contribBarTrack">
+            <div class="contribBarFill" style="width: ${Math.min(100, Math.max(5, ch.share_pct))}%;"></div>
+          </div>
+          <div class="contribVal">
+            <strong>${money(ch.projected_sales)}</strong>
+          </div>
         </div>
-        <div class="contribBarTrack">
-          <div class="contribBarFill" style="width: ${Math.min(100, Math.max(5, ch.share_pct))}%;"></div>
-        </div>
-        <div class="contribVal">
-          <strong>${money(ch.projected_sales)}</strong>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   // Render Anomaly & Predictive Signals without emojis
@@ -894,6 +914,13 @@
 
     // Pre-populate filter options on load
     populateForecastFilters();
+
+    // Close open dropdown menus on window scroll
+    window.addEventListener('scroll', () => {
+      document.querySelectorAll('.customSelectMenu').forEach(m => { m.hidden = true; });
+      document.querySelectorAll('.customSelectBtn').forEach(b => { b.setAttribute('aria-expanded', 'false'); b.classList.remove('open'); });
+      document.querySelectorAll('.customSelectWrap').forEach(w => { w.classList.remove('open'); });
+    }, { passive: true });
 
     // Deep link check on load
     if (location.hash === '#forecast') {
