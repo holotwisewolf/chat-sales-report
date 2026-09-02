@@ -1059,6 +1059,7 @@
 
       return `
         <div class="channelContribRow">
+          <span class="contribIndex">${idx + 1}</span>
           <div class="contribInfo">
             <span class="contribName" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
             <span class="contribShare">${sharePct.toFixed(1)}% share</span>
@@ -1097,6 +1098,7 @@
 
       return `
         <div class="channelContribRow">
+          <span class="contribIndex">${idx + 1}</span>
           <div class="contribInfo">
             <span class="contribName" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
             <span class="contribShare">${sharePct.toFixed(1)}% share${retailer ? ` · ${escapeHtml(retailer)}` : ''}</span>
