@@ -837,6 +837,11 @@
         const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
         navBtn.style.setProperty('--liquid-x', `${x}%`);
         navBtn.style.setProperty('--liquid-y', `${y}%`);
+        const lightEl = document.getElementById('liquidSvgLight');
+        if (lightEl) {
+          lightEl.setAttribute('x', String(e.clientX - rect.left));
+          lightEl.setAttribute('y', String(e.clientY - rect.top));
+        }
       }, { passive: true });
       navBtn.addEventListener('pointerleave', () => {
         navBtn.style.removeProperty('--liquid-x');
