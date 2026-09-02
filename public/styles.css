@@ -2255,13 +2255,12 @@ main{padding-bottom:110px}
   border-top: 1px solid var(--hair);
 }
 
-/* Channel Share Bars */
+/* Channel Share Bars — Harmonized with standard dashboard .barRow */
 .channelForecastList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-  max-height: 215px;
+  margin-top: 8px;
+  max-height: 220px;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 6px;
@@ -2271,81 +2270,23 @@ main{padding-bottom:110px}
 .channelForecastList::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.28); border-radius: 4px; }
 .channelForecastList::-webkit-scrollbar-thumb:hover { background: rgba(124, 58, 237, 0.5); }
 
-.channelContribRow {
-  display: grid;
-  grid-template-columns: 24px minmax(105px, 140px) 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  border-top: 1px solid var(--hair);
+.channelForecastList .barRow {
+  padding: 8px 2px;
 }
 
-.channelContribRow:first-child {
-  border-top: 0;
-}
-
-.contribIndex {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: rgba(21, 42, 80, 0.06);
-  color: var(--ink2);
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
-.channelContribRow:nth-child(1) .contribIndex {
-  background: rgba(124, 58, 237, 0.12);
-  color: #7c3aed;
-}
-
-.channelContribRow:nth-child(2) .contribIndex {
-  background: rgba(11, 87, 199, 0.1);
-  color: #0b57c7;
-}
-
-.channelContribRow:nth-child(3) .contribIndex {
-  background: rgba(14, 165, 233, 0.1);
-  color: #0284c7;
-}
-
-.contribInfo {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.contribName {
+.channelForecastList .barLabel {
   font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.contribNameText {
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  white-space: nowrap;
   cursor: help;
-}
-
-.contribShare {
-  font-size: 11px;
-  color: var(--ink2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.contribPeriod {
-  font-size: 10.5px;
-  color: var(--muted, #9ca3af);
-  margin-top: 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Year badge pill next to CHANNEL CONTRIBUTION eyebrow */

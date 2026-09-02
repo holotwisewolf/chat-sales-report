@@ -1058,19 +1058,11 @@
       const periodSales = (totalPeriodSales * sharePct) / 100;
 
       return `
-        <div class="channelContribRow">
-          <span class="contribIndex">${idx + 1}</span>
-          <div class="contribInfo">
-            <span class="contribName" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-            <span class="contribShare">${sharePct.toFixed(1)}% share</span>
-            <span class="contribPeriod">${timeframeLabel}</span>
-          </div>
-          <div class="contribBarTrack">
-            <div class="contribBarFill" style="width: ${Math.min(100, Math.max(5, sharePct))}%;"></div>
-          </div>
-          <div class="contribVal">
-            <strong>${money(periodSales)}</strong>
-          </div>
+        <div class="barRow indexed channelContribRow" title="${escapeHtml(name)} — ${sharePct.toFixed(1)}% share — ${money(periodSales)}">
+          <span class="barLabel"><span class="barIndexInline">${idx + 1}</span><span class="contribNameText" title="${escapeHtml(name)}">${escapeHtml(name)}</span></span>
+          <div class="barTrack"><i style="width: ${Math.min(100, Math.max(3, sharePct)).toFixed(1)}%; background: var(--chart-series, #0b57c7);"></i></div>
+          <strong class="barValueCell">${money(periodSales)}</strong>
+          <small class="barSub indentedSub">${sharePct.toFixed(1)}% share &middot; ${timeframeLabel}</small>
         </div>
       `;
     }).join('');
@@ -1097,19 +1089,11 @@
       const periodSales = (totalPeriodSales * sharePct) / 100;
 
       return `
-        <div class="channelContribRow">
-          <span class="contribIndex">${idx + 1}</span>
-          <div class="contribInfo">
-            <span class="contribName" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-            <span class="contribShare">${sharePct.toFixed(1)}% share${retailer ? ` · ${escapeHtml(retailer)}` : ''}</span>
-            <span class="contribPeriod">${timeframeLabel}</span>
-          </div>
-          <div class="contribBarTrack">
-            <div class="contribBarFill" style="width: ${Math.min(100, Math.max(3, sharePct))}%;"></div>
-          </div>
-          <div class="contribVal">
-            <strong>${money(periodSales)}</strong>
-          </div>
+        <div class="barRow indexed channelContribRow" title="${escapeHtml(name)} — ${sharePct.toFixed(1)}% share — ${money(periodSales)}">
+          <span class="barLabel"><span class="barIndexInline">${idx + 1}</span><span class="contribNameText" title="${escapeHtml(name)}">${escapeHtml(name)}</span></span>
+          <div class="barTrack"><i style="width: ${Math.min(100, Math.max(3, sharePct)).toFixed(1)}%; background: #7c3aed;"></i></div>
+          <strong class="barValueCell">${money(periodSales)}</strong>
+          <small class="barSub indentedSub">${sharePct.toFixed(1)}% share${retailer ? ` &middot; ${escapeHtml(retailer)}` : ''} &middot; ${timeframeLabel}</small>
         </div>
       `;
     }).join('');
