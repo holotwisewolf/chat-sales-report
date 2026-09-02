@@ -29,7 +29,7 @@ function makeCarousel(track, dots) {
 
   track.addEventListener('pointerdown', event => {
     // Don't hijack clicks on interactive elements inside the carousel
-    if (event.target.closest('button, a, select, input, [role="button"], [role="spinbutton"], #chartYearVal, .inlineYearText, .inlineYearWheel, .chartTitleWrap, .option-wheel, .portalWheel')) return;
+    if (event.target.closest('button, a, select, input, [role="button"], [role="spinbutton"], #chartYearVal, #channelMonthPickerVal, .inlineYearText, .inlineYearWheel, .chartTitleWrap, .option-wheel, .portalWheel')) return;
     dragStart = event.clientX;
     dragDelta = 0;
     track.setPointerCapture(event.pointerId);

@@ -696,15 +696,84 @@
 
   // Selected channel forecast filter
   let selectedChannelPeriod = 'all';
+  let activeChannelWheelInstance = null;
 
-  // Render Channel Contribution Bars with Scrollable Month Tabs
+  // Setup the OptionWheel picker for channel month (same pattern as year wheel in app.js)
+  function setupChannelMonthWheel(forecastSeries) {
+    const wheelTextEl = $('#channelMonthPickerVal');
+    const backdrop = $('#yearWheelBackdrop');
+    const portalWheel = $('#portalWheel');
+    if (!wheelTextEl || !backdrop || !portalWheel) return;
+
+    // Items: "All Months" first, then each forecast period
+    const items = ['All Months', ...forecastSeries.map(f => f.period)];
+
+    const closeWheel = () => {
+      backdrop.hidden = true;
+      wheelTextEl.style.visibility = 'visible';
+    };
+
+    const openWheel = (e) => {
+      if (e) { e.stopPropagation(); e.preventDefault(); }
+
+      const rect = wheelTextEl.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      portalWheel.style.left = centerX + 'px';
+      portalWheel.style.top = centerY + 'px';
+      backdrop.style.setProperty('--spot-x', `${centerX}px`);
+      backdrop.style.setProperty('--spot-y', `${centerY}px`);
+      backdrop.hidden = false;
+      wheelTextEl.style.visibility = 'hidden';
+
+      let curIdx = selectedChannelPeriod === 'all' ? 0 : items.indexOf(selectedChannelPeriod);
+      if (curIdx === -1) curIdx = 0;
+
+      activeChannelWheelInstance = new ReactBitsOptionWheel(portalWheel, {
+        items,
+        defaultSelected: curIdx,
+        rowH: 26,
+        smoothing: 180,
+        fade: 0.55,
+        minOpacity: 0.04,
+        blur: 0,
+        loop: false,
+        onChange: (index, label) => {
+          selectedChannelPeriod = index === 0 ? 'all' : label;
+          wheelTextEl.textContent = label;
+          if (lastData) updateChannelForecastRows(lastData);
+        }
+      });
+    };
+
+    window.openChannelMonthWheel = openWheel;
+
+    wheelTextEl.onpointerdown = (e) => e.stopPropagation();
+    wheelTextEl.onclick = openWheel;
+
+    portalWheel.onclick = (e) => {
+      if (activeChannelWheelInstance && activeChannelWheelInstance.dragMoved) return;
+      const item = e.target.closest('.option-wheel__item');
+      if (item) {
+        const idx = Number(item.dataset.index);
+        activeChannelWheelInstance.applyTarget(idx, true);
+      }
+    };
+
+    backdrop.onpointerdown = (e) => {
+      if (!portalWheel.contains(e.target)) {
+        e.stopPropagation(); e.preventDefault();
+        closeWheel();
+      }
+    };
+  }
+
+  // Render Channel Contribution Bars — uses the OptionWheel month picker
   function renderChannelContributions(data) {
     const list = $('#channelForecastList');
-    const tabs = $('#channelMonthTabs');
     if (!list) return;
 
     const forecastSeries = data.forecast || [];
-    const horizonCount = forecastSeries.length || currentHorizon;
     const channels = data.channel_contributions || [];
 
     if (!channels.length) {
@@ -712,28 +781,13 @@
       return;
     }
 
-    // Render Scrollable Month Tabs
-    if (tabs) {
-      const monthOptions = [
-        { id: 'all', label: `All (${horizonCount}M)` },
-        ...forecastSeries.map(f => ({ id: f.period, label: f.period }))
-      ];
+    // Boot the wheel picker (idempotent — re-uses same backdrop/portal)
+    setupChannelMonthWheel(forecastSeries);
 
-      tabs.innerHTML = monthOptions.map(m => `
-        <button type="button" class="channelMonthTab ${selectedChannelPeriod === m.id ? 'active' : ''}" data-period="${escapeHtml(m.id)}">
-          ${escapeHtml(m.label)}
-        </button>
-      `).join('');
-
-      // Wire Tab Click Listeners
-      tabs.querySelectorAll('.channelMonthTab').forEach(btn => {
-        btn.addEventListener('click', () => {
-          selectedChannelPeriod = btn.dataset.period;
-          tabs.querySelectorAll('.channelMonthTab').forEach(b => b.classList.toggle('active', b.dataset.period === selectedChannelPeriod));
-          updateChannelForecastRows(data);
-        });
-      });
-    }
+    // Sync the label back to "All Months" on fresh render
+    selectedChannelPeriod = 'all';
+    const wheelTextEl = $('#channelMonthPickerVal');
+    if (wheelTextEl) wheelTextEl.textContent = 'All Months';
 
     updateChannelForecastRows(data);
   }
@@ -758,7 +812,7 @@
       if (hint) hint.textContent = `Expected revenue distribution across retail partners over the entire ${timeframeLabel} horizon.`;
     } else {
       const matched = forecastSeries.find(f => f.period === selectedChannelPeriod);
-      totalPeriodSales = matched ? matched.sales : 0;
+      totalPeriodSales = matched ? (matched.sales || matched.p50 || 0) : 0;
       timeframeLabel = selectedChannelPeriod;
       if (hint) hint.textContent = `Expected revenue distribution across retail partners in ${selectedChannelPeriod}.`;
     }
@@ -776,7 +830,7 @@
         <div class="channelContribRow">
           <div class="contribInfo">
             <span class="contribName">${escapeHtml(name)}</span>
-            <span class="contribShare">${sharePct.toFixed(1)}% share (${timeframeLabel})</span>
+            <span class="contribShare">${sharePct.toFixed(1)}% share · ${timeframeLabel}</span>
           </div>
           <div class="contribBarTrack">
             <div class="contribBarFill" style="width: ${Math.min(100, Math.max(5, sharePct))}%;"></div>
