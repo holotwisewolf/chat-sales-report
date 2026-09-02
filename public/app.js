@@ -228,7 +228,18 @@ document.querySelector('#importForm').onsubmit = async event => {
 };
 
 // Clicking a dialog's backdrop (outside its card) closes it.
-document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
+document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => {
+  if (event.target === dialog) {
+    if (dialog.id === 'chatDialog') {
+      const overlay = document.querySelector('#chatGooeyOverlay');
+      if (overlay && !overlay.hidden) {
+        overlay.hidden = true;
+        return;
+      }
+    }
+    dialog.close();
+  }
+}));
 // Collapsible dashboard sections; whether each is open is remembered - except across UI
 // versions, where stale saved state (e.g. graphs left collapsed) caused confusion.
 const UI_VERSION = '6';

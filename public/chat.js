@@ -192,21 +192,25 @@ if (chatSettingsBtn && chatGooeyOverlay) {
 }
 
 if (chatDialog) {
-  chatDialog.onclick = event => {
+  chatDialog.addEventListener('click', event => {
     if (event.target === chatDialog) {
       if (chatGooeyOverlay && !chatGooeyOverlay.hidden) {
+        event.stopPropagation();
+        event.preventDefault();
         chatGooeyOverlay.hidden = true;
       } else {
         chatDialog.close();
       }
     }
-  };
+  }, true);
 }
 
 if (chatGooeyOverlay) {
   chatGooeyOverlay.onclick = event => {
-    if (event.target === chatGooeyOverlay) {
+    const card = event.target.closest('.settingsOverlayCard');
+    if (!card) {
       event.stopPropagation();
+      event.preventDefault();
       chatGooeyOverlay.hidden = true;
     }
   };
