@@ -250,4 +250,17 @@ require('./lib/forecast')(app, db);
 app.get('/api/config', (req, res) => res.json({ businessName: process.env.BUSINESS_NAME || '' }));
 
 const PORT = Number(process.env.PORT) || 3000;
-app.listen(PORT, () => console.log(`Sales Dashboard: http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  const url = `http://localhost:${PORT}`;
+  console.log(`\n===================================================`);
+  console.log(`  Sales Dashboard is LIVE at: ${url}`);
+  console.log(`===================================================\n`);
+
+  if (process.env.AUTO_OPEN !== 'false') {
+    const cp = require('child_process');
+    const startCmd = process.platform === 'win32'
+      ? `start "" "${url}"`
+      : (process.platform === 'darwin' ? `open "${url}"` : `xdg-open "${url}"`);
+    cp.exec(startCmd, () => {});
+  }
+});

@@ -9,6 +9,8 @@ for retail sales, outlet counters, and categories.
 import sys
 import json
 import math
+import importlib
+import importlib.util
 from datetime import datetime
 
 def parse_input():
@@ -42,7 +44,9 @@ def try_timesfm_forecast(series, horizon, freq=0):
     freq: 0 for high freq/monthly, 1 for daily, 2 for weekly
     """
     try:
-        import timesfm
+        if importlib.util.find_spec("timesfm") is None:
+            return {"success": False, "reason": "timesfm package is not installed"}
+        timesfm = importlib.import_module("timesfm")
         # Instantiate TimesFM model
         tfm = timesfm.TimesFm(
             hparams=timesfm.TimesFmHparams(

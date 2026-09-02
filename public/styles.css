@@ -546,9 +546,9 @@ main{padding-bottom:110px}
 .searchItem mark{background:rgba(42,120,214,.2);color:var(--accent);font-weight:750;border-radius:2px;padding:0 1px}
 .searchEmpty{padding:12px;font-size:13px;color:var(--muted);text-align:center}
 
-/* Normal Cyan Button for Sales Forecast / Back to Dashboard (Same as Print Report) */
+/* Lighter Sky-Cyan Button for Sales Forecast / Back to Dashboard */
 #navForecastBtn {
-  background: #0891b2;
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
   color: #ffffff;
   border: 0;
   border-radius: 13px;
@@ -560,13 +560,14 @@ main{padding-bottom:110px}
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: transform .12s ease, filter .12s ease, background .15s ease;
+  transition: transform .12s ease, filter .12s ease, background .15s ease, box-shadow .15s ease;
   font-family: inherit;
-  box-shadow: none;
+  box-shadow: 0 3px 12px rgba(14, 165, 233, 0.28);
 }
 
 #navForecastBtn:hover {
-  background: #0e7490;
+  background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%);
+  box-shadow: 0 5px 16px rgba(14, 165, 233, 0.38);
 }
 
 #navForecastBtn:active {
@@ -1450,10 +1451,10 @@ main{padding-bottom:110px}
 }
 
 .navViewBtn.on {
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(167, 139, 250, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .navViewBtn .sparkleIcon {
