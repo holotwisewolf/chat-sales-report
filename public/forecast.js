@@ -824,28 +824,12 @@
 
   // Event Listeners Setup
   function initForecastEventListeners() {
-    // Navigation toggle in header with liquid glass pointer tracking
+    // Navigation toggle in header
     const navBtn = $('#navForecastBtn');
     if (navBtn) {
       navBtn.addEventListener('click', () => {
         const isForecastVisible = !$('#forecastView')?.hidden;
         window.switchView(isForecastVisible ? 'dashboard' : 'forecast');
-      });
-      navBtn.addEventListener('pointermove', e => {
-        const rect = navBtn.getBoundingClientRect();
-        const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-        const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-        navBtn.style.setProperty('--liquid-x', `${x}%`);
-        navBtn.style.setProperty('--liquid-y', `${y}%`);
-        const lightEl = document.getElementById('liquidSvgLight');
-        if (lightEl) {
-          lightEl.setAttribute('x', String(e.clientX - rect.left));
-          lightEl.setAttribute('y', String(e.clientY - rect.top));
-        }
-      }, { passive: true });
-      navBtn.addEventListener('pointerleave', () => {
-        navBtn.style.removeProperty('--liquid-x');
-        navBtn.style.removeProperty('--liquid-y');
       });
     }
 
