@@ -1332,6 +1332,20 @@ main{padding-bottom:110px}
   min-width: 140px;
 }
 
+.fField .customSelectBtn {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 11px;
+}
+
+.fControlPillGroup .customSelectBtn {
+  min-height: 36px;
+  padding: 6px 11px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
 .fLabel {
   font-size: 10.5px;
   font-weight: 750;
@@ -1522,11 +1536,30 @@ main{padding-bottom:110px}
 }
 
 .forecastLineGlow {
-  filter: drop-shadow(0 0 6px rgba(124, 58, 237, 0.5));
+  filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.65));
+  animation: forecastPulse 3.5s infinite ease-in-out;
+}
+
+@keyframes forecastPulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(124, 58, 237, 0.5)); opacity: 0.95; }
+  50% { filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.85)); opacity: 1; }
 }
 
 .forecastBandAnim {
-  transition: d 0.3s ease;
+  animation: bandSweepIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center bottom;
+  transition: d 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes bandSweepIn {
+  from {
+    opacity: 0;
+    transform: scaleY(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
 }
 
 .fDataDot {

@@ -31,9 +31,9 @@
         navBtn.classList.remove('secondary');
         navBtn.classList.add('on');
       }
-      if (navLabel) navLabel.textContent = '📊 Back to Dashboard';
-      if (pageTitle) pageTitle.textContent = 'AI Sales Forecast';
-      if (brandEyebrow) brandEyebrow.textContent = 'GOOGLE TIMESFM PREDICTIONS';
+      if (navLabel) navLabel.textContent = 'Back to Dashboard';
+      if (pageTitle) pageTitle.textContent = 'Sales Forecast';
+      if (brandEyebrow) brandEyebrow.textContent = 'TIMESFM PREDICTIONS';
       location.hash = 'forecast';
 
       // Update active dock item
@@ -49,7 +49,7 @@
         navBtn.classList.add('secondary');
         navBtn.classList.remove('on');
       }
-      if (navLabel) navLabel.textContent = '🔮 AI Sales Forecast';
+      if (navLabel) navLabel.textContent = 'Sales Forecast';
       if (pageTitle) pageTitle.textContent = 'Sales dashboard';
       if (brandEyebrow) brandEyebrow.textContent = 'SALES REPORTS';
       location.hash = 'dashboard';
@@ -58,6 +58,79 @@
       $$('.dockItem').forEach(b => b.classList.toggle('active', b.dataset.action === 'charts'));
     }
   };
+
+  // Custom Animated Select Helper for Forecast Dropdowns
+  function setupForecastSelect(selectId, wrapId, btnId, menuId, defaultLabel, onChangeCallback) {
+    const select = document.querySelector(selectId);
+    const wrap = document.querySelector(wrapId);
+    const btn = document.querySelector(btnId);
+    const menu = document.querySelector(menuId);
+    if (!select || !wrap || !btn || !menu) return;
+
+    const updateDisplay = () => {
+      const selectedOption = select.options[select.selectedIndex];
+      const label = selectedOption && selectedOption.value ? selectedOption.text : defaultLabel;
+      const labelSpan = btn.querySelector('.customSelectLabel');
+      if (labelSpan) labelSpan.textContent = label;
+    };
+
+    const syncMenuOptions = () => {
+      menu.innerHTML = [...select.options].map(opt => `
+        <button type="button" class="customSelectItem ${opt.selected ? 'active' : ''}" data-value="${escapeHtml(opt.value)}">
+          <span>${escapeHtml(opt.text)}</span>
+          ${opt.selected ? '<span class="customSelectCheck">&#10003;</span>' : ''}
+        </button>
+      `).join('');
+    };
+
+    // Close on outside click
+    document.addEventListener('pointerdown', e => {
+      if (!wrap.contains(e.target) && !menu.hidden) {
+        menu.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+        btn.classList.remove('open');
+      }
+    });
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const willOpen = menu.hidden;
+      // Close other dropdowns
+      document.querySelectorAll('.customSelectMenu').forEach(m => { m.hidden = true; });
+      document.querySelectorAll('.customSelectBtn').forEach(b => { b.setAttribute('aria-expanded', 'false'); b.classList.remove('open'); });
+
+      if (willOpen) {
+        syncMenuOptions();
+        menu.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+        btn.classList.add('open');
+      }
+    });
+
+    menu.addEventListener('click', e => {
+      const item = e.target.closest('.customSelectItem');
+      if (!item) return;
+      const val = item.dataset.value;
+      select.value = val;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      updateDisplay();
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('open');
+      if (typeof onChangeCallback === 'function') {
+        onChangeCallback(val);
+      }
+    });
+
+    // Observe changes to underlying select element
+    select.addEventListener('change', updateDisplay);
+    const observer = new MutationObserver(() => {
+      updateDisplay();
+      syncMenuOptions();
+    });
+    observer.observe(select, { childList: true, subtree: true });
+    updateDisplay();
+  }
 
   // Populate forecast filters from main dashboard data options
   function populateForecastFilters() {
@@ -152,8 +225,8 @@
     const growthEl = $('#fStatGrowth');
     const growth = summary.growth_rate_pct || 0;
     growthEl.innerHTML = growth >= 0 
-      ? `<span class="badgeOk">↑ +${growth}% vs previous</span>`
-      : `<span class="badgeWarn">↓ ${growth}% vs previous</span>`;
+      ? `<span class="badgeOk">+${growth}% vs previous</span>`
+      : `<span class="badgeWarn">${growth}% vs previous</span>`;
 
     $('#fStatUnits').textContent = formatNum(summary.total_projected_units);
     $('#fStatAvgMonthly').textContent = `Avg ${money(summary.average_monthly_sales)} / month`;
@@ -168,11 +241,62 @@
     $('#fStatRange').textContent = `${confidencePct}% Confidence Band`;
 
     if (data.model && $('#fModelBadge')) {
-      $('#fModelBadge').textContent = `🔮 ${data.model}`;
+      $('#fModelBadge').textContent = data.model;
     }
   }
 
-  // Render Interactive Forecast SVG Chart with Confidence Envelope
+  // Smooth Cubic Bezier Path Builder
+  function buildSmoothBezier(points) {
+    if (!points || points.length === 0) return '';
+    if (points.length === 1) return `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+    if (points.length === 2) return `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)} L ${points[1].x.toFixed(1)},${points[1].y.toFixed(1)}`;
+
+    let d = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i === 0 ? i : i - 1];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2] || p2;
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  // Bezier path generator for connecting two bezier curves (like confidence band envelope)
+  function buildBandEnvelopePath(topPoints, bottomPoints) {
+    if (!topPoints || !topPoints.length || !bottomPoints || !bottomPoints.length) return '';
+    const topPathD = buildSmoothBezier(topPoints);
+    
+    // Bottom points in reverse
+    const revBottom = [...bottomPoints].reverse();
+    if (revBottom.length === 1) {
+      return `${topPathD} L ${revBottom[0].x.toFixed(1)},${revBottom[0].y.toFixed(1)} Z`;
+    }
+
+    let bottomD = ` L ${revBottom[0].x.toFixed(1)},${revBottom[0].y.toFixed(1)}`;
+    for (let i = 0; i < revBottom.length - 1; i++) {
+      const p0 = revBottom[i === 0 ? i : i - 1];
+      const p1 = revBottom[i];
+      const p2 = revBottom[i + 1];
+      const p3 = revBottom[i + 2] || p2;
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      bottomD += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return `${topPathD} ${bottomD} Z`;
+  }
+
+  // Render Interactive Forecast SVG Chart with Smooth Bezier Confidence Envelope
   function renderForecastChart(data) {
     const container = $('#forecastSvgContainer');
     if (!container) return;
@@ -215,13 +339,13 @@
     const getX = i => padL + i * stepX;
     const getY = val => padT + (H - padT - padB) * (1 - Math.max(0, val) / maxVal);
 
-    // Build historical path
+    // Build historical coordinates
     const histPoints = [];
     for (let i = 0; i < hist.length; i++) {
       histPoints.push({ x: getX(i), y: getY(allPoints[i].sales), p: allPoints[i] });
     }
 
-    // Build forecast path (starts from last historical point for seamless line)
+    // Build forecast coordinates (starts at last historical point for smooth continuous curve)
     const forecastPoints = [];
     if (hist.length > 0) {
       forecastPoints.push({ x: getX(hist.length - 1), y: getY(allPoints[hist.length - 1].sales), p: allPoints[hist.length - 1] });
@@ -230,35 +354,33 @@
       forecastPoints.push({ x: getX(i), y: getY(allPoints[i].sales), p: allPoints[i] });
     }
 
-    // Build confidence interval polygon path (P10 to P90)
+    // Build smooth confidence interval envelope (P10 to P90)
     let bandPathD = '';
     if (pred.length > 0) {
-      const bandTop = [];
-      const bandBottom = [];
+      const bandTopPoints = [];
+      const bandBottomPoints = [];
       
       // Start band at last historical point
       if (hist.length > 0) {
         const lastHistX = getX(hist.length - 1);
         const lastHistY = getY(allPoints[hist.length - 1].sales);
-        bandTop.push(`${lastHistX.toFixed(1)},${lastHistY.toFixed(1)}`);
-        bandBottom.unshift(`${lastHistX.toFixed(1)},${lastHistY.toFixed(1)}`);
+        bandTopPoints.push({ x: lastHistX, y: lastHistY });
+        bandBottomPoints.push({ x: lastHistX, y: lastHistY });
       }
 
       for (let i = hist.length; i < numPoints; i++) {
         const pt = allPoints[i];
         const x = getX(i);
-        const y90 = getY(pt.p90);
-        const y10 = getY(pt.p10);
-        bandTop.push(`${x.toFixed(1)},${y90.toFixed(1)}`);
-        bandBottom.unshift(`${x.toFixed(1)},${y10.toFixed(1)}`);
+        bandTopPoints.push({ x, y: getY(pt.p90) });
+        bandBottomPoints.push({ x, y: getY(pt.p10) });
       }
 
-      bandPathD = `M ${bandTop.join(' L ')} L ${bandBottom.join(' L ')} Z`;
+      bandPathD = buildBandEnvelopePath(bandTopPoints, bandBottomPoints);
     }
 
-    // SVG Line Paths
-    const histPathD = buildSvgPath(histPoints);
-    const forecastPathD = buildSvgPath(forecastPoints);
+    // Smooth Bezier Line Paths
+    const histPathD = buildSmoothBezier(histPoints);
+    const forecastPathD = buildSmoothBezier(forecastPoints);
 
     // Y Grid Ticks
     const ticks = [0, 0.25, 0.5, 0.75, 1.0].map(t => t * maxVal);
@@ -270,13 +392,14 @@
       <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" class="forecastSvg">
         <defs>
           <linearGradient id="bandGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.28"/>
-            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.08"/>
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.32"/>
+            <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.06"/>
           </linearGradient>
-          <linearGradient id="histAreaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#0b57c7" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="#0b57c7" stop-opacity="0.0"/>
-          </linearGradient>
+          <filter id="forecastGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
         </defs>
 
         <!-- Y Axis Grid Lines -->
@@ -291,14 +414,14 @@
         <line x1="${splitX.toFixed(1)}" x2="${splitX.toFixed(1)}" y1="${padT}" y2="${H - padB}" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"/>
         <text x="${splitX.toFixed(1)}" y="${padT - 8}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#8b5cf6" letter-spacing="0.05em">PROJECTION START</text>
 
-        <!-- Shaded Confidence Interval Envelope (P10 - P90) -->
+        <!-- Shaded Smooth Confidence Interval Envelope (P10 - P90) -->
         ${bandPathD ? `<path d="${bandPathD}" fill="url(#bandGrad)" class="forecastBandAnim" />` : ''}
 
-        <!-- Historical Line -->
-        ${histPathD ? `<path d="${histPathD}" fill="none" stroke="#0b57c7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />` : ''}
+        <!-- Historical Smooth Bezier Line -->
+        ${histPathD ? `<path d="${histPathD}" fill="none" stroke="#0b57c7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lineDraw" pathLength="1" />` : ''}
 
-        <!-- Forecast Dotted/Glowing Line -->
-        ${forecastPathD ? `<path d="${forecastPathD}" fill="none" stroke="#7c3aed" stroke-width="3.2" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round" class="forecastLineGlow" />` : ''}
+        <!-- Forecast Smooth Bezier Dotted/Glowing Line -->
+        ${forecastPathD ? `<path d="${forecastPathD}" fill="none" stroke="#7c3aed" stroke-width="3.2" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round" class="forecastLineGlow" filter="url(#forecastGlow)" />` : ''}
 
         <!-- Data Point Circles -->
         ${allPoints.map((pt, i) => {
@@ -322,8 +445,9 @@
           </text>
         `).join('')}
 
-        <!-- Cursor Crosshair Line -->
-        <line id="fCrosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 2" opacity="0"/>
+        <!-- Cursor Crosshair Line and Highlight Dot -->
+        <line id="fCrosshair" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="2 2" opacity="0"/>
+        <circle id="fCrossTarget" cx="0" cy="0" r="7" fill="none" stroke="#7c3aed" stroke-width="2.5" opacity="0"/>
       </svg>
     `;
 
@@ -331,22 +455,12 @@
     setupForecastChartHover(container, allPoints, getX, getY, W, H);
   }
 
-  // Build SVG path from point array
-  function buildSvgPath(points) {
-    if (!points || !points.length) return '';
-    if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
-    let d = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
-    for (let i = 1; i < points.length; i++) {
-      d += ` L ${points[i].x.toFixed(1)},${points[i].y.toFixed(1)}`;
-    }
-    return d;
-  }
-
   // Interactive Hover Handler for Chart
   function setupForecastChartHover(container, points, getX, getY, W, H) {
     const svg = container.querySelector('svg');
     const tip = $('#forecastChartTip');
     const crosshair = container.querySelector('#fCrosshair');
+    const crossTarget = container.querySelector('#fCrossTarget');
     if (!svg || !tip || !crosshair) return;
 
     svg.addEventListener('pointermove', e => {
@@ -373,6 +487,13 @@
       crosshair.setAttribute('x2', px);
       crosshair.setAttribute('opacity', '0.6');
 
+      if (crossTarget) {
+        crossTarget.setAttribute('cx', px);
+        crossTarget.setAttribute('cy', py);
+        crossTarget.setAttribute('stroke', pt.isForecast ? '#7c3aed' : '#0b57c7');
+        crossTarget.setAttribute('opacity', '1');
+      }
+
       tip.hidden = false;
       tip.style.display = 'block';
 
@@ -393,7 +514,7 @@
         `;
       }
 
-      const tipWidth = 210;
+      const tipWidth = 220;
       const leftPos = Math.min(Math.max(px - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
       tip.style.top = '12px';
@@ -401,6 +522,7 @@
 
     svg.addEventListener('pointerleave', () => {
       crosshair.setAttribute('opacity', '0');
+      if (crossTarget) crossTarget.setAttribute('opacity', '0');
       tip.hidden = true;
       tip.style.display = 'none';
     });
@@ -433,7 +555,7 @@
     `).join('');
   }
 
-  // Render Anomaly & Predictive Signals
+  // Render Anomaly & Predictive Signals without emojis
   function renderAnomalies(data) {
     const list = $('#forecastAnomaliesList');
     if (!list) return;
@@ -446,7 +568,7 @@
     anomalies.forEach(a => {
       signals.push({
         type: a.type === 'surge' ? 'ok' : 'warn',
-        title: a.type === 'surge' ? `📈 Historical Demand Surge in ${a.period}` : `📉 Performance Dip Detected in ${a.period}`,
+        title: a.type === 'surge' ? `Historical Demand Surge in ${a.period}` : `Performance Dip Detected in ${a.period}`,
         text: `Sales reached ${money(a.sales)} (${a.deviation_pct >= 0 ? '+' : ''}${a.deviation_pct}% deviation from expected RM ${a.expected.toLocaleString()}).`
       });
     });
@@ -455,7 +577,7 @@
     if (summary.peak_month) {
       signals.push({
         type: 'info',
-        title: `✨ Seasonal Demand Inflection: Peak Expected in ${summary.peak_month}`,
+        title: `Seasonal Demand Inflection: Peak Expected in ${summary.peak_month}`,
         text: `TimesFM projects peak seasonal volume around ${money(summary.peak_sales)}. Ensure adequate inventory replenishment at major retail outlets 3-4 weeks prior.`
       });
     }
@@ -464,7 +586,7 @@
     if (summary.volatility_index > 8) {
       signals.push({
         type: 'warn',
-        title: `⚠️ Higher Volatility Spread Observed`,
+        title: `Higher Volatility Spread Observed`,
         text: `Sales fluctuations across outlets widen prediction bounds. Consider monitoring monthly consignment sell-through rate closely.`
       });
     }
@@ -472,7 +594,7 @@
     if (!signals.length) {
       signals.push({
         type: 'ok',
-        title: `✅ Stable Consistent Run-rate`,
+        title: `Stable Consistent Run-rate`,
         text: `Historical consignments demonstrate consistent sales velocity without abnormal disruptions.`
       });
     }
@@ -485,7 +607,7 @@
     `).join('');
   }
 
-  // Render Month-by-Month Forecast Table
+  // Render Month-by-Month Forecast Table without emojis
   function renderForecastTable(data) {
     const tbody = $('#forecastTableBody');
     if (!tbody) return;
@@ -505,7 +627,7 @@
       const demandBadge = idx === 0 
         ? '<span class="demandPill normal">Current Baseline</span>'
         : (row.p50 >= (data.summary?.peak_sales || 0) * 0.95 
-            ? '<span class="demandPill peak">🔥 Peak Season</span>' 
+            ? '<span class="demandPill peak">Peak Season</span>' 
             : (growth > 5 ? '<span class="demandPill high">High Demand</span>' : '<span class="demandPill normal">Steady</span>'));
 
       return `
@@ -628,15 +750,13 @@
       });
     });
 
-    // Confidence dropdown
-    $('#fConfidence')?.addEventListener('change', e => {
-      currentConfidence = parseFloat(e.target.value) || 0.9;
+    // Initialize custom animated dropdowns for forecast
+    setupForecastSelect('#fRetailer', '#wrapFRetailer', '#btnFRetailer', '#menuFRetailer', 'All retailers', () => loadForecastData());
+    setupForecastSelect('#fCounter', '#wrapFCounter', '#btnFCounter', '#menuFCounter', 'All counters', () => loadForecastData());
+    setupForecastSelect('#fCategory', '#wrapFCategory', '#btnFCategory', '#menuFCategory', 'All categories', () => loadForecastData());
+    setupForecastSelect('#fConfidence', '#wrapFConfidence', '#btnFConfidence', '#menuFConfidence', '90% Standard', (val) => {
+      currentConfidence = parseFloat(val) || 0.90;
       loadForecastData();
-    });
-
-    // Filter selects
-    ['#fRetailer', '#fCounter', '#fCategory'].forEach(sel => {
-      $(sel)?.addEventListener('change', () => loadForecastData());
     });
 
     // Target gap form evaluation

@@ -17,8 +17,13 @@
       <h1 id="pageTitle">Sales dashboard</h1>
     </div>
     <div class="headerActions">
-      <button id="navForecastBtn" class="navViewBtn secondary" type="button" aria-label="Switch between Dashboard and AI Forecast">
-        <span class="sparkleIcon">🔮</span> <span id="navForecastLabel">AI Sales Forecast</span>
+      <button id="navForecastBtn" class="navViewBtn secondary" type="button" aria-label="Switch between Dashboard and Sales Forecast">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="navBtnIcon">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span id="navForecastLabel">Sales Forecast</span>
       </button>
       <button id="printBtn">Print report</button>
     </div>
@@ -241,7 +246,7 @@
       <section class="forecastHeroPanel">
         <div class="forecastHeroContent">
           <div class="forecastBadgeRow">
-            <span class="forecastModelBadge" id="fModelBadge">🔮 Google TimesFM Foundation Engine</span>
+            <span class="forecastModelBadge" id="fModelBadge">Google TimesFM Foundation Engine</span>
             <span class="forecastStatusBadge">Zero-Shot Active</span>
           </div>
           <h2>Sales Forecasting &amp; Trend Projection</h2>
@@ -252,24 +257,65 @@
       <!-- Forecast Toolbar -->
       <section class="forecastToolbar">
         <div class="forecastFilterGroup">
-          <label class="fField">
+          <div class="fField">
             <span class="fLabel">Retailer Chain</span>
-            <select id="fRetailer">
-              <option value="">All retailers</option>
-            </select>
-          </label>
-          <label class="fField">
+            <div class="customSelectWrap" id="wrapFRetailer">
+              <button type="button" class="customSelectBtn" id="btnFRetailer" aria-haspopup="listbox" aria-expanded="false">
+                <span class="customSelectLabel">All retailers</span>
+                <span class="customSelectChev">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="4" x2="12" y2="16"></line>
+                    <polyline points="7 11 12 16 17 11"></polyline>
+                    <line x1="4" y1="20" x2="20" y2="20"></line>
+                  </svg>
+                </span>
+              </button>
+              <div class="customSelectMenu" id="menuFRetailer" hidden></div>
+              <select id="fRetailer" hidden>
+                <option value="">All retailers</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="fField">
             <span class="fLabel">Store / Counter</span>
-            <select id="fCounter">
-              <option value="">All counters</option>
-            </select>
-          </label>
-          <label class="fField">
+            <div class="customSelectWrap" id="wrapFCounter">
+              <button type="button" class="customSelectBtn" id="btnFCounter" aria-haspopup="listbox" aria-expanded="false">
+                <span class="customSelectLabel">All counters</span>
+                <span class="customSelectChev">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="4" x2="12" y2="16"></line>
+                    <polyline points="7 11 12 16 17 11"></polyline>
+                    <line x1="4" y1="20" x2="20" y2="20"></line>
+                  </svg>
+                </span>
+              </button>
+              <div class="customSelectMenu" id="menuFCounter" hidden></div>
+              <select id="fCounter" hidden>
+                <option value="">All counters</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="fField">
             <span class="fLabel">Category</span>
-            <select id="fCategory">
-              <option value="">All categories</option>
-            </select>
-          </label>
+            <div class="customSelectWrap" id="wrapFCategory">
+              <button type="button" class="customSelectBtn" id="btnFCategory" aria-haspopup="listbox" aria-expanded="false">
+                <span class="customSelectLabel">All categories</span>
+                <span class="customSelectChev">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="4" x2="12" y2="16"></line>
+                    <polyline points="7 11 12 16 17 11"></polyline>
+                    <line x1="4" y1="20" x2="20" y2="20"></line>
+                  </svg>
+                </span>
+              </button>
+              <div class="customSelectMenu" id="menuFCategory" hidden></div>
+              <select id="fCategory" hidden>
+                <option value="">All categories</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div class="forecastOptionsGroup">
@@ -293,11 +339,24 @@
 
           <div class="fControlPillGroup">
             <span class="fLabel">Confidence Band</span>
-            <select id="fConfidence" class="compactSelect">
-              <option value="0.80">80% Uncertainty</option>
-              <option value="0.90" selected>90% Standard</option>
-              <option value="0.95">95% Wide</option>
-            </select>
+            <div class="customSelectWrap" id="wrapFConfidence" style="min-width: 155px;">
+              <button type="button" class="customSelectBtn" id="btnFConfidence" aria-haspopup="listbox" aria-expanded="false">
+                <span class="customSelectLabel">90% Standard</span>
+                <span class="customSelectChev">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="4" x2="12" y2="16"></line>
+                    <polyline points="7 11 12 16 17 11"></polyline>
+                    <line x1="4" y1="20" x2="20" y2="20"></line>
+                  </svg>
+                </span>
+              </button>
+              <div class="customSelectMenu" id="menuFConfidence" hidden></div>
+              <select id="fConfidence" hidden>
+                <option value="0.80">80% Uncertainty</option>
+                <option value="0.90" selected>90% Standard</option>
+                <option value="0.95">95% Wide</option>
+              </select>
+            </div>
           </div>
         </div>
       </section>
