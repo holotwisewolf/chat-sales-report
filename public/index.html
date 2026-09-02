@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=97">
+  <link rel="stylesheet" href="/styles.css?v=98">
 </head>
 
 <body>
@@ -457,12 +457,12 @@
           </div>
         </article>
 
-        <!-- Channel Forecast Contributions — month picker via same OptionWheel as "2026" -->
+        <!-- Channel Forecast Contributions with OptionWheel month picker -->
         <article class="panel channelContributionPanel">
           <div class="panelHeadRow">
             <div>
               <p class="eyebrow">CHANNEL CONTRIBUTION</p>
-              <h3>Projected Revenue by Retailer in
+              <h3><span style="font-weight:400">Projected Revenue by Retailer in</span>
                 <span class="inlineYearText" id="channelMonthPickerVal" tabindex="0" role="button" aria-label="Select month"
                   onclick="window.openChannelMonthWheel && window.openChannelMonthWheel(event)"
                   onpointerdown="event.stopPropagation()">All Months</span>
@@ -470,7 +470,19 @@
             </div>
           </div>
           <p class="hint" id="channelContribHint">Expected revenue distribution across retail partners for the forecast horizon.</p>
-          <div id="channelForecastList" class="channelForecastList"></div>
+          <!-- Carousel: pane 0 = retailers, pane 1 = top counters -->
+          <div class="carousel" id="channelContribCarousel">
+            <div class="carouselTrack" id="channelContribTrack">
+              <div class="carouselPane">
+                <div id="channelForecastList" class="channelForecastList"></div>
+              </div>
+              <div class="carouselPane">
+                <p class="hint" style="margin-bottom:10px">Top counters by projected revenue share.</p>
+                <div id="channelCounterList" class="channelForecastList"></div>
+              </div>
+            </div>
+          </div>
+          <div class="carouselDots" id="channelContribDots"></div>
         </article>
       </section>
 
@@ -1012,13 +1024,13 @@
   <!-- Year wheel dim backdrop for focus isolation -->
   <div id="yearWheelBackdrop" class="yearWheelBackdrop" hidden><div id="portalWheel" class="portalWheel"></div></div>
 
-  <script src="/chart.js?v=97"></script>
-  <script src="/app.js?v=97"></script>
-  <script src="/import.js?v=97"></script>
-  <script src="/chat.js?v=97"></script>
-  <script src="/data.js?v=97"></script>
-  <script src="/forecast.js?v=97"></script>
-  <script src="/extras.js?v=97"></script>
+  <script src="/chart.js?v=98"></script>
+  <script src="/app.js?v=98"></script>
+  <script src="/import.js?v=98"></script>
+  <script src="/chat.js?v=98"></script>
+  <script src="/data.js?v=98"></script>
+  <script src="/forecast.js?v=98"></script>
+  <script src="/extras.js?v=98"></script>
 </body>
 
 </html>

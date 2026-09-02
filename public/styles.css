@@ -2238,6 +2238,12 @@ main{padding-bottom:110px}
   color: var(--ink2);
 }
 
+.contribPeriod {
+  font-size: 10.5px;
+  color: var(--muted, #9ca3af);
+  margin-top: 1px;
+}
+
 .contribBarTrack {
   height: 8px;
   background: rgba(21, 42, 80, 0.08);

@@ -617,79 +617,121 @@
     if (modalBackdrop) modalBackdrop.onclick = closeModal;
   }
 
-  // Render Mini Wave Trajectory Chart with Upper/Lower Bound Confidence Channel
-  function renderModalSparkline(selectedPt, allPoints) {
+  // Generate realistic synthetic daily breakdown for a selected forecast month
+  // The month's P50/P10/P90 are distributed across each day with a random-walk ripple
+  function buildDailyPoints(pt) {
+    const period = pt.period || '';
+    const [yr, mo] = period.split('-').map(Number);
+    const daysInMonth = new Date(yr || 2026, (mo || 9), 0).getDate() || 30;
+    const monthlyP50 = pt.p50 || pt.sales || 0;
+    const monthlyP90 = pt.p90 || monthlyP50 * 1.15;
+    const monthlyP10 = pt.p10 || monthlyP50 * 0.85;
+
+    // Distribute monthly total across days with realistic retail curve
+    // Weekends + mid-month peak pattern
+    const rawWeights = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const seed = yr * 100 + mo + day;           // deterministic but day-specific
+      const pseudo = Math.sin(seed * 6.47) * 0.5 + 0.5; // pseudo-random 0-1
+      const weekdayBoost = (day % 7 === 0 || day % 7 === 6) ? 1.25 : 1.0; // weekends
+      const midMonthBoost = Math.exp(-Math.pow((day - daysInMonth / 2) / 7, 2)) * 0.2 + 1.0;
+      return (0.7 + pseudo * 0.6) * weekdayBoost * midMonthBoost;
+    });
+    const wSum = rawWeights.reduce((a, b) => a + b, 0);
+    const shareScale = daysInMonth / wSum;
+
+    return rawWeights.map((w, i) => {
+      const dailyShare = w * shareScale;
+      const dailyP50 = (monthlyP50 / daysInMonth) * dailyShare;
+      const dailyP90 = (monthlyP90 / daysInMonth) * dailyShare;
+      const dailyP10 = (monthlyP10 / daysInMonth) * dailyShare;
+      return { day: i + 1, p50: dailyP50, p90: dailyP90, p10: dailyP10 };
+    });
+  }
+
+  // Render Mini Wave Trajectory — daily breakdown for the selected month
+  function renderModalSparkline(selectedPt, _allPoints) {
     const container = $('#fModalSvgContainer');
-    if (!container || !allPoints || !allPoints.length) return;
+    if (!container || !selectedPt) return;
 
     const W = container.clientWidth || 600;
     const H = 150;
-    const padL = 40, padR = 40, padT = 25, padB = 25;
+    const padL = 38, padR = 16, padT = 22, padB = 28;
 
-    const maxVal = Math.max(...allPoints.map(p => p.p90 || p.sales * 1.12), 1000) * 1.1;
-    const minVal = Math.min(...allPoints.map(p => p.p10 || p.sales * 0.88), 0) * 0.9;
+    const dayPts = buildDailyPoints(selectedPt);
+    const n = dayPts.length;
+
+    const maxVal = Math.max(...dayPts.map(d => d.p90), 1) * 1.12;
+    const minVal = Math.min(...dayPts.map(d => d.p10), 0) * 0.9;
     const valRange = Math.max(1, maxVal - minVal);
 
-    const stepX = (W - padL - padR) / Math.max(1, allPoints.length - 1);
+    const stepX = (W - padL - padR) / Math.max(1, n - 1);
     const getX = i => padL + i * stepX;
     const getY = val => padT + (H - padT - padB) * (1 - (val - minVal) / valRange);
 
-    const pts50 = allPoints.map((p, i) => ({ x: getX(i), y: getY(p.sales), period: p.period, sales: p.sales }));
-    const pts90 = allPoints.map((p, i) => ({ x: getX(i), y: getY(p.p90 || p.sales * 1.12) }));
-    const pts10 = allPoints.map((p, i) => ({ x: getX(i), y: getY(p.p10 || p.sales * 0.88) }));
+    const pts50 = dayPts.map((d, i) => ({ x: getX(i), y: getY(d.p50) }));
+    const pts90 = dayPts.map((d, i) => ({ x: getX(i), y: getY(d.p90) }));
+    const pts10 = dayPts.map((d, i) => ({ x: getX(i), y: getY(d.p10) }));
 
     const pathP50 = buildSmoothBezier(pts50);
     const pathP90 = buildSmoothBezier(pts90);
     const pathP10 = buildSmoothBezier(pts10);
 
-    // Build confidence band polygon
     let bandD = `M ${pts90[0].x.toFixed(1)},${pts90[0].y.toFixed(1)}`;
-    for (let i = 1; i < pts90.length; i++) bandD += ` L ${pts90[i].x.toFixed(1)},${pts90[i].y.toFixed(1)}`;
-    for (let i = pts10.length - 1; i >= 0; i--) bandD += ` L ${pts10[i].x.toFixed(1)},${pts10[i].y.toFixed(1)}`;
+    for (let i = 1; i < n; i++) bandD += ` L ${pts90[i].x.toFixed(1)},${pts90[i].y.toFixed(1)}`;
+    for (let i = n - 1; i >= 0; i--) bandD += ` L ${pts10[i].x.toFixed(1)},${pts10[i].y.toFixed(1)}`;
     bandD += ' Z';
 
-    const selIdx = allPoints.findIndex(p => p.period === selectedPt.period);
-    const selX = getX(selIdx !== -1 ? selIdx : allPoints.length - 1);
-    const selY = getY(selectedPt.sales);
+    // Y axis ticks (3 levels)
+    const yTick = v => padT + (H - padT - padB) * (1 - (v - minVal) / valRange);
+    const tickMid = minVal + valRange / 2;
+
+    // Highlight the peak day
+    const peakIdx = dayPts.reduce((best, d, i) => d.p50 > dayPts[best].p50 ? i : best, 0);
+    const peakX = getX(peakIdx);
+    const peakY = getY(dayPts[peakIdx].p50);
+    const peakVal = dayPts[peakIdx].p50;
+
+    // X axis: show day 1, mid, last
+    const midIdx = Math.floor(n / 2);
 
     container.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" style="overflow: visible;">
+      <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" style="overflow:visible;">
         <defs>
           <linearGradient id="modalBandGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.06"/>
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.05"/>
           </linearGradient>
         </defs>
 
-        <!-- Shaded Confidence Band (UB to LB channel) -->
-        <path d="${bandD}" fill="url(#modalBandGrad)" />
+        <!-- Y grid lines -->
+        <line x1="${padL}" x2="${W - padR}" y1="${yTick(maxVal / 1.12).toFixed(1)}" y2="${yTick(maxVal / 1.12).toFixed(1)}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="${padL}" x2="${W - padR}" y1="${yTick(tickMid).toFixed(1)}" y2="${yTick(tickMid).toFixed(1)}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="${padL - 4}" y="${(yTick(maxVal / 1.12) + 3.5).toFixed(1)}" fill="#9ca3af" font-size="8.5" text-anchor="end">${money(maxVal / 1.12)}</text>
+        <text x="${padL - 4}" y="${(yTick(tickMid) + 3.5).toFixed(1)}" fill="#9ca3af" font-size="8.5" text-anchor="end">${money(tickMid)}</text>
 
-        <!-- Upper Bound Line (P90) -->
-        <path d="${pathP90}" fill="none" stroke="#8b5cf6" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.85"/>
+        <!-- Confidence band -->
+        <path d="${bandD}" fill="url(#modalBandGrad)"/>
+        <!-- UB dashed line -->
+        <path d="${pathP90}" fill="none" stroke="#8b5cf6" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.7"/>
+        <!-- LB dashed line -->
+        <path d="${pathP10}" fill="none" stroke="#3b82f6" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.7"/>
+        <!-- P50 projection -->
+        <path d="${pathP50}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round"/>
 
-        <!-- Lower Bound Line (P10) -->
-        <path d="${pathP10}" fill="none" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.85"/>
-
-        <!-- Projected / Baseline Line (P50) -->
-        <path d="${pathP50}" fill="none" stroke="#7c3aed" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
-
-        <!-- Vertical Crosshair to Selected Month -->
-        <line x1="${selX.toFixed(1)}" x2="${selX.toFixed(1)}" y1="${padT - 8}" y2="${H - padB + 6}" stroke="var(--ink2)" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.4"/>
-
-        <!-- Selected Month Dot -->
-        <circle cx="${selX.toFixed(1)}" cy="${selY.toFixed(1)}" r="5.5" fill="#7c3aed" stroke="#ffffff" stroke-width="2.5" />
-
-        <!-- Floating Badge for Selected Month -->
-        <g transform="translate(${Math.min(Math.max(selX - 45, 8), W - 98)}, ${Math.max(selY - 38, 2)})">
-          <rect width="90" height="28" rx="7" fill="#ffffff" stroke="#7c3aed" stroke-width="1.2" filter="drop-shadow(0 2px 5px rgba(124,58,237,0.2))"/>
-          <text x="45" y="12" fill="var(--ink2)" font-size="9" font-weight="700" text-anchor="middle">${escapeHtml(selectedPt.period)}</text>
-          <text x="45" y="23" fill="#7c3aed" font-size="11" font-weight="800" text-anchor="middle">${money(selectedPt.sales)}</text>
+        <!-- Peak day highlight -->
+        <line x1="${peakX.toFixed(1)}" x2="${peakX.toFixed(1)}" y1="${padT}" y2="${H - padB}" stroke="#7c3aed" stroke-width="1" stroke-dasharray="2 2" opacity="0.35"/>
+        <circle cx="${peakX.toFixed(1)}" cy="${peakY.toFixed(1)}" r="4.5" fill="#7c3aed" stroke="#fff" stroke-width="2"/>
+        <g transform="translate(${Math.min(Math.max(peakX - 38, 4), W - 82)}, ${Math.max(peakY - 30, 2)})">
+          <rect width="76" height="24" rx="6" fill="#fff" stroke="#7c3aed" stroke-width="1" filter="drop-shadow(0 2px 5px rgba(124,58,237,0.18))"/>
+          <text x="38" y="10" fill="#6b7280" font-size="8" font-weight="600" text-anchor="middle">Day ${peakIdx + 1} · Peak</text>
+          <text x="38" y="20" fill="#7c3aed" font-size="9.5" font-weight="800" text-anchor="middle">${money(peakVal)}</text>
         </g>
 
-        <!-- X Axis Labels -->
-        <text x="${padL}" y="${H - 4}" fill="var(--muted)" font-size="10">${escapeHtml(allPoints[0]?.period || '')}</text>
-        <text x="${W / 2}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="middle">${escapeHtml(allPoints[Math.floor(allPoints.length / 2)]?.period || '')}</text>
-        <text x="${W - padR}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="end">${escapeHtml(allPoints[allPoints.length - 1]?.period || '')}</text>
+        <!-- X axis day labels -->
+        <text x="${getX(0).toFixed(1)}" y="${H - 8}" fill="#9ca3af" font-size="9" text-anchor="middle">Day 1</text>
+        <text x="${getX(midIdx).toFixed(1)}" y="${H - 8}" fill="#9ca3af" font-size="9" text-anchor="middle">Day ${midIdx + 1}</text>
+        <text x="${getX(n - 1).toFixed(1)}" y="${H - 8}" fill="#9ca3af" font-size="9" text-anchor="end">Day ${n}</text>
       </svg>
     `;
   }
@@ -830,10 +872,58 @@
         <div class="channelContribRow">
           <div class="contribInfo">
             <span class="contribName">${escapeHtml(name)}</span>
-            <span class="contribShare">${sharePct.toFixed(1)}% share · ${timeframeLabel}</span>
+            <span class="contribShare">${sharePct.toFixed(1)}% share</span>
+            <span class="contribPeriod">${timeframeLabel}</span>
           </div>
           <div class="contribBarTrack">
             <div class="contribBarFill" style="width: ${Math.min(100, Math.max(5, sharePct))}%;"></div>
+          </div>
+          <div class="contribVal">
+            <strong>${money(periodSales)}</strong>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Render top counters pane
+    renderCounterContributions(data, totalPeriodSales, timeframeLabel);
+
+    // Re-init the carousel for this panel (in case panes changed)
+    const track = $('#channelContribTrack');
+    const dots = $('#channelContribDots');
+    if (track && dots && !track._carouselInit) {
+      track._carouselInit = true;
+      // Use the global makeCarousel from extras.js
+      if (typeof makeCarousel === 'function') makeCarousel(track, dots);
+    }
+  }
+
+  // Render top counters into the second carousel pane
+  function renderCounterContributions(data, totalPeriodSales, timeframeLabel) {
+    const list = $('#channelCounterList');
+    if (!list) return;
+
+    const counters = data.top_counters || [];
+    if (!counters.length) {
+      list.innerHTML = '<p class="hint">No counter data available for this filter.</p>';
+      return;
+    }
+
+    list.innerHTML = counters.map((c, idx) => {
+      const name = c.name || `Counter #${idx + 1}`;
+      const retailer = c.retailer || '';
+      const sharePct = Number(c.share_pct) || 0;
+      const periodSales = (totalPeriodSales * sharePct) / 100;
+
+      return `
+        <div class="channelContribRow">
+          <div class="contribInfo">
+            <span class="contribName">${escapeHtml(name)}</span>
+            <span class="contribShare">${sharePct.toFixed(1)}% share${retailer ? ` · ${escapeHtml(retailer)}` : ''}</span>
+            <span class="contribPeriod">${timeframeLabel}</span>
+          </div>
+          <div class="contribBarTrack">
+            <div class="contribBarFill" style="width: ${Math.min(100, Math.max(3, sharePct))}%;"></div>
           </div>
           <div class="contribVal">
             <strong>${money(periodSales)}</strong>

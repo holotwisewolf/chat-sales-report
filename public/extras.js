@@ -54,6 +54,8 @@ function makeCarousel(track, dots) {
   render();
 }
 
+window.makeCarousel = makeCarousel;
+
 document.querySelectorAll('.carouselTrack').forEach(track => {
   const wrapper = track.closest('.carousel');
   const dots = wrapper && wrapper.nextElementSibling?.classList.contains('carouselDots') ? wrapper.nextElementSibling : null;
