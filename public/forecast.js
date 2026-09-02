@@ -584,7 +584,7 @@
       const tipWidth = 150;
       const leftPos = Math.min(Math.max(trackX - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
-      tip.style.top = '-8px';
+      tip.style.top = '-26px';
       tip.style.cursor = pt.isForecast ? 'pointer' : 'default';
       svg.style.cursor = pt.isForecast ? 'pointer' : 'default';
       tip.dataset.currentIdx = String(closestIdx);
@@ -861,10 +861,10 @@
       dotP10.setAttribute('cx', x); dotP10.setAttribute('cy', getY(d.p10).toFixed(1));
       hg.setAttribute('opacity', '1');
 
-      // Position tooltip with bounds protection and higher floating offset
+      // Position tooltip with bounds protection and higher floating offset above the chart
       const cRect = container.getBoundingClientRect();
       const tipLeft = Math.min(Math.max(e.clientX - cRect.left - 48, 8), container.offsetWidth - 110);
-      const tipTop = Math.max(e.clientY - cRect.top - 86, -4);
+      const tipTop = -36;
       tip.innerHTML = `<div class="modalDayTipHead">Day ${d.day} Projected</div>
         <div class="modalDayTipRow" style="color:#7c3aed"><span>P50</span><span>${money(d.p50)}</span></div>
         <div class="modalDayTipRow" style="color:#8b5cf6"><span>UB</span><span>${money(d.p90)}</span></div>

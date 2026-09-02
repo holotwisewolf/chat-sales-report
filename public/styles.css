@@ -1688,6 +1688,7 @@ main{padding-bottom:110px}
   position: relative;
   width: 100%;
   height: 350px;
+  margin-top: 24px;
 }
 
 .forecastSvgContainer {
@@ -1824,23 +1825,23 @@ main{padding-bottom:110px}
 .forecastModalBackdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   animation: fModalFadeIn 0.2s ease forwards;
 }
 
 .forecastModalDialog {
   position: relative;
-  z-index: 10;
-  width: 100%;
-  max-width: 660px;
+  z-index: 1;
   background: #ffffff;
   color: var(--ink);
   border: 1px solid var(--hair2);
-  border-radius: 20px;
+  border-radius: 18px;
   padding: 24px 28px;
-  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 680px;
+  box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.04);
   animation: fModalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -1857,7 +1858,7 @@ main{padding-bottom:110px}
 .fModalHeader {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .fModalTopRow {
@@ -1898,7 +1899,7 @@ main{padding-bottom:110px}
   justify-content: center;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
   flex: none;
 }
 
@@ -1990,8 +1991,8 @@ main{padding-bottom:110px}
 /* Modal Mini Wave Trajectory Chart */
 .fModalChartWrap {
   width: 100%;
-  height: 175px;
-  margin: 14px 0 16px;
+  height: 180px;
+  margin: 28px 0 16px;
   position: relative;
 }
 
@@ -1999,7 +2000,7 @@ main{padding-bottom:110px}
   font-size: 11px;
   font-weight: 700;
   color: var(--ink2);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
