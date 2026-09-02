@@ -728,6 +728,11 @@
         <!-- P50 projection -->
         <path d="${pathP50}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round"/>
 
+        <!-- Day data dots along P50 curve with smooth hover magnification -->
+        ${dayPts.map((d, i) => `
+          <circle cx="${getX(i).toFixed(1)}" cy="${getY(d.p50).toFixed(1)}" r="3" fill="#ffffff" stroke="#7c3aed" stroke-width="1.8" class="fModalDayDot" data-idx="${i}"/>
+        `).join('')}
+
         <!-- Peak day highlight -->
         <line x1="${peakX.toFixed(1)}" x2="${peakX.toFixed(1)}" y1="${padT}" y2="${H - padB}" stroke="#7c3aed" stroke-width="1" stroke-dasharray="2 2" opacity="0.35"/>
         <circle cx="${peakX.toFixed(1)}" cy="${peakY.toFixed(1)}" r="4.5" fill="#7c3aed" stroke="#fff" stroke-width="2"/>
@@ -748,32 +753,35 @@
     setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n);
   }
 
-  // Interactive daily hover: crosshair + floating tooltip on the modal sparkline
+  // Interactive daily hover: crosshair + smooth day dot magnification + floating tooltip
   function setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n) {
     const svg = container.querySelector('svg');
     if (!svg) return;
     const ns = 'http://www.w3.org/2000/svg';
 
+    const dayDotEls = svg.querySelectorAll('.fModalDayDot');
+
     // Hover group (hidden by default)
     const hg = document.createElementNS(ns, 'g');
     hg.setAttribute('opacity', '0');
     hg.setAttribute('pointer-events', 'none');
-    hg.style.transition = 'opacity 0.1s';
+    hg.style.transition = 'opacity 0.12s ease';
 
     const vline = document.createElementNS(ns, 'line');
     vline.setAttribute('y1', padT); vline.setAttribute('y2', H - padB);
     vline.setAttribute('stroke', '#7c3aed'); vline.setAttribute('stroke-width', '1.2');
-    vline.setAttribute('stroke-dasharray', '3 3'); vline.setAttribute('opacity', '0.55');
+    vline.setAttribute('stroke-dasharray', '3 3'); vline.setAttribute('opacity', '0.6');
 
-    const mkDot = (fill, r) => {
+    const mkDot = (fill, r, sw = '2') => {
       const c = document.createElementNS(ns, 'circle');
       c.setAttribute('r', r); c.setAttribute('fill', fill);
-      c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2');
+      c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', sw);
+      c.style.transition = 'cx 0.08s ease, cy 0.08s ease, r 0.15s ease';
       return c;
     };
-    const dotP50 = mkDot('#7c3aed', 4.5);
-    const dotP90 = mkDot('#8b5cf6', 3.5);
-    const dotP10 = mkDot('#3b82f6', 3.5);
+    const dotP50 = mkDot('#7c3aed', 6, '2.5');
+    const dotP90 = mkDot('#8b5cf6', 4);
+    const dotP10 = mkDot('#3b82f6', 4);
 
     hg.appendChild(vline); hg.appendChild(dotP90); hg.appendChild(dotP50); hg.appendChild(dotP10);
     svg.appendChild(hg);
@@ -782,7 +790,7 @@
     const overlay = document.createElementNS(ns, 'rect');
     overlay.setAttribute('x', padL); overlay.setAttribute('y', padT);
     overlay.setAttribute('width', W - padL - padR); overlay.setAttribute('height', H - padT - padB);
-    overlay.setAttribute('fill', 'transparent'); overlay.style.cursor = 'crosshair';
+    overlay.setAttribute('fill', 'transparent'); overlay.style.cursor = 'pointer';
     svg.appendChild(overlay);
 
     // Floating HTML tooltip
@@ -804,17 +812,20 @@
       const d = dayPts[idx];
       const x = getX(idx).toFixed(1);
 
+      // Magnify active day dot and normalize others
+      dayDotEls.forEach((dot, i) => dot.classList.toggle('active', i === idx));
+
       vline.setAttribute('x1', x); vline.setAttribute('x2', x);
       dotP50.setAttribute('cx', x); dotP50.setAttribute('cy', getY(d.p50).toFixed(1));
       dotP90.setAttribute('cx', x); dotP90.setAttribute('cy', getY(d.p90).toFixed(1));
       dotP10.setAttribute('cx', x); dotP10.setAttribute('cy', getY(d.p10).toFixed(1));
       hg.setAttribute('opacity', '1');
 
-      // Position tooltip
+      // Position tooltip with bounds protection
       const cRect = container.getBoundingClientRect();
-      const tipLeft = Math.min(e.clientX - cRect.left + 12, container.offsetWidth - 105);
-      const tipTop = Math.max(e.clientY - cRect.top - 72, 2);
-      tip.innerHTML = `<div class="modalDayTipHead">Day ${d.day}</div>
+      const tipLeft = Math.min(Math.max(e.clientX - cRect.left - 48, 8), container.offsetWidth - 110);
+      const tipTop = Math.max(e.clientY - cRect.top - 78, 2);
+      tip.innerHTML = `<div class="modalDayTipHead">Day ${d.day} Projected</div>
         <div class="modalDayTipRow" style="color:#7c3aed"><span>P50</span><span>${money(d.p50)}</span></div>
         <div class="modalDayTipRow" style="color:#8b5cf6"><span>UB</span><span>${money(d.p90)}</span></div>
         <div class="modalDayTipRow" style="color:#3b82f6"><span>LB</span><span>${money(d.p10)}</span></div>`;
@@ -824,6 +835,7 @@
     });
 
     overlay.addEventListener('pointerleave', () => {
+      dayDotEls.forEach(dot => dot.classList.remove('active'));
       hg.setAttribute('opacity', '0');
       tip.style.display = 'none';
     });
