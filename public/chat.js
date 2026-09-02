@@ -4,10 +4,8 @@ const chatDialog = $chat('#chatDialog');
 const chatLog = $chat('#chatLog');
 const chatInput = $chat('#chatInput');
 const clearChatPrompt = $chat('#clearChatPrompt');
-const chatSettingsBtn = $chat('#chatSettingsBtn');
-const chatGooeyOverlay = $chat('#chatGooeyOverlay');
 const recentChatsList = $chat('#recentChatsList');
-const SUGGESTIONS = ['Top counters by sales', 'School shoes vs other shoes', 'Sales by retailer this month', 'Units sold each month'];
+const SUGGESTIONS = ['🔮 Forecast next 3 months sales', 'Top counters by sales', 'School shoes vs other shoes', 'Sales by retailer this month', 'Units sold each month'];
 
 // Window helper
 window.openChat = () => chatDialog.showModal();

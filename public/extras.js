@@ -77,7 +77,9 @@ document.querySelectorAll('.carouselTrack').forEach(track => {
   const actions = {
     upload: () => window.openUpload?.(),
     ask: () => window.openChat?.(),
+    forecast: () => window.switchView?.('forecast'),
     charts: () => {
+      window.switchView?.('dashboard');
       const section = $extra('#collOverview');
       if (!section) return;
       section.classList.remove('closed');

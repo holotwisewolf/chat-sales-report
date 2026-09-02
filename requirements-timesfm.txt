@@ -1,0 +1,6 @@
+# TimesFM dependencies for Google Research Foundation Model
+torch>=2.0.0
+timesfm>=1.0.0
+huggingface_hub
+numpy>=1.24.0
+scipy>=1.10.0

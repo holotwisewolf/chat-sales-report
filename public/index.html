@@ -7,225 +7,448 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=73">
+  <link rel="stylesheet" href="/styles.css?v=84">
 </head>
 
 <body>
   <header>
     <div>
       <p class="eyebrow" id="brandEyebrow">SALES REPORTS</p>
-      <h1>Sales dashboard</h1>
+      <h1 id="pageTitle">Sales dashboard</h1>
     </div>
-    <div class="headerActions"><button id="printBtn">Print report</button></div>
+    <div class="headerActions">
+      <button id="navForecastBtn" class="navViewBtn secondary" type="button" aria-label="Switch between Dashboard and AI Forecast">
+        <span class="sparkleIcon">🔮</span> <span id="navForecastLabel">AI Sales Forecast</span>
+      </button>
+      <button id="printBtn">Print report</button>
+    </div>
   </header>
   <main>
-    <section class="toolbar">
-      <div class="searchWrap"><input id="dSearch" placeholder="Search counter, retailer, SKU, product&hellip;"
-          autocomplete="off">
-        <div id="searchMenu" class="searchMenu" hidden></div>
-      </div>
-      <div class="customSelectWrap" id="wrapRetailer"><button type="button" class="customSelectBtn" id="btnRetailer"
-          aria-haspopup="listbox" aria-expanded="false"><span class="customSelectLabel">All retailers</span><span
-            class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="4" x2="12" y2="16"></line>
-              <polyline points="7 11 12 16 17 11"></polyline>
-              <line x1="4" y1="20" x2="20" y2="20"></line>
-            </svg></span></button>
-        <div class="customSelectMenu" id="menuRetailer" hidden></div><select id="dRetailer" hidden>
-          <option value="">All retailers</option>
-        </select>
-      </div>
-      <div class="customSelectWrap" id="wrapCategory"><button type="button" class="customSelectBtn" id="btnCategory"
-          aria-haspopup="listbox" aria-expanded="false"><span class="customSelectLabel">All categories</span><span
-            class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="4" x2="12" y2="16"></line>
-              <polyline points="7 11 12 16 17 11"></polyline>
-              <line x1="4" y1="20" x2="20" y2="20"></line>
-            </svg></span></button>
-        <div class="customSelectMenu" id="menuCategory" hidden></div><select id="dCategory" hidden>
-          <option value="">All categories</option>
-        </select>
-      </div>
-      <div class="periodPicker"><button type="button" class="customSelectBtn" id="periodBtn" aria-haspopup="true" aria-expanded="false"><span class="customSelectLabel" id="periodBtnLabel">All time</span><span class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="16"></line><polyline points="7 11 12 16 17 11"></polyline><line x1="4" y1="20" x2="20" y2="20"></line></svg></span></button>
-        <div id="periodPop" class="periodPop" hidden>
-          <p class="ppLabel">Year</p>
-          <div class="ppRow" id="ppYears"></div>
-          <p class="ppLabel">Month &mdash; left-click to pick months, right-click to exclude one</p>
-          <div class="ppRow" id="ppMonths"></div>
-          <p class="ppLabel">Custom range</p>
-          <div class="ppCustom"><input type="date" id="ppFrom" aria-label="From date"><span>to</span><input type="date"
-              id="ppTo" aria-label="To date"></div>
-          <div class="ppFoot"><button type="button" class="linkish" id="ppReset">Reset</button></div>
+    <!-- Main Historical Dashboard View -->
+    <div id="dashboardView" class="viewSection">
+      <section class="toolbar">
+        <div class="searchWrap"><input id="dSearch" placeholder="Search counter, retailer, SKU, product&hellip;"
+            autocomplete="off">
+          <div id="searchMenu" class="searchMenu" hidden></div>
         </div>
-      </div><label class="modeToggle"><div class="checkbox-comp"><input type="checkbox" id="editMode"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Edit mode</label>
-      <div class="exportDropdown"><button type="button" class="customSelectBtn" id="exportMenuBtn" aria-haspopup="menu" aria-expanded="false"><span class="customSelectLabel">Export</span><span class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="16"></line><polyline points="7 11 12 16 17 11"></polyline><line x1="4" y1="20" x2="20" y2="20"></line></svg></span></button>
-        <div id="exportMenu" class="exportMenu" hidden><button type="button" id="exportCsv">Export CSV
-            (.csv)</button><button type="button" id="exportXls">Export Excel (.xls)</button><button type="button"
-            id="exportPrintBtn">Print Report / PDF</button></div>
-      </div>
-    </section>
-    <p class="tableHint hint">Right-click a row to delete it &middot; Drag the bar below the table to resize</p>
-    <section class="tableSection">
-      <div id="dataTable"></div>
-    </section>
-    <div id="activeFilters" class="activeFilters statusBar"></div>
-    <section class="collapsible" id="collOverview">
-      <div class="collHead">
-        <h2>Performance Overview 
-          <div class="filterToggleFlyoutWrap" onclick="event.stopPropagation()">
-            <button type="button" class="filterToggleBtn" id="applyFilterToggleBtn">
-              <span class="toggleIndicator"></span>
-              <span class="toggleLabel">Apply current filter</span>
-              <svg class="flyoutChevron" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-            <div class="flyoutSubmenu" id="filterFlyoutSubmenu">
-              <div class="flyoutHeader">Active Filter Parameters &rsaquo;</div>
-              <div id="flyoutFilterList" class="flyoutFilterList"></div>
+        <div class="customSelectWrap" id="wrapRetailer"><button type="button" class="customSelectBtn" id="btnRetailer"
+            aria-haspopup="listbox" aria-expanded="false"><span class="customSelectLabel">All retailers</span><span
+              class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="4" x2="12" y2="16"></line>
+                <polyline points="7 11 12 16 17 11"></polyline>
+                <line x1="4" y1="20" x2="20" y2="20"></line>
+              </svg></span></button>
+          <div class="customSelectMenu" id="menuRetailer" hidden></div><select id="dRetailer" hidden>
+            <option value="">All retailers</option>
+          </select>
+        </div>
+        <div class="customSelectWrap" id="wrapCategory"><button type="button" class="customSelectBtn" id="btnCategory"
+            aria-haspopup="listbox" aria-expanded="false"><span class="customSelectLabel">All categories</span><span
+              class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="4" x2="12" y2="16"></line>
+                <polyline points="7 11 12 16 17 11"></polyline>
+                <line x1="4" y1="20" x2="20" y2="20"></line>
+              </svg></span></button>
+          <div class="customSelectMenu" id="menuCategory" hidden></div><select id="dCategory" hidden>
+            <option value="">All categories</option>
+          </select>
+        </div>
+        <div class="periodPicker"><button type="button" class="customSelectBtn" id="periodBtn" aria-haspopup="true" aria-expanded="false"><span class="customSelectLabel" id="periodBtnLabel">All time</span><span class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="16"></line><polyline points="7 11 12 16 17 11"></polyline><line x1="4" y1="20" x2="20" y2="20"></line></svg></span></button>
+          <div id="periodPop" class="periodPop" hidden>
+            <p class="ppLabel">Year</p>
+            <div class="ppRow" id="ppYears"></div>
+            <p class="ppLabel">Month &mdash; left-click to pick months, right-click to exclude one</p>
+            <div class="ppRow" id="ppMonths"></div>
+            <p class="ppLabel">Custom range</p>
+            <div class="ppCustom"><input type="date" id="ppFrom" aria-label="From date"><span>to</span><input type="date"
+                id="ppTo" aria-label="To date"></div>
+            <div class="ppFoot"><button type="button" class="linkish" id="ppReset">Reset</button></div>
+          </div>
+        </div><label class="modeToggle"><div class="checkbox-comp"><input type="checkbox" id="editMode"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12.5L9.5 16.5L18.5 7.5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div> Edit mode</label>
+        <div class="exportDropdown"><button type="button" class="customSelectBtn" id="exportMenuBtn" aria-haspopup="menu" aria-expanded="false"><span class="customSelectLabel">Export</span><span class="customSelectChev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="16"></line><polyline points="7 11 12 16 17 11"></polyline><line x1="4" y1="20" x2="20" y2="20"></line></svg></span></button>
+          <div id="exportMenu" class="exportMenu" hidden><button type="button" id="exportCsv">Export CSV
+              (.csv)</button><button type="button" id="exportXls">Export Excel (.xls)</button><button type="button"
+              id="exportPrintBtn">Print Report / PDF</button></div>
+        </div>
+      </section>
+      <p class="tableHint hint">Right-click a row to delete it &middot; Drag the bar below the table to resize</p>
+      <section class="tableSection">
+        <div id="dataTable"></div>
+      </section>
+      <div id="activeFilters" class="activeFilters statusBar"></div>
+      <section class="collapsible" id="collOverview">
+        <div class="collHead">
+          <h2>Performance Overview 
+            <div class="filterToggleFlyoutWrap" onclick="event.stopPropagation()">
+              <button type="button" class="filterToggleBtn" id="applyFilterToggleBtn">
+                <span class="toggleIndicator"></span>
+                <span class="toggleLabel">Apply current filter</span>
+                <svg class="flyoutChevron" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+              <div class="flyoutSubmenu" id="filterFlyoutSubmenu">
+                <div class="flyoutHeader">Active Filter Parameters &rsaquo;</div>
+                <div id="flyoutFilterList" class="flyoutFilterList"></div>
+              </div>
+            </div>
+          </h2>
+          <button type="button" class="chev" aria-label="Show or hide">
+            <svg class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+              stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="4" x2="12" y2="15"></line>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="3.5" y1="19.5" x2="20.5" y2="19.5"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="collBody">
+          <div class="collInner">
+            <div class="card-grid bento-section bentoGrid" id="dashboardBento">
+              <!-- Bento Card 1: Total Sales -->
+              <article class="magic-bento-card bentoCard bentoSales">
+                <div class="magic-bento-card__content">
+                  <h2 class="magic-bento-card__title">Total sales</h2>
+                  <strong class="bentoStatVal" id="sales">&mdash;</strong>
+                </div>
+              </article>
+
+              <!-- Bento Card 2: Units Sold -->
+              <article class="magic-bento-card bentoCard bentoUnits">
+                <div class="magic-bento-card__content">
+                  <h2 class="magic-bento-card__title">Units sold</h2>
+                  <strong class="bentoStatVal" id="units">&mdash;</strong>
+                </div>
+              </article>
+
+              <!-- Bento Card 3: Graphs (Simple Graph & Categories) - Spans 2x2 on Desktop -->
+              <article class="magic-bento-card bentoCard bentoGraphs">
+                <div class="bentoGraphInner">
+                  <div class="carousel" id="chartCarousel">
+                    <div class="carouselTrack" id="carouselTrack">
+                      <div class="carouselPane">
+                        <div class="chartTitleWrap">
+                          <h2 class="bentoMainTitle">Monthly sales in <span class="inlineYearText" id="chartYearVal" tabindex="0" role="button" aria-label="Select year" onclick="window.openYearWheel && window.openYearWheel(event)" onpointerdown="event.stopPropagation()">2026</span></h2>
+                        </div>
+                        <p class="hint bentoGraphHint">12-month sales trend with peer comparison.</p>
+                        <div class="trend" id="trend"></div>
+                      </div>
+                      <div class="carouselPane">
+                        <h2 class="bentoMainTitle">Yearly sales (all-time)</h2>
+                        <p class="hint bentoGraphHint">Total annual sales from oldest to newest report.</p>
+                        <div class="trend" id="yearlyTrend"></div>
+                      </div>
+                      <div class="carouselPane">
+                        <h2 class="bentoMainTitle">Sales by category</h2>
+                        <p class="hint bentoGraphHint">Revenue breakdown across product categories.</p>
+                        <div id="catPane"></div>
+                      </div>
+                      <div class="carouselPane" id="filteredPane">
+                        <h2 class="bentoMainTitle">Filtered sales</h2>
+                        <p class="hint bentoGraphHint" id="filteredHint">Dedicated trend for active filters.</p>
+                        <div class="trend" id="filteredTrend"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="carouselDots" id="carouselDots"></div>
+                </div>
+              </article>
+
+              <!-- Bento Card 4: Channels - slide between By retailer and By counters; spans 2x2 on desktop -->
+              <article class="magic-bento-card bentoCard bentoRetailers">
+                <div class="bentoRetailersInner">
+                  <div class="carousel" id="channelCarousel">
+                    <div class="carouselTrack" id="channelTrack">
+                      <div class="carouselPane">
+                        <h3 class="bentoSubhead">By retailer</h3>
+                        <div id="retailers"></div>
+                      </div>
+                      <div class="carouselPane">
+                        <h3 class="bentoSubhead">By counters</h3>
+                        <div id="channelCounters"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="carouselDots" id="channelDots"></div>
+                </div>
+              </article>
+
+              <!-- Bento Card 5: Active Counters -->
+              <article class="magic-bento-card bentoCard bentoCounters">
+                <div class="magic-bento-card__content">
+                  <h2 class="magic-bento-card__title">Active counters</h2>
+                  <strong class="bentoStatVal" id="counters">&mdash;</strong>
+                </div>
+              </article>
+
+              <!-- Bento Card 6: Top Counter -->
+              <article class="magic-bento-card bentoCard bentoTop">
+                <div class="magic-bento-card__content">
+                  <h2 class="magic-bento-card__title">Top counter</h2>
+                  <strong class="bentoStatVal bentoStatTop" id="top">&mdash;</strong>
+                </div>
+              </article>
             </div>
           </div>
-        </h2>
-        <button type="button" class="chev" aria-label="Show or hide">
-          <svg class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-            stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="4" x2="12" y2="15"></line>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="3.5" y1="19.5" x2="20.5" y2="19.5"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="collBody">
-        <div class="collInner">
-          <div class="card-grid bento-section bentoGrid" id="dashboardBento">
-            <!-- Bento Card 1: Total Sales -->
-            <article class="magic-bento-card bentoCard bentoSales">
-              <div class="magic-bento-card__content">
-                <h2 class="magic-bento-card__title">Total sales</h2>
-                <strong class="bentoStatVal" id="sales">&mdash;</strong>
-              </div>
-            </article>
-
-            <!-- Bento Card 2: Units Sold -->
-            <article class="magic-bento-card bentoCard bentoUnits">
-              <div class="magic-bento-card__content">
-                <h2 class="magic-bento-card__title">Units sold</h2>
-                <strong class="bentoStatVal" id="units">&mdash;</strong>
-              </div>
-            </article>
-
-            <!-- Bento Card 3: Graphs (Simple Graph & Categories) - Spans 2x2 on Desktop -->
-            <article class="magic-bento-card bentoCard bentoGraphs">
-              <div class="bentoGraphInner">
-                <div class="carousel" id="chartCarousel">
-                  <div class="carouselTrack" id="carouselTrack">
-                    <div class="carouselPane">
-                      <div class="chartTitleWrap">
-                        <h2 class="bentoMainTitle">Monthly sales in <span class="inlineYearText" id="chartYearVal" tabindex="0" role="button" aria-label="Select year" onclick="window.openYearWheel && window.openYearWheel(event)" onpointerdown="event.stopPropagation()">2026</span></h2>
-                      </div>
-                      <p class="hint bentoGraphHint">12-month sales trend with peer comparison.</p>
-                      <div class="trend" id="trend"></div>
-                    </div>
-                    <div class="carouselPane">
-                      <h2 class="bentoMainTitle">Yearly sales (all-time)</h2>
-                      <p class="hint bentoGraphHint">Total annual sales from oldest to newest report.</p>
-                      <div class="trend" id="yearlyTrend"></div>
-                    </div>
-                    <div class="carouselPane">
-                      <h2 class="bentoMainTitle">Sales by category</h2>
-                      <p class="hint bentoGraphHint">Revenue breakdown across product categories.</p>
-                      <div id="catPane"></div>
-                    </div>
-                    <div class="carouselPane" id="filteredPane">
-                      <h2 class="bentoMainTitle">Filtered sales</h2>
-                      <p class="hint bentoGraphHint" id="filteredHint">Dedicated trend for active filters.</p>
-                      <div class="trend" id="filteredTrend"></div>
-                    </div>
-                  </div>
-                </div>
-                <div class="carouselDots" id="carouselDots"></div>
-              </div>
-            </article>
-
-            <!-- Bento Card 4: Channels - slide between By retailer and By counters; spans 2x2 on desktop -->
-            <article class="magic-bento-card bentoCard bentoRetailers">
-              <div class="bentoRetailersInner">
-                <div class="carousel" id="channelCarousel">
-                  <div class="carouselTrack" id="channelTrack">
-                    <div class="carouselPane">
-                      <h3 class="bentoSubhead">By retailer</h3>
-                      <div id="retailers"></div>
-                    </div>
-                    <div class="carouselPane">
-                      <h3 class="bentoSubhead">By counters</h3>
-                      <div id="channelCounters"></div>
-                    </div>
-                  </div>
-                </div>
-                <div class="carouselDots" id="channelDots"></div>
-              </div>
-            </article>
-
-            <!-- Bento Card 5: Active Counters -->
-            <article class="magic-bento-card bentoCard bentoCounters">
-              <div class="magic-bento-card__content">
-                <h2 class="magic-bento-card__title">Active counters</h2>
-                <strong class="bentoStatVal" id="counters">&mdash;</strong>
-              </div>
-            </article>
-
-            <!-- Bento Card 6: Top Counter -->
-            <article class="magic-bento-card bentoCard bentoTop">
-              <div class="magic-bento-card__content">
-                <h2 class="magic-bento-card__title">Top counter</h2>
-                <strong class="bentoStatVal bentoStatTop" id="top">&mdash;</strong>
-              </div>
-            </article>
+        </div>
+      </section>
+      <section class="collapsible" id="collCounters">
+        <div class="collHead">
+          <h2>Top Counters &amp; Insights</h2><button type="button" class="chev" aria-label="Show or hide"><svg
+              class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+              stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="4" x2="12" y2="15"></line>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="3.5" y1="19.5" x2="20.5" y2="19.5"></line>
+            </svg></button>
+        </div>
+        <div class="collBody">
+          <div class="collInner">
+            <div class="grid">
+              <article class="panel plain">
+                <div id="ranking"></div>
+              </article>
+              <article class="panel plain">
+                <h3>Insights</h3>
+                <p class="hint">Compared only with other stores in the same retailer and period.</p>
+                <div id="alerts"></div>
+              </article>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
-    <section class="collapsible" id="collCounters">
-      <div class="collHead">
-        <h2>Top Counters &amp; Insights</h2><button type="button" class="chev" aria-label="Show or hide"><svg
-            class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-            stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="4" x2="12" y2="15"></line>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="3.5" y1="19.5" x2="20.5" y2="19.5"></line>
-          </svg></button>
-      </div>
-      <div class="collBody">
-        <div class="collInner">
-          <div class="grid">
-            <article class="panel plain">
-              <div id="ranking"></div>
-            </article>
-            <article class="panel plain">
-              <h3>Insights</h3>
-              <p class="hint">Compared only with other stores in the same retailer and period.</p>
-              <div id="alerts"></div>
-            </article>
+      </section>
+      <section class="collapsible" id="collHistory">
+        <div class="collHead">
+          <h2>Imported report history</h2><button type="button" class="chev" aria-label="Show or hide"><svg
+              class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+              stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="4" x2="12" y2="15"></line>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="3.5" y1="19.5" x2="20.5" y2="19.5"></line>
+            </svg></button>
+        </div>
+        <div class="collBody">
+          <div class="collInner">
+            <div id="reports"></div>
           </div>
         </div>
-      </div>
-    </section>
-    <section class="collapsible" id="collHistory">
-      <div class="collHead">
-        <h2>Imported report history</h2><button type="button" class="chev" aria-label="Show or hide"><svg
-            class="chevIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-            stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="4" x2="12" y2="15"></line>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="3.5" y1="19.5" x2="20.5" y2="19.5"></line>
-          </svg></button>
-      </div>
-      <div class="collBody">
-        <div class="collInner">
-          <div id="reports"></div>
+      </section>
+    </div>
+
+    <!-- Dedicated AI Forecast View (Feature 2 & 3) -->
+    <div id="forecastView" class="viewSection forecastView" hidden>
+      <!-- Hero Banner -->
+      <section class="forecastHeroPanel">
+        <div class="forecastHeroContent">
+          <div class="forecastBadgeRow">
+            <span class="forecastModelBadge" id="fModelBadge">🔮 Google TimesFM Foundation Engine</span>
+            <span class="forecastStatusBadge">Zero-Shot Active</span>
+          </div>
+          <h2>Sales Forecasting &amp; Trend Projection</h2>
+          <p class="hint forecastHeroHint">Predict future retail revenue, demand volume, and seasonal inflection points using Google Research's time-series foundation model with probabilistic confidence intervals.</p>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- Forecast Toolbar -->
+      <section class="forecastToolbar">
+        <div class="forecastFilterGroup">
+          <label class="fField">
+            <span class="fLabel">Retailer Chain</span>
+            <select id="fRetailer">
+              <option value="">All retailers</option>
+            </select>
+          </label>
+          <label class="fField">
+            <span class="fLabel">Store / Counter</span>
+            <select id="fCounter">
+              <option value="">All counters</option>
+            </select>
+          </label>
+          <label class="fField">
+            <span class="fLabel">Category</span>
+            <select id="fCategory">
+              <option value="">All categories</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="forecastOptionsGroup">
+          <div class="fControlPillGroup">
+            <span class="fLabel">Forecast Horizon</span>
+            <div class="pillButtons" id="horizonButtons">
+              <button type="button" class="pillBtn" data-horizon="3">3 Months</button>
+              <button type="button" class="pillBtn on" data-horizon="6">6 Months</button>
+              <button type="button" class="pillBtn" data-horizon="12">12 Months</button>
+            </div>
+          </div>
+
+          <div class="fControlPillGroup">
+            <span class="fLabel">Scenario Mode</span>
+            <div class="pillButtons" id="scenarioButtons">
+              <button type="button" class="pillBtn" data-scenario="conservative" title="10th Percentile (Conservative Lower Bound)">Conservative (P10)</button>
+              <button type="button" class="pillBtn on" data-scenario="baseline" title="50th Percentile (Expected Median)">Baseline (P50)</button>
+              <button type="button" class="pillBtn" data-scenario="optimistic" title="90th Percentile (Optimistic Upper Bound)">Optimistic (P90)</button>
+            </div>
+          </div>
+
+          <div class="fControlPillGroup">
+            <span class="fLabel">Confidence Band</span>
+            <select id="fConfidence" class="compactSelect">
+              <option value="0.80">80% Uncertainty</option>
+              <option value="0.90" selected>90% Standard</option>
+              <option value="0.95">95% Wide</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Forecast KPI Bento Cards -->
+      <section class="card-grid bento-section bentoGrid forecastBentoGrid">
+        <article class="magic-bento-card bentoCard fCard">
+          <div class="magic-bento-card__content">
+            <h2 class="magic-bento-card__title">Total Projected Sales</h2>
+            <strong class="bentoStatVal" id="fStatSales">&mdash;</strong>
+            <span class="fSubMetric" id="fStatGrowth">&mdash;</span>
+          </div>
+        </article>
+        <article class="magic-bento-card bentoCard fCard">
+          <div class="magic-bento-card__content">
+            <h2 class="magic-bento-card__title">Forecasted Units</h2>
+            <strong class="bentoStatVal" id="fStatUnits">&mdash;</strong>
+            <span class="fSubMetric" id="fStatAvgMonthly">&mdash;</span>
+          </div>
+        </article>
+        <article class="magic-bento-card bentoCard fCard">
+          <div class="magic-bento-card__content">
+            <h2 class="magic-bento-card__title">Peak Demand Month</h2>
+            <strong class="bentoStatVal fHighlightVal" id="fStatPeak">&mdash;</strong>
+            <span class="fSubMetric" id="fStatPeakSales">&mdash;</span>
+          </div>
+        </article>
+        <article class="magic-bento-card bentoCard fCard">
+          <div class="magic-bento-card__content">
+            <h2 class="magic-bento-card__title">Uncertainty Spread</h2>
+            <strong class="bentoStatVal" id="fStatVolatility">&mdash;</strong>
+            <span class="fSubMetric" id="fStatRange">&mdash;</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Main Forecast Chart Panel -->
+      <section class="panel forecastChartPanel">
+        <div class="forecastChartHeader">
+          <div>
+            <h3>TimesFM Probabilistic Sales Trajectory</h3>
+            <p class="hint">Solid line represents recorded historical sales. Dashed glowing line and shaded envelope show TimesFM future projection with confidence interval bounds.</p>
+          </div>
+          <div class="forecastChartLegend">
+            <span class="legendItem"><i class="legendDot histDot"></i> Recorded Actuals</span>
+            <span class="legendItem"><i class="legendDot predDot"></i> TimesFM Projected</span>
+            <span class="legendItem"><i class="legendBox bandBox"></i> Confidence Interval (P10 - P90)</span>
+          </div>
+        </div>
+        <div class="forecastChartWrap" id="forecastChartWrap">
+          <div id="forecastSvgContainer" class="forecastSvgContainer"></div>
+          <div id="forecastChartTip" class="forecastChartTip" hidden></div>
+        </div>
+      </section>
+
+      <!-- Target Feasibility & Gap Analysis Engine (Feature 3) -->
+      <section class="forecastTargetGrid">
+        <!-- Target Gap Planner -->
+        <article class="panel targetPlannerPanel">
+          <div class="targetPlannerHead">
+            <div>
+              <p class="eyebrow">TARGET FEASIBILITY &amp; GAP PLANNER</p>
+              <h3>Test Your Revenue Goal</h3>
+            </div>
+            <span class="feasibilityBadge" id="targetFeasibilityBadge">Ready</span>
+          </div>
+          <p class="hint">Enter a sales target to evaluate how realistic it is against TimesFM's baseline trajectory and calculate required channel growth rates.</p>
+
+          <form id="targetGapForm" class="targetGapForm" onsubmit="return false;">
+            <div class="targetInputRow">
+              <div class="targetInputWrap">
+                <span class="currencyPrefix">RM</span>
+                <input type="number" id="targetAmountInput" placeholder="e.g. 500000" min="1000" step="500" required>
+              </div>
+              <button type="button" id="calcTargetGapBtn" class="primary">Evaluate Target</button>
+            </div>
+            <div class="targetQuickChips" id="targetQuickChips">
+              <button type="button" class="quickChip" data-mult="1.1">+10% Growth</button>
+              <button type="button" class="quickChip" data-mult="1.2">+20% Growth</button>
+              <button type="button" class="quickChip" data-mult="1.3">+30% Stretch</button>
+            </div>
+          </form>
+
+          <div class="targetGapResults" id="targetGapResults">
+            <div class="gapMetricRow">
+              <div class="gapMetric">
+                <span class="gapMetricLabel">Target Gap vs Baseline</span>
+                <strong class="gapMetricVal" id="targetGapVal">&mdash;</strong>
+              </div>
+              <div class="gapMetric">
+                <span class="gapMetricLabel">Required Growth Rate</span>
+                <strong class="gapMetricVal" id="targetGrowthRateVal">&mdash;</strong>
+              </div>
+            </div>
+            <div class="targetAdviceBox" id="targetAdviceBox">
+              Enter a sales goal above to get an instant AI feasibility breakdown and strategic recommendations.
+            </div>
+          </div>
+        </article>
+
+        <!-- Channel Forecast Contributions -->
+        <article class="panel channelContributionPanel">
+          <div class="panelHeadRow">
+            <div>
+              <p class="eyebrow">CHANNEL CONTRIBUTION</p>
+              <h3>Projected Revenue by Retailer</h3>
+            </div>
+          </div>
+          <p class="hint">Expected revenue distribution across retail partners over the selected horizon.</p>
+          <div id="channelForecastList" class="channelForecastList"></div>
+        </article>
+      </section>
+
+      <!-- Anomaly & Intelligence Alerts -->
+      <section class="panel forecastAnomaliesPanel">
+        <div class="panelHeadRow">
+          <div>
+            <p class="eyebrow">PREDICTIVE SIGNALS &amp; ANOMALIES</p>
+            <h3>Seasonal Peaks &amp; Deviation Alerts</h3>
+          </div>
+        </div>
+        <div id="forecastAnomaliesList" class="forecastAnomaliesList"></div>
+      </section>
+
+      <!-- Month-by-Month Projection Breakdown Table -->
+      <section class="panel forecastTablePanel">
+        <div class="panelHeadRow">
+          <div>
+            <p class="eyebrow">MONTHLY FORECAST BREAKDOWN</p>
+            <h3>Projected Periods (P10, P50, P90)</h3>
+          </div>
+          <button type="button" class="secondary linkishBtn" id="exportForecastCsvBtn">Export Forecast CSV</button>
+        </div>
+        <div class="forecastTableWrap">
+          <table class="forecastTable" id="forecastTable">
+            <thead>
+              <tr>
+                <th>Forecast Month</th>
+                <th class="numCol">Conservative (P10)</th>
+                <th class="numCol highlightCol">Expected Forecast (P50)</th>
+                <th class="numCol">Optimistic (P90)</th>
+                <th class="numCol">Forecasted Pairs</th>
+                <th class="numCol">MoM Growth</th>
+                <th>Demand Level</th>
+              </tr>
+            </thead>
+            <tbody id="forecastTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </main>
   <dialog id="importDialog">
     <form id="importForm">
@@ -667,7 +890,7 @@
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 20h9" />
         <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-      </svg><span class="dockLabel">Manual entry</span></button><button type="button" class="dockItem" data-action="undo" data-disabled="1" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      </svg><span class="dockLabel">Manual entry</span></button><button type="button" class="dockItem" data-action="forecast" aria-label="AI Forecast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span class="dockLabel">Forecast</span></button><button type="button" class="dockItem" data-action="undo" data-disabled="1" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 7v6h6" />
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
@@ -676,12 +899,14 @@
   <!-- Year wheel dim backdrop for focus isolation -->
   <div id="yearWheelBackdrop" class="yearWheelBackdrop" hidden><div id="portalWheel" class="portalWheel"></div></div>
 
-  <script src="/chart.js?v=83"></script>
-  <script src="/app.js?v=83"></script>
-  <script src="/import.js?v=83"></script>
-  <script src="/chat.js?v=83"></script>
-  <script src="/data.js?v=83"></script>
-  <script src="/extras.js?v=83"></script>
+  <script src="/chart.js?v=84"></script>
+  <script src="/app.js?v=84"></script>
+  <script src="/import.js?v=84"></script>
+  <script src="/chat.js?v=84"></script>
+  <script src="/data.js?v=84"></script>
+  <script src="/forecast.js?v=84"></script>
+  <script src="/liquid-glass.js?v=84"></script>
+  <script src="/extras.js?v=84"></script>
 </body>
 
 </html>

@@ -217,6 +217,7 @@ app.post('/api/import/manual', (req, res) => {
 require('./lib/importjobs')(app, db, { counterId, categoryId, pruneOrphans });
 require('./lib/chat')(app, db, { pruneOrphans });
 require('./lib/data')(app, db, { counterId, categoryId, pruneOrphans });
+require('./lib/forecast')(app, db);
 
 // Local-only branding: the published repo ships a generic label; BUSINESS_NAME in .env personalizes it.
 app.get('/api/config', (req, res) => res.json({ businessName: process.env.BUSINESS_NAME || '' }));
