@@ -504,7 +504,7 @@
     setupForecastChartHover(container, allPoints, getX, getY, W, H);
   }
 
-  // Interactive Continuous Hover Handler for Monthly Forecast Chart
+  // Interactive Continuous Hover Handler for Monthly Forecast Chart with Magnetic Dot Snapping
   function setupForecastChartHover(container, points, getX, getY, W, H) {
     const svg = container.querySelector('svg');
     const tip = $('#forecastChartTip');
@@ -522,11 +522,6 @@
       const mouseX = ((e.clientX - rect.left) / rect.width) * W;
       const clampedX = Math.max(padL, Math.min(W - padR, mouseX));
 
-      // Continuous fluid vertical crosshair line tracking
-      crosshair.setAttribute('x1', clampedX.toFixed(1));
-      crosshair.setAttribute('x2', clampedX.toFixed(1));
-      crosshair.setAttribute('opacity', '0.65');
-
       // Find nearest data point
       let closestIdx = 0;
       let minDist = Infinity;
@@ -540,6 +535,12 @@
       });
 
       const pt = points[closestIdx];
+      const nearestDotX = getX(closestIdx);
+      const nearestDotY = getY(pt.sales);
+
+      // Magnetic snap: if cursor is close enough (within 22px), snap cleanly to the dot
+      const isSnapped = minDist <= 22;
+      const trackX = isSnapped ? nearestDotX : clampedX;
 
       // Continuous curve height interpolation
       const fracIdx = (clampedX - padL) / stepX;
@@ -548,10 +549,18 @@
       const t = fracIdx - i0;
       const smoothT = (1 - Math.cos(t * Math.PI)) / 2;
       const interpSales = points[i0].sales + (points[i1].sales - points[i0].sales) * smoothT;
-      const interpY = getY(interpSales);
+      const interpY = isSnapped ? nearestDotY : getY(interpSales);
+
+      // Highlight nearest dot smoothly without layout thrashing
+      const dotEls = svg.querySelectorAll('.fDataDot');
+      dotEls.forEach((dot, idx) => dot.classList.toggle('active', idx === closestIdx));
+
+      crosshair.setAttribute('x1', trackX.toFixed(1));
+      crosshair.setAttribute('x2', trackX.toFixed(1));
+      crosshair.setAttribute('opacity', '0.65');
 
       if (crossTarget) {
-        crossTarget.setAttribute('cx', clampedX.toFixed(1));
+        crossTarget.setAttribute('cx', trackX.toFixed(1));
         crossTarget.setAttribute('cy', interpY.toFixed(1));
         crossTarget.setAttribute('stroke', pt.isForecast ? '#7c3aed' : '#0b57c7');
         crossTarget.setAttribute('opacity', '1');
@@ -573,9 +582,9 @@
       }
 
       const tipWidth = 150;
-      const leftPos = Math.min(Math.max(clampedX - tipWidth / 2, 10), W - tipWidth - 10);
+      const leftPos = Math.min(Math.max(trackX - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
-      tip.style.top = '12px';
+      tip.style.top = '-8px';
       tip.style.cursor = pt.isForecast ? 'pointer' : 'default';
       svg.style.cursor = pt.isForecast ? 'pointer' : 'default';
       tip.dataset.currentIdx = String(closestIdx);
@@ -630,7 +639,10 @@
 
     // Populate Top Header for that specific month
     const eyebrow = $('#fModalEyebrow');
-    if (eyebrow) eyebrow.textContent = `Sales Projection • ${pt.period}`;
+    if (eyebrow) eyebrow.textContent = `Daily Sales Breakdown • ${pt.period}`;
+
+    const modalChartTitle = $('#fModalChartTitle');
+    if (modalChartTitle) modalChartTitle.textContent = `Daily Projected Sales Trajectory (${pt.period})`;
 
     const mSales = $('#fModalSales');
     if (mSales) mSales.textContent = money(pt.sales);
@@ -849,10 +861,10 @@
       dotP10.setAttribute('cx', x); dotP10.setAttribute('cy', getY(d.p10).toFixed(1));
       hg.setAttribute('opacity', '1');
 
-      // Position tooltip with bounds protection
+      // Position tooltip with bounds protection and higher floating offset
       const cRect = container.getBoundingClientRect();
       const tipLeft = Math.min(Math.max(e.clientX - cRect.left - 48, 8), container.offsetWidth - 110);
-      const tipTop = Math.max(e.clientY - cRect.top - 78, 2);
+      const tipTop = Math.max(e.clientY - cRect.top - 86, -4);
       tip.innerHTML = `<div class="modalDayTipHead">Day ${d.day} Projected</div>
         <div class="modalDayTipRow" style="color:#7c3aed"><span>P50</span><span>${money(d.p50)}</span></div>
         <div class="modalDayTipRow" style="color:#8b5cf6"><span>UB</span><span>${money(d.p90)}</span></div>
