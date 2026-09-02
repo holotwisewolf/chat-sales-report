@@ -1025,7 +1025,8 @@
 
   function updateChannelForecastRows(data) {
     const list = $('#channelForecastList');
-    const hint = $('#channelContribHint');
+    const rHint = $('#channelRetailerHint');
+    const cHint = $('#channelCounterHint');
     if (!list) return;
 
     const forecastSeries = data.forecast || [];
@@ -1040,12 +1041,14 @@
       const endPeriod = forecastSeries[forecastSeries.length - 1]?.period || '';
       timeframeLabel = startPeriod && endPeriod ? `${startPeriod} – ${endPeriod}` : `${horizonCount} Months`;
       totalPeriodSales = forecastSeries.reduce((acc, f) => acc + (f.sales || 0), 0);
-      if (hint) hint.textContent = `Expected revenue distribution across retail partners over the entire ${timeframeLabel} horizon.`;
+      if (rHint) rHint.textContent = `Expected revenue distribution across retail partners over the entire ${timeframeLabel} horizon.`;
+      if (cHint) cHint.textContent = `Top retail counters by projected revenue share over the entire ${timeframeLabel} horizon.`;
     } else {
       const matched = forecastSeries.find(f => f.period === selectedChannelPeriod);
       totalPeriodSales = matched ? (matched.sales || matched.p50 || 0) : 0;
       timeframeLabel = selectedChannelPeriod;
-      if (hint) hint.textContent = `Expected revenue distribution across retail partners in ${selectedChannelPeriod}.`;
+      if (rHint) rHint.textContent = `Expected revenue distribution across retail partners in ${selectedChannelPeriod}.`;
+      if (cHint) cHint.textContent = `Top retail counters by projected revenue share in ${selectedChannelPeriod}.`;
     }
 
     list.innerHTML = channels.map((ch, idx) => {
