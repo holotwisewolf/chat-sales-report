@@ -208,7 +208,7 @@ async function loadDrafts() {
       <div class="draftActions" style="margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-shrink:0">
         <span class="chip ${j.status === 'review' ? '' : 'warn'}">${j.status === 'review' ? 'ready to check' : j.status.replace('failed_', '')}</span>
         <button type="button" class="secondary" data-resume="${j.id}">Resume</button>
-        <button type="button" class="draftDel" data-del-draft="${j.id}" title="Delete this draft">&times;</button>
+        <button type="button" class="draftDel" data-del-draft="${j.id}" title="Delete this draft" aria-label="Delete draft"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
     </div>
   `).join('') : '<p class="hint">No saved drafts. Unfinished reviews keep themselves here.</p>';
