@@ -76,13 +76,15 @@
     return clean;
   }
 
-  // Custom Animated Select Helper for Forecast Dropdowns
+  // Custom Animated Select Helper for Forecast Dropdowns with Live Search Typing Input
   function setupForecastSelect(selectId, wrapId, btnId, menuId, defaultLabel, onChangeCallback) {
     const select = document.querySelector(selectId);
     const wrap = document.querySelector(wrapId);
     const btn = document.querySelector(btnId);
     const menu = document.querySelector(menuId);
     if (!select || !wrap || !btn || !menu) return;
+
+    let filterQuery = '';
 
     const updateDisplay = () => {
       const selectedOption = select.options[select.selectedIndex];
@@ -91,22 +93,81 @@
       if (labelSpan) labelSpan.textContent = label;
     };
 
-    const syncMenuOptions = () => {
-      menu.innerHTML = [...select.options].map(opt => `
-        <button type="button" class="customSelectItem ${opt.selected ? 'active' : ''}" data-value="${escapeHtml(opt.value)}" title="${escapeHtml(opt.text)}">
-          <span>${escapeHtml(formatCompactName(opt.text, 30))}</span>
-          ${opt.selected ? '<span class="customSelectCheck">&#10003;</span>' : ''}
-        </button>
-      `).join('');
+    const getFilteredOptions = () => {
+      const query = filterQuery.trim().toLowerCase();
+      const allOptions = [...select.options];
+      if (!query) return allOptions;
+      return allOptions.filter(opt => opt.text.toLowerCase().includes(query) || (opt.value && opt.value.toLowerCase().includes(query)));
+    };
+
+    const renderItemsOnly = () => {
+      const itemsWrap = menu.querySelector('.customSelectItemsWrap');
+      if (!itemsWrap) return;
+      const filtered = getFilteredOptions();
+      itemsWrap.innerHTML = filtered.length
+        ? filtered.map(opt => `
+            <button type="button" class="customSelectItem ${opt.selected ? 'active' : ''}" data-value="${escapeHtml(opt.value)}" title="${escapeHtml(opt.text)}">
+              <span>${escapeHtml(formatCompactName(opt.text, 32))}</span>
+              ${opt.selected ? '<span class="customSelectCheck">&#10003;</span>' : ''}
+            </button>
+          `).join('')
+        : '<div class="customSelectNoMatch">No matches found</div>';
+    };
+
+    const renderMenu = () => {
+      const filtered = getFilteredOptions();
+      const itemsHtml = filtered.length
+        ? filtered.map(opt => `
+            <button type="button" class="customSelectItem ${opt.selected ? 'active' : ''}" data-value="${escapeHtml(opt.value)}" title="${escapeHtml(opt.text)}">
+              <span>${escapeHtml(formatCompactName(opt.text, 32))}</span>
+              ${opt.selected ? '<span class="customSelectCheck">&#10003;</span>' : ''}
+            </button>
+          `).join('')
+        : '<div class="customSelectNoMatch">No matches found</div>';
+
+      menu.innerHTML = `
+        <div class="customSelectSearchWrap">
+          <svg class="searchIcon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="customSelectSearch" placeholder="Type to search..." value="${escapeHtml(filterQuery)}" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="customSelectItemsWrap">
+          ${itemsHtml}
+        </div>
+      `;
+
+      const searchInput = menu.querySelector('.customSelectSearch');
+      if (searchInput) {
+        searchInput.addEventListener('input', e => {
+          filterQuery = e.target.value;
+          renderItemsOnly();
+        });
+        searchInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const firstItem = menu.querySelector('.customSelectItem');
+            if (firstItem) firstItem.click();
+          } else if (e.key === 'Escape') {
+            closeDropdown();
+          }
+        });
+      }
+    };
+
+    const closeDropdown = () => {
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('open');
+      wrap.classList.remove('open');
+      filterQuery = '';
     };
 
     // Close on outside click
     document.addEventListener('pointerdown', e => {
       if (!wrap.contains(e.target) && !menu.hidden) {
-        menu.hidden = true;
-        btn.setAttribute('aria-expanded', 'false');
-        btn.classList.remove('open');
-        wrap.classList.remove('open');
+        closeDropdown();
       }
     });
 
@@ -119,11 +180,16 @@
       document.querySelectorAll('.customSelectWrap').forEach(w => { w.classList.remove('open'); });
 
       if (willOpen) {
-        syncMenuOptions();
+        filterQuery = '';
+        renderMenu();
         menu.hidden = false;
         btn.setAttribute('aria-expanded', 'true');
         btn.classList.add('open');
         wrap.classList.add('open');
+        setTimeout(() => {
+          const input = menu.querySelector('.customSelectSearch');
+          if (input) input.focus();
+        }, 30);
       }
     });
 
@@ -134,10 +200,7 @@
       select.value = val;
       select.dispatchEvent(new Event('change', { bubbles: true }));
       updateDisplay();
-      menu.hidden = true;
-      btn.setAttribute('aria-expanded', 'false');
-      btn.classList.remove('open');
-      wrap.classList.remove('open');
+      closeDropdown();
       if (typeof onChangeCallback === 'function') {
         onChangeCallback(val);
       }
@@ -147,7 +210,7 @@
     select.addEventListener('change', updateDisplay);
     const observer = new MutationObserver(() => {
       updateDisplay();
-      syncMenuOptions();
+      if (!menu.hidden) renderMenu();
     });
     observer.observe(select, { childList: true, subtree: true });
     updateDisplay();
