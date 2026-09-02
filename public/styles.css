@@ -1943,6 +1943,22 @@ main{padding-bottom:110px}
   border: 1px solid var(--hair2);
   border-radius: 14px;
   padding: 14px 16px;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.targetGapResults.targetUpdatedAnim {
+  animation: targetFlash 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes targetFlash {
+  0% {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.45);
+    background: rgba(238, 246, 255, 0.95);
+  }
+  100% {
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.6);
+  }
 }
 
 .gapMetricRow {

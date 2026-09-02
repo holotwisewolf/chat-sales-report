@@ -661,30 +661,22 @@
     }).join('');
   }
 
-  // Target Feasibility & Gap Evaluation
+  // Target Feasibility & Gap Evaluation with Instant Feedback & Input Sanitization
   async function evaluateTargetGap(targetAmount) {
-    if (!targetAmount || targetAmount <= 0) return;
+    // Sanitize input (handles commas, currency symbols, etc.)
+    let target = typeof targetAmount === 'number' ? targetAmount : parseFloat(String(targetAmount || '').replace(/[^0-9.]/g, ''));
+    if (!target || isNaN(target) || target <= 0) return;
 
-    const retailer = $('#fRetailer')?.value || '';
-    const counter = $('#fCounter')?.value || '';
-    const category = $('#fCategory')?.value || '';
+    const calcBtn = $('#calcTargetGapBtn');
+    const resultsBox = $('#targetGapResults');
+    const originalText = calcBtn ? calcBtn.textContent : 'Evaluate Target';
 
-    try {
-      const res = await fetch('/api/forecast/target-gap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetSales: targetAmount,
-          horizon: currentHorizon,
-          retailer,
-          counter,
-          category
-        })
-      });
+    if (calcBtn) {
+      calcBtn.disabled = true;
+      calcBtn.textContent = 'Evaluating...';
+    }
 
-      if (!res.ok) throw new Error('Target gap API error');
-      const resData = await res.json();
-
+    const applyResults = (resData) => {
       const badge = $('#targetFeasibilityBadge');
       if (badge) {
         badge.textContent = resData.feasibility;
@@ -706,8 +698,86 @@
       if (adviceBox) {
         adviceBox.innerHTML = `<strong>Strategic Assessment:</strong> ${escapeHtml(resData.advice)}`;
       }
+
+      if (resultsBox) {
+        resultsBox.classList.remove('targetUpdatedAnim');
+        void resultsBox.offsetWidth; // trigger reflow
+        resultsBox.classList.add('targetUpdatedAnim');
+      }
+    };
+
+    // Fast Path: If we already have forecast data in memory for this filter set, compute instantly (0ms)
+    if (lastData && lastData.forecast && lastData.forecast.length > 0) {
+      const baselineProjected = lastData.summary?.total_projected_sales || 0;
+      const optimisticProjected = lastData.forecast.reduce((acc, f) => acc + (Number(f.p90) || Number(f.sales) || 0), 0);
+      const conservativeProjected = lastData.forecast.reduce((acc, f) => acc + (Number(f.p10) || Number(f.sales) || 0), 0);
+
+      const gap = Math.round((target - baselineProjected) * 100) / 100;
+      const requiredGrowthRate = Math.round(((target - baselineProjected) / Math.max(1, baselineProjected)) * 1000) / 10;
+
+      let feasibility = 'Achievable (On Track)';
+      let feasibilityTier = 'likely';
+      let advice = 'Your target is well aligned with historical momentum and TimesFM seasonality baseline.';
+
+      if (target > optimisticProjected) {
+        feasibility = 'High Stretch Target (Challenging)';
+        feasibilityTier = 'stretch';
+        advice = `Reaching RM ${target.toLocaleString()} exceeds the 90th percentile projection (RM ${Math.round(optimisticProjected).toLocaleString()}). Requires aggressive promotional campaigns or opening new retail counters.`;
+      } else if (target > baselineProjected) {
+        feasibility = 'Growth Target (Attainable)';
+        feasibilityTier = 'moderate';
+        advice = `Target is ${requiredGrowthRate}% above baseline. Focus on top retail chains and high-volume counters to close the RM ${Math.abs(gap).toLocaleString()} gap.`;
+      } else {
+        feasibility = 'Conservative Target (Easily Attainable)';
+        feasibilityTier = 'conservative';
+        advice = `TimesFM forecasts baseline revenue of RM ${Math.round(baselineProjected).toLocaleString()}, which is RM ${Math.abs(gap).toLocaleString()} higher than your target.`;
+      }
+
+      applyResults({
+        target,
+        gap,
+        gapFormatted: `${gap >= 0 ? '+' : '-'}RM ${Math.abs(gap).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        requiredGrowthRate,
+        feasibility,
+        feasibilityTier,
+        advice
+      });
+
+      if (calcBtn) {
+        calcBtn.textContent = originalText;
+        calcBtn.disabled = false;
+      }
+      return;
+    }
+
+    // Network Path (if data not yet loaded)
+    const retailer = $('#fRetailer')?.value || '';
+    const counter = $('#fCounter')?.value || '';
+    const category = $('#fCategory')?.value || '';
+
+    try {
+      const res = await fetch('/api/forecast/target-gap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetSales: target,
+          horizon: currentHorizon,
+          retailer,
+          counter,
+          category
+        })
+      });
+
+      if (!res.ok) throw new Error('Target gap API error');
+      const resData = await res.json();
+      applyResults(resData);
     } catch (e) {
       console.warn('Target gap analysis failed:', e);
+    } finally {
+      if (calcBtn) {
+        calcBtn.textContent = originalText;
+        calcBtn.disabled = false;
+      }
     }
   }
 
@@ -791,9 +861,18 @@
     });
 
     // Target gap form evaluation
-    $('#calcTargetGapBtn')?.addEventListener('click', () => {
-      const target = Number($('#targetAmountInput')?.value);
+    const submitTargetCalc = () => {
+      const rawVal = $('#targetAmountInput')?.value || '';
+      const target = parseFloat(String(rawVal).replace(/[^0-9.]/g, ''));
       if (target > 0) evaluateTargetGap(target);
+    };
+
+    $('#calcTargetGapBtn')?.addEventListener('click', submitTargetCalc);
+    $('#targetAmountInput')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitTargetCalc();
+      }
     });
 
     // Target quick chips
