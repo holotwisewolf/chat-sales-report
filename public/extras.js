@@ -4,8 +4,9 @@ const $extra = selector => document.querySelector(selector);
 // Carousel: horizontal panes you can drag or click through, with dot indicators.
 // Any markup pairing <div class="carousel"><div class="carouselTrack">…</div></div> with a
 // following <div class="carouselDots"> gets the same drag/dot behaviour.
-function makeCarousel(track, dots) {
+function makeCarousel(track, dots, opts) {
   if (!track || !dots) return;
+  const onSlide = opts && opts.onSlide;
   const panes = () => [...track.children];
   let index = 0;
   let dragStart = null;
@@ -14,6 +15,7 @@ function makeCarousel(track, dots) {
   const render = () => {
     track.style.transform = `translateX(${-index * 100}%)`;
     dots.innerHTML = panes().map((_, i) => `<button type="button" class="carouselDot ${i === index ? 'on' : ''}" data-pane="${i}" aria-label="Go to slide ${i + 1}"></button>`).join('');
+    if (onSlide) onSlide(index);
   };
   
   window.slideCarouselTo = targetIndex => {

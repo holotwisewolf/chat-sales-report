@@ -734,6 +734,90 @@
         <text x="${getX(n - 1).toFixed(1)}" y="${H - 8}" fill="#9ca3af" font-size="9" text-anchor="end">Day ${n}</text>
       </svg>
     `;
+
+    // Wire up interactive daily hover
+    setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n);
+  }
+
+  // Interactive daily hover: crosshair + floating tooltip on the modal sparkline
+  function setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n) {
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // Hover group (hidden by default)
+    const hg = document.createElementNS(ns, 'g');
+    hg.setAttribute('opacity', '0');
+    hg.setAttribute('pointer-events', 'none');
+    hg.style.transition = 'opacity 0.1s';
+
+    const vline = document.createElementNS(ns, 'line');
+    vline.setAttribute('y1', padT); vline.setAttribute('y2', H - padB);
+    vline.setAttribute('stroke', '#7c3aed'); vline.setAttribute('stroke-width', '1.2');
+    vline.setAttribute('stroke-dasharray', '3 3'); vline.setAttribute('opacity', '0.55');
+
+    const mkDot = (fill, r) => {
+      const c = document.createElementNS(ns, 'circle');
+      c.setAttribute('r', r); c.setAttribute('fill', fill);
+      c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2');
+      return c;
+    };
+    const dotP50 = mkDot('#7c3aed', 4.5);
+    const dotP90 = mkDot('#8b5cf6', 3.5);
+    const dotP10 = mkDot('#3b82f6', 3.5);
+
+    hg.appendChild(vline); hg.appendChild(dotP90); hg.appendChild(dotP50); hg.appendChild(dotP10);
+    svg.appendChild(hg);
+
+    // Transparent hit-area overlay
+    const overlay = document.createElementNS(ns, 'rect');
+    overlay.setAttribute('x', padL); overlay.setAttribute('y', padT);
+    overlay.setAttribute('width', W - padL - padR); overlay.setAttribute('height', H - padT - padB);
+    overlay.setAttribute('fill', 'transparent'); overlay.style.cursor = 'crosshair';
+    svg.appendChild(overlay);
+
+    // Floating HTML tooltip
+    const tip = document.createElement('div');
+    tip.className = 'modalDayTip';
+    tip.style.display = 'none';
+    container.style.position = 'relative';
+    container.appendChild(tip);
+
+    const getIdx = (clientX) => {
+      const rect = svg.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const relX = (clientX - rect.left) * scaleX;
+      return Math.max(0, Math.min(n - 1, Math.round((relX - padL) / ((W - padL - padR) / Math.max(1, n - 1)))));
+    };
+
+    overlay.addEventListener('pointermove', (e) => {
+      const idx = getIdx(e.clientX);
+      const d = dayPts[idx];
+      const x = getX(idx).toFixed(1);
+
+      vline.setAttribute('x1', x); vline.setAttribute('x2', x);
+      dotP50.setAttribute('cx', x); dotP50.setAttribute('cy', getY(d.p50).toFixed(1));
+      dotP90.setAttribute('cx', x); dotP90.setAttribute('cy', getY(d.p90).toFixed(1));
+      dotP10.setAttribute('cx', x); dotP10.setAttribute('cy', getY(d.p10).toFixed(1));
+      hg.setAttribute('opacity', '1');
+
+      // Position tooltip
+      const cRect = container.getBoundingClientRect();
+      const tipLeft = Math.min(e.clientX - cRect.left + 12, container.offsetWidth - 105);
+      const tipTop = Math.max(e.clientY - cRect.top - 72, 2);
+      tip.innerHTML = `<div class="modalDayTipHead">Day ${d.day}</div>
+        <div class="modalDayTipRow" style="color:#7c3aed"><span>P50</span><span>${money(d.p50)}</span></div>
+        <div class="modalDayTipRow" style="color:#8b5cf6"><span>UB</span><span>${money(d.p90)}</span></div>
+        <div class="modalDayTipRow" style="color:#3b82f6"><span>LB</span><span>${money(d.p10)}</span></div>`;
+      tip.style.left = tipLeft + 'px';
+      tip.style.top = tipTop + 'px';
+      tip.style.display = 'block';
+    });
+
+    overlay.addEventListener('pointerleave', () => {
+      hg.setAttribute('opacity', '0');
+      tip.style.display = 'none';
+    });
   }
 
   // Selected channel forecast filter
@@ -823,13 +907,36 @@
       return;
     }
 
+    // Update year badge from forecast series
+    const yearBadge = $('#channelYearBadge');
+    if (yearBadge) {
+      const years = [...new Set(forecastSeries.map(f => (f.period || '').slice(0, 4)).filter(Boolean))];
+      yearBadge.textContent = years.length ? years.join('–') : '';
+    }
+
     // Boot the wheel picker (idempotent — re-uses same backdrop/portal)
     setupChannelMonthWheel(forecastSeries);
+
+    // Boot the carousel once with onSlide to update Retailer/Counter label
+    const track = $('#channelContribTrack');
+    const dots = $('#channelContribDots');
+    if (track && dots && !track._carouselInit) {
+      track._carouselInit = true;
+      const entityLabels = ['Retailer', 'Counter'];
+      window.makeCarousel(track, dots, {
+        onSlide: (idx) => {
+          const label = $('#channelEntityLabel');
+          if (label) label.textContent = entityLabels[idx] || entityLabels[0];
+        }
+      });
+    }
 
     // Sync the label back to "All Months" on fresh render
     selectedChannelPeriod = 'all';
     const wheelTextEl = $('#channelMonthPickerVal');
     if (wheelTextEl) wheelTextEl.textContent = 'All Months';
+    const entityLabel = $('#channelEntityLabel');
+    if (entityLabel) entityLabel.textContent = 'Retailer';
 
     updateChannelForecastRows(data);
   }
@@ -887,15 +994,6 @@
 
     // Render top counters pane
     renderCounterContributions(data, totalPeriodSales, timeframeLabel);
-
-    // Re-init the carousel for this panel (in case panes changed)
-    const track = $('#channelContribTrack');
-    const dots = $('#channelContribDots');
-    if (track && dots && !track._carouselInit) {
-      track._carouselInit = true;
-      // Use the global makeCarousel from extras.js
-      if (typeof makeCarousel === 'function') makeCarousel(track, dots);
-    }
   }
 
   // Render top counters into the second carousel pane
