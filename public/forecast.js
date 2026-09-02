@@ -193,7 +193,24 @@
     }
   }
 
-  // Load forecast data from API
+  // In-memory client-side forecast cache
+  const forecastCache = new Map();
+  window.clearForecastCache = () => {
+    forecastCache.clear();
+  };
+
+  function syncTargetEvaluation(data) {
+    const targetInput = $('#targetAmountInput');
+    if (targetInput && (!targetInput.value || Number(targetInput.value) <= 0)) {
+      const defaultTarget = Math.round((data.summary?.total_projected_sales || 100000) * 1.1 / 1000) * 1000;
+      targetInput.value = defaultTarget;
+      evaluateTargetGap(defaultTarget);
+    } else if (targetInput && targetInput.value) {
+      evaluateTargetGap(Number(targetInput.value));
+    }
+  }
+
+  // Load forecast data from API (cached on client to prevent redundant requests)
   async function loadForecastData() {
     const retailer = $('#fRetailer')?.value || '';
     const counter = $('#fCounter')?.value || '';
@@ -208,10 +225,27 @@
       scenario: currentScenario
     });
 
+    const cacheKey = params.toString();
+
+    // Check memory cache first
+    if (forecastCache.has(cacheKey)) {
+      const data = forecastCache.get(cacheKey);
+      lastData = data;
+      renderForecastKPIs(data);
+      renderForecastChart(data);
+      renderChannelContributions(data);
+      renderAnomalies(data);
+      renderForecastTable(data);
+      syncTargetEvaluation(data);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/forecast?${params}`);
       if (!res.ok) throw new Error('Forecast API returned status ' + res.status);
       const data = await res.json();
+      
+      forecastCache.set(cacheKey, data);
       lastData = data;
 
       renderForecastKPIs(data);
@@ -219,16 +253,7 @@
       renderChannelContributions(data);
       renderAnomalies(data);
       renderForecastTable(data);
-
-      // Auto evaluate default target if planner is uninitialized
-      const targetInput = $('#targetAmountInput');
-      if (targetInput && (!targetInput.value || Number(targetInput.value) <= 0)) {
-        const defaultTarget = Math.round((data.summary?.total_projected_sales || 100000) * 1.1 / 1000) * 1000;
-        targetInput.value = defaultTarget;
-        evaluateTargetGap(defaultTarget);
-      } else if (targetInput && targetInput.value) {
-        evaluateTargetGap(Number(targetInput.value));
-      }
+      syncTargetEvaluation(data);
     } catch (err) {
       console.error('Failed to load forecast:', err);
     }
@@ -479,7 +504,7 @@
     setupForecastChartHover(container, allPoints, getX, getY, W, H);
   }
 
-  // Interactive Hover Handler for Chart
+  // Interactive Continuous Hover Handler for Monthly Forecast Chart
   function setupForecastChartHover(container, points, getX, getY, W, H) {
     const svg = container.querySelector('svg');
     const tip = $('#forecastChartTip');
@@ -487,16 +512,27 @@
     const crossTarget = container.querySelector('#fCrossTarget');
     if (!svg || !tip || !crosshair) return;
 
+    const numPoints = points.length;
+    const padL = getX(0);
+    const padR = W - getX(numPoints - 1);
+    const stepX = (W - padL - padR) / Math.max(1, numPoints - 1);
+
     svg.addEventListener('pointermove', e => {
       const rect = svg.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * W;
+      const clampedX = Math.max(padL, Math.min(W - padR, mouseX));
 
-      // Find closest point
+      // Continuous fluid vertical crosshair line tracking
+      crosshair.setAttribute('x1', clampedX.toFixed(1));
+      crosshair.setAttribute('x2', clampedX.toFixed(1));
+      crosshair.setAttribute('opacity', '0.65');
+
+      // Find nearest data point
       let closestIdx = 0;
       let minDist = Infinity;
       points.forEach((pt, idx) => {
         const px = getX(idx);
-        const dist = Math.abs(mouseX - px);
+        const dist = Math.abs(clampedX - px);
         if (dist < minDist) {
           minDist = dist;
           closestIdx = idx;
@@ -504,16 +540,19 @@
       });
 
       const pt = points[closestIdx];
-      const px = getX(closestIdx);
-      const py = getY(pt.sales);
 
-      crosshair.setAttribute('x1', px);
-      crosshair.setAttribute('x2', px);
-      crosshair.setAttribute('opacity', '0.6');
+      // Continuous curve height interpolation
+      const fracIdx = (clampedX - padL) / stepX;
+      const i0 = Math.max(0, Math.min(numPoints - 1, Math.floor(fracIdx)));
+      const i1 = Math.min(numPoints - 1, i0 + 1);
+      const t = fracIdx - i0;
+      const smoothT = (1 - Math.cos(t * Math.PI)) / 2;
+      const interpSales = points[i0].sales + (points[i1].sales - points[i0].sales) * smoothT;
+      const interpY = getY(interpSales);
 
       if (crossTarget) {
-        crossTarget.setAttribute('cx', px);
-        crossTarget.setAttribute('cy', py);
+        crossTarget.setAttribute('cx', clampedX.toFixed(1));
+        crossTarget.setAttribute('cy', interpY.toFixed(1));
         crossTarget.setAttribute('stroke', pt.isForecast ? '#7c3aed' : '#0b57c7');
         crossTarget.setAttribute('opacity', '1');
       }
@@ -534,7 +573,7 @@
       }
 
       const tipWidth = 150;
-      const leftPos = Math.min(Math.max(px - tipWidth / 2, 10), W - tipWidth - 10);
+      const leftPos = Math.min(Math.max(clampedX - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
       tip.style.top = '12px';
       tip.style.cursor = pt.isForecast ? 'pointer' : 'default';
@@ -728,11 +767,6 @@
         <!-- P50 projection -->
         <path d="${pathP50}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round"/>
 
-        <!-- Day data dots along P50 curve with smooth hover magnification -->
-        ${dayPts.map((d, i) => `
-          <circle cx="${getX(i).toFixed(1)}" cy="${getY(d.p50).toFixed(1)}" r="3" fill="#ffffff" stroke="#7c3aed" stroke-width="1.8" class="fModalDayDot" data-idx="${i}"/>
-        `).join('')}
-
         <!-- Peak day highlight -->
         <line x1="${peakX.toFixed(1)}" x2="${peakX.toFixed(1)}" y1="${padT}" y2="${H - padB}" stroke="#7c3aed" stroke-width="1" stroke-dasharray="2 2" opacity="0.35"/>
         <circle cx="${peakX.toFixed(1)}" cy="${peakY.toFixed(1)}" r="4.5" fill="#7c3aed" stroke="#fff" stroke-width="2"/>
@@ -753,13 +787,11 @@
     setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n);
   }
 
-  // Interactive daily hover: crosshair + smooth day dot magnification + floating tooltip
+  // Interactive daily hover: continuous crosshair + floating tooltip on the modal sparkline
   function setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n) {
     const svg = container.querySelector('svg');
     if (!svg) return;
     const ns = 'http://www.w3.org/2000/svg';
-
-    const dayDotEls = svg.querySelectorAll('.fModalDayDot');
 
     // Hover group (hidden by default)
     const hg = document.createElementNS(ns, 'g');
@@ -776,12 +808,11 @@
       const c = document.createElementNS(ns, 'circle');
       c.setAttribute('r', r); c.setAttribute('fill', fill);
       c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', sw);
-      c.style.transition = 'cx 0.08s ease, cy 0.08s ease, r 0.15s ease';
       return c;
     };
-    const dotP50 = mkDot('#7c3aed', 6, '2.5');
-    const dotP90 = mkDot('#8b5cf6', 4);
-    const dotP10 = mkDot('#3b82f6', 4);
+    const dotP50 = mkDot('#7c3aed', 5, '2.5');
+    const dotP90 = mkDot('#8b5cf6', 3.5);
+    const dotP10 = mkDot('#3b82f6', 3.5);
 
     hg.appendChild(vline); hg.appendChild(dotP90); hg.appendChild(dotP50); hg.appendChild(dotP10);
     svg.appendChild(hg);
@@ -790,7 +821,7 @@
     const overlay = document.createElementNS(ns, 'rect');
     overlay.setAttribute('x', padL); overlay.setAttribute('y', padT);
     overlay.setAttribute('width', W - padL - padR); overlay.setAttribute('height', H - padT - padB);
-    overlay.setAttribute('fill', 'transparent'); overlay.style.cursor = 'pointer';
+    overlay.setAttribute('fill', 'transparent'); overlay.style.cursor = 'crosshair';
     svg.appendChild(overlay);
 
     // Floating HTML tooltip
@@ -812,9 +843,6 @@
       const d = dayPts[idx];
       const x = getX(idx).toFixed(1);
 
-      // Magnify active day dot and normalize others
-      dayDotEls.forEach((dot, i) => dot.classList.toggle('active', i === idx));
-
       vline.setAttribute('x1', x); vline.setAttribute('x2', x);
       dotP50.setAttribute('cx', x); dotP50.setAttribute('cy', getY(d.p50).toFixed(1));
       dotP90.setAttribute('cx', x); dotP90.setAttribute('cy', getY(d.p90).toFixed(1));
@@ -835,7 +863,6 @@
     });
 
     overlay.addEventListener('pointerleave', () => {
-      dayDotEls.forEach(dot => dot.classList.remove('active'));
       hg.setAttribute('opacity', '0');
       tip.style.display = 'none';
     });
