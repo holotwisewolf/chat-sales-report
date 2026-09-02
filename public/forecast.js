@@ -537,6 +537,8 @@
       const leftPos = Math.min(Math.max(px - tipWidth / 2, 10), W - tipWidth - 10);
       tip.style.left = `${(leftPos / W) * 100}%`;
       tip.style.top = '12px';
+      tip.style.cursor = 'pointer';
+      tip.dataset.currentIdx = String(closestIdx);
     });
 
     svg.addEventListener('pointerleave', () => {
@@ -546,71 +548,150 @@
       tip.style.display = 'none';
     });
 
-    // Select point function for bottom detail card
-    function selectPoint(idx) {
-      const pt = points[idx];
-      if (!pt) return;
+    // Clicking anywhere on the chart, dot, or hover tooltip opens the sleek modal overlay!
+    svg.addEventListener('click', e => {
+      const rect = svg.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * W;
 
-      // Update dot active styling
-      svg.querySelectorAll('.fDataDot').forEach((d, i) => {
-        d.classList.toggle('selectedDot', i === idx);
+      let closestIdx = 0;
+      let minDist = Infinity;
+      points.forEach((pt, idx) => {
+        const px = getX(idx);
+        const dist = Math.abs(mouseX - px);
+        if (dist < minDist) {
+          minDist = dist;
+          closestIdx = idx;
+        }
       });
-
-      const card = $('#forecastDotCard');
-      if (!card) return;
-      card.hidden = false;
-      card.style.display = 'block';
-
-      const selMonth = $('#fDotSelectedMonth');
-      if (selMonth) selMonth.textContent = `Period: ${pt.period} ${pt.isForecast ? '(TimesFM Projected)' : '(Recorded Actual)'}`;
-
-      const sSales = $('#fDotSales');
-      if (sSales) sSales.textContent = money2(pt.sales);
-
-      const sUnits = $('#fDotUnits');
-      if (sUnits) sUnits.textContent = `${formatNum(pt.units)} pairs ${pt.growth_pct != null ? `(${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}% MoM)` : ''}`;
-
-      const sUb = $('#fDotUb');
-      if (sUb) sUb.textContent = pt.p90 ? money2(pt.p90) : money2(pt.sales * 1.12);
-
-      const sLb = $('#fDotLb');
-      if (sLb) sLb.textContent = pt.p10 ? money2(pt.p10) : money2(pt.sales * 0.88);
-
-      const chRows = $('#fDotChannelRows');
-      if (chRows) {
-        const channels = lastData?.channel_contributions && lastData.channel_contributions.length ? lastData.channel_contributions : [
-          { name: 'Mydin', share_pct: 79.7 },
-          { name: 'Hero Market', share_pct: 20.3 }
-        ];
-        chRows.innerHTML = channels.map(ch => {
-          const share = Number(ch.share_pct) || 50;
-          const chSales = (pt.sales * share) / 100;
-          return `
-            <div class="fDotChannelRow">
-              <span class="chName">${escapeHtml(ch.name || 'Retail Partner')} (${share.toFixed(1)}%)</span>
-              <span class="chVal">${money(chSales)}</span>
-            </div>
-          `;
-        }).join('');
-      }
-    }
-
-    // Dot click listeners
-    svg.querySelectorAll('.fDataDot').forEach(dot => {
-      dot.addEventListener('click', e => {
-        e.stopPropagation();
-        const idx = parseInt(dot.dataset.idx, 10);
-        selectPoint(idx);
-      });
+      openForecastDrilldownModal(points[closestIdx], points);
     });
 
-    // Auto-select initial forecast point if available
-    const firstForecastIdx = points.findIndex(p => p.isForecast);
-    if (firstForecastIdx !== -1) {
-      selectPoint(firstForecastIdx);
-    } else if (points.length > 0) {
-      selectPoint(points.length - 1);
+    tip.addEventListener('click', () => {
+      const idx = parseInt(tip.dataset.currentIdx || '0', 10);
+      openForecastDrilldownModal(points[idx] || points[0], points);
+    });
+  }
+
+  // Open Drilldown Overlay Modal (Exact visual layout from screenshot)
+  function openForecastDrilldownModal(pt, allPoints) {
+    const modal = $('#forecastModalOverlay');
+    if (!modal || !pt) return;
+
+    modal.hidden = false;
+    modal.style.display = 'flex';
+
+    // Populate Top Header
+    const eyebrow = $('#fModalEyebrow');
+    if (eyebrow) eyebrow.textContent = `Sales Projection`;
+
+    const mSales = $('#fModalSales');
+    if (mSales) mSales.textContent = money(pt.sales);
+
+    const mUnits = $('#fModalUnits');
+    if (mUnits) mUnits.textContent = `${formatNum(pt.units)} pairs`;
+
+    const mPeriod = $('#fModalPeriod');
+    if (mPeriod) mPeriod.textContent = `${pt.period} ${pt.growth_pct != null ? `(${pt.growth_pct >= 0 ? '+' : ''}${pt.growth_pct}% MoM)` : ''}`;
+
+    // Populate Bottom 3 Bento Cards
+    const bLb = $('#fBentoLb');
+    if (bLb) bLb.textContent = pt.p10 ? money(pt.p10) : money(pt.sales * 0.88);
+
+    const bP50 = $('#fBentoP50');
+    if (bP50) bP50.textContent = money(pt.sales);
+
+    const bUb = $('#fBentoUb');
+    if (bUb) bUb.textContent = pt.p90 ? money(pt.p90) : money(pt.sales * 1.12);
+
+    // Channel List
+    const chList = $('#fModalChannelList');
+    if (chList) {
+      const channels = lastData?.channel_contributions && lastData.channel_contributions.length ? lastData.channel_contributions : [
+        { name: 'Mydin', share_pct: 79.7 },
+        { name: 'Hero Market', share_pct: 20.3 }
+      ];
+      chList.innerHTML = channels.map(ch => {
+        const share = Number(ch.share_pct) || 50;
+        const chSales = (pt.sales * share) / 100;
+        return `
+          <div class="fModalChannelRow">
+            <span class="chName">${escapeHtml(ch.name || 'Retail Partner')} (${share.toFixed(1)}% share)</span>
+            <span class="chVal">${money2(chSales)}</span>
+          </div>
+        `;
+      }).join('');
     }
+
+    // Render Mini Wave Sparkline in Modal
+    renderModalSparkline(pt, allPoints);
+
+    // Setup Close Listeners
+    const modalCloseBtn = $('#fModalCloseBtn');
+    const modalBackdrop = $('#forecastModalBackdrop');
+    const closeModal = () => {
+      modal.hidden = true;
+      modal.style.display = 'none';
+    };
+    if (modalCloseBtn) modalCloseBtn.onclick = closeModal;
+    if (modalBackdrop) modalBackdrop.onclick = closeModal;
+  }
+
+  // Render Mini Smooth Wave Curve in Modal (Exact visual from screenshot)
+  function renderModalSparkline(selectedPt, allPoints) {
+    const container = $('#fModalSvgContainer');
+    if (!container || !allPoints || !allPoints.length) return;
+
+    const W = container.clientWidth || 620;
+    const H = 150;
+    const padL = 35, padR = 35, padT = 30, padB = 25;
+
+    const maxVal = Math.max(...allPoints.map(p => p.sales || 0), 1000) * 1.15;
+    const minVal = Math.min(...allPoints.map(p => p.sales || 0), 0) * 0.9;
+    const valRange = Math.max(1, maxVal - minVal);
+
+    const stepX = (W - padL - padR) / Math.max(1, allPoints.length - 1);
+    const getX = i => padL + i * stepX;
+    const getY = val => padT + (H - padT - padB) * (1 - (val - minVal) / valRange);
+
+    const wavePoints = allPoints.map((p, i) => ({
+      x: getX(i),
+      y: getY(p.sales),
+      period: p.period,
+      sales: p.sales,
+      isSel: p.period === selectedPt.period
+    }));
+
+    const pathD = buildSmoothBezier(wavePoints);
+    const selPoint = wavePoints.find(p => p.isSel) || wavePoints[wavePoints.length - 1];
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" style="overflow: visible;">
+        <!-- Background Grid Lines -->
+        <line x1="${padL}" x2="${W - padR}" y1="${getY(maxVal * 0.75).toFixed(1)}" y2="${getY(maxVal * 0.75).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+        <line x1="${padL}" x2="${W - padR}" y1="${getY(maxVal * 0.35).toFixed(1)}" y2="${getY(maxVal * 0.35).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+
+        <!-- Smooth White Wave Line from screenshot -->
+        <path d="${pathD}" fill="none" stroke="#f1f5f9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- Vertical Crosshair Line -->
+        <line x1="${selPoint.x.toFixed(1)}" x2="${selPoint.x.toFixed(1)}" y1="${padT - 10}" y2="${H - padB + 5}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" />
+
+        <!-- Selected Dot Highlight -->
+        <circle cx="${selPoint.x.toFixed(1)}" cy="${selPoint.y.toFixed(1)}" r="4.5" fill="#fff" stroke="#111317" stroke-width="2" />
+
+        <!-- Floating Badge above Selected Point -->
+        <g transform="translate(${Math.min(Math.max(selPoint.x - 45, 10), W - 95)}, ${Math.max(selPoint.y - 42, 2)})">
+          <rect width="90" height="30" rx="7" fill="#1e222b" stroke="rgba(255,255,255,0.18)"/>
+          <text x="45" y="13" fill="#94a3b8" font-size="9.5" font-weight="600" text-anchor="middle">${escapeHtml(selPoint.period)}</text>
+          <text x="45" y="25" fill="#fff" font-size="11.5" font-weight="750" text-anchor="middle">${money(selPoint.sales)}</text>
+        </g>
+
+        <!-- Start, Mid, End Axis Labels -->
+        <text x="${padL}" y="${H - 4}" fill="#64748b" font-size="10">${escapeHtml(allPoints[0]?.period || '')}</text>
+        <text x="${W / 2}" y="${H - 4}" fill="#64748b" font-size="10" text-anchor="middle">${escapeHtml(allPoints[Math.floor(allPoints.length / 2)]?.period || '')}</text>
+        <text x="${W - padR}" y="${H - 4}" fill="#64748b" font-size="10" text-anchor="end">${escapeHtml(allPoints[allPoints.length - 1]?.period || '')}</text>
+      </svg>
+    `;
   }
 
   // Render Channel Contribution Bars

@@ -7,7 +7,7 @@
   <title>Sales Dashboard</title>
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b57c7'/%3E%3Cpath d='M7 24V14M13 24V8M19 24v-8M25 24V11' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/styles.css?v=94">
+  <link rel="stylesheet" href="/styles.css?v=95">
 </head>
 
 <body>
@@ -409,31 +409,6 @@
         <div class="forecastChartWrap" id="forecastChartWrap">
           <div id="forecastSvgContainer" class="forecastSvgContainer"></div>
           <div id="forecastChartTip" class="forecastChartTip" hidden></div>
-        </div>
-
-        <!-- Interactive Selected Point Drilldown Card (Click any forecast dot to inspect) -->
-        <div id="forecastDotCard" class="forecastDotCard" hidden>
-          <div class="fDotCardGrid">
-            <div class="fDotCardCol">
-              <span class="fDotCardLabel" id="fDotSelectedMonth">Selected Period</span>
-              <strong class="fDotCardVal" id="fDotSales">&mdash;</strong>
-              <span class="fDotCardSub" id="fDotUnits">&mdash;</span>
-            </div>
-            <div class="fDotCardCol fDotColUb">
-              <span class="fDotCardLabel">Upper Bound (UB / P90)</span>
-              <strong class="fDotCardVal" id="fDotUb">&mdash;</strong>
-              <span class="fDotCardSub" id="fDotUbMeta">Optimistic Demand</span>
-            </div>
-            <div class="fDotCardCol fDotColLb">
-              <span class="fDotCardLabel">Lower Bound (LB / P10)</span>
-              <strong class="fDotCardVal" id="fDotLb">&mdash;</strong>
-              <span class="fDotCardSub" id="fDotLbMeta">Conservative Floor</span>
-            </div>
-            <div class="fDotCardCol fDotColChannels">
-              <span class="fDotCardLabel">Projected Channel Split</span>
-              <div class="fDotChannelRows" id="fDotChannelRows"></div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -980,16 +955,77 @@
         <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
       </svg><span class="dockLabel">Undo</span></button></nav>
 
+  <!-- Forecast Period Drilldown Overlay Modal (Exact Screenshot Template) -->
+  <div id="forecastModalOverlay" class="forecastModalOverlay" hidden>
+    <div class="forecastModalBackdrop" id="forecastModalBackdrop"></div>
+    <div class="forecastModalDialog">
+      <div class="fModalHeader">
+        <div class="fModalTopRow">
+          <div class="fModalEyebrowWrap">
+            <span class="fModalEyebrow" id="fModalEyebrow">Sales Projection</span>
+            <span class="fModalLiveDot">&bull; Live</span>
+          </div>
+          <button type="button" class="fModalCloseBtn" id="fModalCloseBtn" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="fModalTitleRow">
+          <div class="fModalBigStat">
+            <strong class="fModalVal" id="fModalSales">&mdash;</strong>
+            <span class="fModalUnits" id="fModalUnits">pairs</span>
+            <span class="fModalPeriod" id="fModalPeriod">&mdash;</span>
+          </div>
+          <div class="fModalPills">
+            <button type="button" class="fModalPillBtn" id="fModalScenarioBtn">Baseline</button>
+            <div class="fModalTimePills">
+              <span class="fModalPill active" id="fModalPillP50">P50</span>
+              <span class="fModalPill" id="fModalPillP90">UB</span>
+              <span class="fModalPill" id="fModalPillP10">LB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Mini Wave Trajectory Chart -->
+      <div class="fModalChartWrap">
+        <div id="fModalSvgContainer" class="fModalSvgContainer"></div>
+      </div>
+
+      <!-- Bottom 3 Bento Cards matching exact template -->
+      <div class="fModalBentoRow">
+        <div class="fModalBentoCard">
+          <span class="fBentoLabel">Lower bound (LB)</span>
+          <strong class="fBentoVal" id="fBentoLb">&mdash;</strong>
+          <span class="fBentoSub">Conservative Floor</span>
+        </div>
+        <div class="fModalBentoCard fModalBentoHighlight">
+          <span class="fBentoLabel">Projected (P50)</span>
+          <strong class="fBentoVal" id="fBentoP50">&mdash;</strong>
+          <span class="fBentoSub">Expected Median</span>
+        </div>
+        <div class="fModalBentoCard">
+          <span class="fBentoLabel">Upper bound (UB)</span>
+          <strong class="fBentoVal" id="fBentoUb">&mdash;</strong>
+          <span class="fBentoSub">Optimistic Peak</span>
+        </div>
+      </div>
+
+      <!-- Channel Breakdown -->
+      <div class="fModalChannelSection">
+        <span class="fBentoLabel">Channel Contribution Breakdown</span>
+        <div class="fModalChannelList" id="fModalChannelList"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Year wheel dim backdrop for focus isolation -->
   <div id="yearWheelBackdrop" class="yearWheelBackdrop" hidden><div id="portalWheel" class="portalWheel"></div></div>
 
-  <script src="/chart.js?v=94"></script>
-  <script src="/app.js?v=94"></script>
-  <script src="/import.js?v=94"></script>
-  <script src="/chat.js?v=94"></script>
-  <script src="/data.js?v=94"></script>
-  <script src="/forecast.js?v=94"></script>
-  <script src="/extras.js?v=94"></script>
+  <script src="/chart.js?v=95"></script>
+  <script src="/app.js?v=95"></script>
+  <script src="/import.js?v=95"></script>
+  <script src="/chat.js?v=95"></script>
+  <script src="/data.js?v=95"></script>
+  <script src="/forecast.js?v=95"></script>
+  <script src="/extras.js?v=95"></script>
 </body>
 
 </html>
