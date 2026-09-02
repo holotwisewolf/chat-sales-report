@@ -796,11 +796,11 @@
     `;
 
     // Wire up interactive daily hover
-    setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n);
+    setupModalDailyHover(container, selectedPt, dayPts, getX, getY, W, H, padL, padR, padT, padB, n);
   }
 
   // Interactive daily hover: continuous crosshair + floating tooltip on the modal sparkline
-  function setupModalDailyHover(container, dayPts, getX, getY, W, H, padL, padR, padT, padB, n) {
+  function setupModalDailyHover(container, selectedPt, dayPts, getX, getY, W, H, padL, padR, padT, padB, n) {
     const svg = container.querySelector('svg');
     if (!svg) return;
     const ns = 'http://www.w3.org/2000/svg';
@@ -853,31 +853,52 @@
     overlay.addEventListener('pointermove', (e) => {
       const idx = getIdx(e.clientX);
       const d = dayPts[idx];
-      const x = getX(idx).toFixed(1);
+      const px = getX(idx);
+      const py50 = getY(d.p50);
+      const py90 = getY(d.p90);
+      const py10 = getY(d.p10);
 
-      vline.setAttribute('x1', x); vline.setAttribute('x2', x);
-      dotP50.setAttribute('cx', x); dotP50.setAttribute('cy', getY(d.p50).toFixed(1));
-      dotP90.setAttribute('cx', x); dotP90.setAttribute('cy', getY(d.p90).toFixed(1));
-      dotP10.setAttribute('cx', x); dotP10.setAttribute('cy', getY(d.p10).toFixed(1));
+      vline.setAttribute('x1', px.toFixed(1)); vline.setAttribute('x2', px.toFixed(1));
+      dotP50.setAttribute('cx', px.toFixed(1)); dotP50.setAttribute('cy', py50.toFixed(1));
+      dotP90.setAttribute('cx', px.toFixed(1)); dotP90.setAttribute('cy', py90.toFixed(1));
+      dotP10.setAttribute('cx', px.toFixed(1)); dotP10.setAttribute('cy', py10.toFixed(1));
       hg.setAttribute('opacity', '1');
 
-      // Position tooltip with bounds protection and higher floating offset well above the curve
+      // Live update the 3 Bento cards in the modal to the hovered day
+      const bLb = $('#fBentoLb');
+      const bP50 = $('#fBentoP50');
+      const bUb = $('#fBentoUb');
+      if (bLb) bLb.textContent = money(d.p10);
+      if (bP50) bP50.textContent = money(d.p50);
+      if (bUb) bUb.textContent = money(d.p90);
+
+      // Tooltip positioning: bottom-centered above the P90 curve, gliding with the trajectory wave
       const cRect = container.getBoundingClientRect();
-      const tipLeft = Math.min(Math.max(e.clientX - cRect.left - 48, 8), container.offsetWidth - 110);
-      const pyP90 = getY(d.p90);
-      const tipTop = Math.min(-36, Math.min(e.clientY - cRect.top - 95, pyP90 - 68));
+      const scaleX = cRect.width / W;
+      const scaleY = cRect.height / H;
+      const screenX = px * scaleX;
+      const screenY = Math.max(py90 * scaleY - 12, 10);
+
       tip.innerHTML = `<div class="modalDayTipHead">Day ${d.day} Projected</div>
         <div class="modalDayTipRow" style="color:#7c3aed"><span>P50</span><span>${money(d.p50)}</span></div>
         <div class="modalDayTipRow" style="color:#8b5cf6"><span>UB</span><span>${money(d.p90)}</span></div>
         <div class="modalDayTipRow" style="color:#3b82f6"><span>LB</span><span>${money(d.p10)}</span></div>`;
-      tip.style.left = tipLeft + 'px';
-      tip.style.top = tipTop + 'px';
+      tip.style.left = screenX.toFixed(1) + 'px';
+      tip.style.top = screenY.toFixed(1) + 'px';
       tip.style.display = 'block';
     });
 
     overlay.addEventListener('pointerleave', () => {
       hg.setAttribute('opacity', '0');
       tip.style.display = 'none';
+
+      // Restore full month totals in Bento cards
+      const bLb = $('#fBentoLb');
+      const bP50 = $('#fBentoP50');
+      const bUb = $('#fBentoUb');
+      if (bLb) bLb.textContent = selectedPt.p10 ? money(selectedPt.p10) : money(selectedPt.sales * 0.88);
+      if (bP50) bP50.textContent = money(selectedPt.sales);
+      if (bUb) bUb.textContent = selectedPt.p90 ? money(selectedPt.p90) : money(selectedPt.sales * 1.12);
     });
   }
 
